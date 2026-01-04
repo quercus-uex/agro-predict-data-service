@@ -1,18 +1,19 @@
 # Donde se almacenarán los modelos para pasarlos a la BD
 from typing import List
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Index
 from sqlalchemy.orm import relationship
 from app import db
 
-class Sectores(db.Model):
+class Sector(db.Model):
     __tablename__ = 'sectores'
     
     id = Column(Integer, primary_key = True, autoincrement = True)
     nombre = Column(String(50), unique = True, nullable = False)
     finca_id = Column(Integer, ForeignKey("fincas.id"), nullable = False)
-    cultivo_id = Column(String(50), nullable = True)
+    cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = True)
 
     finca = relationship("Finca", back_populates = "sectores")
+    cultivo = relationship("Cultivo", back_populates = "cultivo")
 
 class Cultivo(db.Model):
     __tablename__ = 'cultivos'
@@ -32,7 +33,7 @@ class CalendarioCultivo(db.Model):
     semana = Column(Integer, nullable = False)
     nivel_alerta = Column(Integer, nullable = False)
 
-    cultivo = relationship("Cultivo", back_populates = "calendario_cultivo")
+    cultivo = relationship("Cultivo", back_populates = "calendarios")
 
 class Finca(db.Model):
     __tablename__ = 'fincas'
@@ -79,18 +80,24 @@ class CCAA(db.Model):
 
     provincias = relationship("Provincia", back_populates="ccaa")
 
-class MedicionesClimaticas(db.Model):
+class MedicionClimatica(db.Model):
     __tablename__ = 'mediciones_climaticas'
 
     id = Column(Integer, primary_key=True, autoincrement = True)
     estacion_id = Column(Integer, ForeignKey("estaciones.id"), nullable = False)
+    provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False)
     timestamp = Column(DateTime, nullable = False, index = True )
 
-    humedad = Column(Float)
-    temperatura = Column(Float)
+    humedad = Column(Float, nullable = False)
+    temperatura = Column(Float, nullable = False)
     vel_viento = Column(Float)
-    precipitacion = Column(Float)
-    etp_mon = Column(Float)
-    pep_mon = Column(Float)
+    precipitacion = Column(Float, nullable = False)
+    etp_mon = Column(Float, nullable = False)
+    pep_mon = Column(Float, nullable = False)
 
     estacion = relationship("Estacion", back_populates = "mediciones")
+    provincia = relationship("Provincia", back_populates = "mediciones")
+
+    __table_args__ = (
+        Index("idx_estacion_timestamp", "estacion_id", "timestamp")
+    )

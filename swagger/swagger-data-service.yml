@@ -1,0 +1,956 @@
+openapi: 3.1.0
+info:
+  title: Servicio de Datos - OpenAPI 3.1
+  description: |-
+    Este es un servicio dedicado a aportar datos solicitado por los servicios principales del sistema software a desarrollar.  
+    Se encarga de obtener datos de servicios proveedores y los normaliza para aportar un tratado de datos más sencillo.
+
+    Este servicio consulta datos a proveedores, los normaliza y los envía como respuesta, no se encarga de almancenarlos.
+
+    Links sobre los servicios de recogida de datos meteorológicos:
+    - [Servicio AEMET](https://github.com/agro-predict-tfg-2026/Aemet.git)
+    - [Servicio SiAR](https://github.com/agro-predict-tfg-2026/SiAR.git)
+    - [Servicio ITACyL](https://github.com/agro-predict-tfg-2026/ITACyL.git)
+
+  contact:
+    email: amendoma@alumnos.unex.es
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Conoce en profundidad el objetivo del proyecto
+  url: https://github.com/alvaromendoooo/Meteorologic-Predictions
+
+servers:
+  - url: http://data:9023/api/v1
+
+tags:
+  - name: Históricos
+    description: Obtención de datos climáticos históricos sobre una provincia | CCAA | estación meteorológica.
+  - name: Actuales
+    description: Obtención de datos climáticos actuales sobre una provincia | CCAA | estación meteorológica.
+  - name: Pronóstico
+    description: Obtención de datos climáticos futuros sobre una provincia | CCAA.
+  - name: Calendario
+    description: Obtención de datos relacionados con plagas | enfermedades.
+  - name: Catálogo
+    description: Agrupación diversa de datos con su descripción para consultar
+
+paths:
+  /climate/historical/provincias:
+    get:
+      tags:
+        - Históricos
+      summary: Obtiene datos climáticos históricos por provincia
+      description: Consulta el proveedor externo SiAR para obtener datos climáticos históricos asociados a una provincia en un rango temporal determinado.
+      operationId: getHistoricalProvincial
+      parameters:
+        - name: provinceCode
+          in: query
+          description: Código de la provincia
+          required: true
+          schema:
+            type: string
+            enum: [ CC, BA ]
+        - name: type
+          in: query
+          description: Tipo de registro horario que se quiere consultar
+          required: true
+          schema:
+            type: string
+            enum: [HORA, DIA, SEMANA, MES]
+        - name: startDate
+          in: query
+          description: Fecha de inicio del histórico
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: Fecha de fin del historico
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Datos históricos provinciales obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/HistoricoHoraResponse'
+                  - $ref: '#/components/schemas/HistoricoDiaResponse'
+                  - $ref: '#/components/schemas/HistoricoSemanaResponse'
+                  - $ref: '#/components/schemas/HistoricoMesResponse'
+                discriminator:
+                  propertyName: type
+        '400':
+          description: Parámetros de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParametersError'
+        
+        '404':
+          description: No existen datos históricos para los parámetros indicados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+
+        '502':
+          description: Error al consultar el proveedor externo SiAR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderError'
+
+  /climate/historical/estacion:
+    get:
+      tags:
+        - Históricos
+      summary: Obtiene datos históricos climáticos por estación
+      description: Consulta el proveedor externo SiAR para obtener datos climáticos históricos asociados a una estación dada de alta en un rango temporal determinado.
+      operationId: getHistoricalEstacion
+      parameters:
+        - name: estacionCode
+          in: query
+          description: Código de la estación
+          required: true
+          schema:
+            type: string
+            enum: [CC01, ... , CC109]
+        - name: type
+          in: query
+          description: Tipo de registro horario que se quiere consultar
+          required: true
+          schema:
+            type: string
+            enum: [HORA, DIA, SEMANA, MES]
+        - name: startDate
+          in: query
+          description: Fecha de inicio del histórico
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: Fecha de fin del historico
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Datos históricos por estación obtenidos
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/HistoricoHoraResponse'
+                  - $ref: '#/components/schemas/HistoricoDiaResponse'
+                  - $ref: '#/components/schemas/HistoricoSemanaResponse'
+                  - $ref: '#/components/schemas/HistoricoMesResponse'
+                discriminator:
+                  propertyName: type
+        '400':
+          description: Parámetros de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParametersError'
+        
+        '404':
+          description: No existen datos históricos para los parámetros indicados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+
+        '502':
+          description: Error al consultar el proveedor externo SiAR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderError'
+    
+  /climate/current/ccaa/{ccaa}:
+    get:
+      tags:
+        - Actuales
+      summary: Predicción sobre una comunidad autónoma hoy
+      description: | 
+        Predicción para la CCAA que se pasa por parámetros con validez para mismo día que la fecha de petición.
+      operationId: getCurrentCCAA
+      parameters:
+        - name: ccaa
+          in: path
+          required: true
+          description: Código de la Comunidad Autónoma
+          schema:
+            type: string
+            enum:
+              - "and" # Andalucía  
+              - "arn" # Aragón  
+              - "ast" # Asturias  
+              - "bal" # Islas Baleares  
+              - "coo" # Islacas Canarias  
+              - "can" # Cantabria  
+              - "cle" # Castilla y León  
+              - "clm" # Castilla - La Mancha  
+              - "cat" # Cataluña  
+              - "val" # Comunidad Valenciana  
+              - "ext" # Extremadura  
+              - "gal" # Galicia  
+              - "mad" # Madrid  
+              - "mur" # Murcia  
+              - "nav" # Navarra  
+              - "pva" # País Vasco  
+              - "rio" # La Rioja  
+            examples: [ext]
+      responses:
+        '200':
+          description: Datos actuales por CCAA obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatosClimaticosCcaaActuales'
+        '400':
+          description: Parámetros de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParametersError'
+        
+        '404':
+          description: No existen datos actuales para la CCAA indicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+
+        '502':
+          description: Error al consultar el proveedor externo AEMET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderError'
+
+  /climate/current/nacional:
+    get:
+      tags:
+        - Actuales
+      summary: Predicción meteorológica nacional hoy
+      description: Predicción nacional para el día actual a la fecha de elaboración de la petición.
+      operationId: getCurrentNacional
+      responses:
+        '200':
+          description: Datos actuales nacionales obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatosClimatiocsActuales'
+        '502':
+          description: Error al consultar el proveedor externo AEMET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderError'
+  
+  /climate/current/provincia/{provinciaCode}:
+    get:
+      tags:
+        - Actuales
+      summary: Predicción meteorológica provincial hoy 
+      description: >
+        Predicción del día actual para la provincia o isla que se pasa por parámetros.
+      operationId: getCurrentProvincial
+      parameters:
+        - name: provinciaCode
+          in: path
+          required: true
+          description: Código de la provincia o isla
+          schema:
+            type: string
+            enum: 
+              - "01"  # Álava
+              - "02"  # Albacete
+              - "03"  # Alicante
+              - "04"  # Almería
+              - "33"  # Asturias
+              - "05"  # Ávila
+              - "06"  # Badajoz
+              - "08"  # Barcelona
+              - "48"  # Bizkaia
+              - "09"  # Burgos
+              - "10"  # Cáceres
+              - "11"  # Cádiz
+              - "39"  # Cantabria
+              - "12"  # Castellón
+              - "51"  # Ceuta
+              - "13"  # Ciudad Real
+              - "14"  # Córdoba
+              - "15"  # A Coruña
+              - "16"  # Cuenca
+              - "17"  # Girona
+              - "18"  # Granada
+              - "19"  # Guadalajara
+              - "20"  # Gipuzkoa
+              - "21"  # Huelva
+              - "22"  # Huesca
+              - "071" # Menorca
+              - "072" # Mallorca
+              - "073" # Ibiza y Formentera
+              - "351" # Lanzarote
+              - "352" # Fuerteventura
+              - "353" # Gran Canaria
+              - "381" # Tenerife
+              - "382" # La Gomera
+              - "383" # La Palma
+              - "384" # El Hierro
+              - "23"  # Jaén
+              - "24"  # León
+              - "25"  # Lleida
+              - "27"  # Lugo
+              - "28"  # Madrid
+              - "29"  # Málaga
+              - "52"  # Melilla
+              - "30"  # Murcia
+              - "31"  # Navarra
+              - "32"  # Ourense
+              - "34"  # Palencia
+              - "36"  # Pontevedra
+              - "26"  # La Rioja
+              - "37"  # Salamanca
+              - "40"  # Segovia
+              - "41"  # Sevilla
+              - "42"  # Soria
+              - "43"  # Tarragona
+              - "44"  # Teruel
+              - "45"  # Toledo
+              - "46"  # Valencia
+              - "47"  # Valladolid
+              - "49"  # Zamora
+              - "50"  # Zaragoza
+            examples: [01]
+      responses:
+        '200':
+          description: Datos actuales de provincia obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderError' # Por cambiar cuando funcione la web de AEMET
+
+        '400':
+          description: Error en los parámetros
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParametersError'
+        '404':
+          description: No se han encontrado datos para la provincia solicitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '502':
+          description: Error en el proveedor de datos
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/ProviderError'
+              
+
+  /climate/plagas:
+    get:
+      tags:
+        - Calendario
+      summary: Calendario de plagas/enfermedades para un cultivo o grupo de cultivos
+      description: Obtiene el calendario de plagas/enfermedades para un cultivo o grupo de cultivos.
+      operationId: getPlagasCalendar
+      parameters:
+        - name: cultivo
+          in: query
+          required: true
+          description: Id del cultivo
+          schema:
+            type: integer
+            examples: [1]  
+        - name: grupo
+          in: query
+          required: true
+          description: Grupo de cultivo a analizar
+          schema:
+            type: string
+            enum:
+              - "CEREALES"
+              - "LEGUMINOSAS"
+      responses:
+        '200':
+          description: "Obtención del calendario de plagas/enfermedades obtenido exitosamente"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatosPlaga'
+        '400':
+          description: Parámetros de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParametersError'
+        
+        '404':
+          description: No existen datos actuales para el cultivo seleccionado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        
+        '502':
+          description: Error interno con el proveedor ITACyL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderError'
+
+
+
+  /catalogs/ccaa:
+    get:
+      tags:
+        - Catálogo
+      summary: Obtiene el catálogo de Comunidades Autónomas
+      description: |
+        Devuelve el listado de Comunidades Autónomas disponibles junto con sus códigos para usar en otros puntos finales.
+      operationId: getCcaaCatalog
+      responses:
+        '200':
+          description: Catálogo de CCAA obtenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CCAA'
+
+          links:
+            consultarDatosActualesCCAA:
+              operationId: getCurrentCCAA
+              parameters:
+                ccaa: $response.body#/code
+              description: >
+                Permite consultar los datos meteorológicos actuales de una Comunidad Autónoma seleccionada a partir de su codigo
+
+  /catalogs/provincia:
+    get:
+      tags:
+        - Catálogo
+      summary: Obtiene el catálogo de Provincias
+      description: |
+        Devuelve el listado de Provincias disponibles junto con sus códigos para usar en otros puntos finales.
+      operationId: getProvinciaCatalog
+      responses:
+        '200':
+          description: Catálogo de Provincias obtenido correctamente
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/Provincias'
+
+
+          links:
+            consultarDatosActualesProvincia:
+              operationId: getCurrentProvincial
+              parameters:
+                provinciaCode: $response.body#/code
+              description: >
+                Permite consultar los datos meteorológicos actuales de una provincia seleccionada a partir de su codigo
+
+components:
+  securitySchemes: 
+    BasicAuth:
+      type: http
+      scheme: basic
+    
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read: Grants read access
+            write: Grants write access
+            admin: Grants access to admin operations  
+
+  schemas:
+    DatosPlaga:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Identificador del cultivo
+          examples: [0]
+        name:
+          type: string
+          description: Nombre del cultivo
+          examples: ["Olivo"]
+        causalAgent:
+          type: string
+          description: Agente causante de la plaga/enfermedad
+        criticalMoment:
+          type: string
+          description: Momento crítico de aparición de la plaga/enfermedad
+        observaciones:
+          type: string
+          description: Observaciones sobre el problema
+        calendarioCultivo:
+          type: array
+          description: Calendario de afectación de la plaga/enfermedad en el cultivo seleccionado
+          items:
+            $ref: '#/components/schemas/CultivoCalendario'
+    CultivoCalendario:
+      type: object
+      properties:
+        cultivoId: 
+          type: integer
+          description: Id único del cultivo al que afecta
+        grupo:
+          type: string
+          description: Grupo del cultivo al que pertenece
+        calendario:
+          type: array
+          description: Listado de semanas del año con su nivel de afectación de la plaga/enfermedad en el cultivo
+          items:
+            $ref: '#/components/schemas/Calendario'
+    Calendario:
+      type: object
+      properties:
+        nivelAlerta: 
+          type: number
+          description: Nivel de alerta de la plaga/enfermedad
+        semana:
+          type: integer
+          description: Número de semana del año
+    DatosClimatiocsActuales:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: Proveedor de datos
+          examples: [AEMET]
+        alcance: 
+          type: string
+          description: Zona analizada
+          examples: [espania]
+        emision:
+          type: string
+          format: date-time
+          description: Fecha en la que se ha realizado la petición
+          examples: [2025-12-31T07:13:00Z]
+        fechaPrediccion:
+          type: string
+          format: date
+          description: Ultimo registro que almacena el proveedor sobre el pronóstico nacional
+          examples: [2025-12-24]
+        fenomeno:
+          type: string
+          description: Pronóstico actual meteorológico
+          example: >
+            Probables precipitaciones localmente fuertes y ocasionalmente con tormenta en litorales de Alborán y del mar Balear. Nieblas persistentes en zonas de montaña del norte peninsular.
+        pronostico:
+          type: string
+          description: Pronóstico meteorológico a fecha del último registro almacenado
+          example: >
+            Se prevé una situación de inestabilidad con bajas presiones en el Mediterráneo occidental y cielos muy nubosos o cubiertos en la Península y Baleares, tendiendo a poco nuboso o despejado al final en el suroeste. Se esperan precipitaciones moderadas y persistentes en el Cantábrico y norte de Galicia, y probabilidad de chubascos localmente fuertes y ocasionalmente con tormenta en litorales de Alborán y del mar Balear; serán menos probables en ambas mesetas. Nevará de forma débil en zonas de montaña por encima de 1000-1200 m. En Canarias intervalos nubosos aumentando por la tarde a nuboso o cubierto, principalmente en el norte de las islas, con precipitaciones ocasionalmente moderadas y menos probables y débiles en el sur. 
+            Nieblas en zonas de montaña, más persistentes en las del norte peninsular, y en zonas de ambas mesetas y del Ebro.Descenso ligero de las temperaturas mínimas en la mitad sur, noreste peninsular y Baleares y en ligero ascenso en el resto, más acusado en el alto Ebro, Cantábrico central y zonas de la meseta Norte. Máximas en ascenso general excepto en los litorales del suroeste, fachadas sureste y este y zonas del alto Ebro y del Cantábrico oriental. Pocos cambios en las temperaturas de Canarias. Heladas moderadas en Pirineos, débiles en el resto de las zonas de montaña, este de Castilla-La Mancha y, localmente, en la meseta Norte. Viento del norte y nordeste en general, que será moderado en los litorales y en zonas de Castilla y León, con intervalos de fuerte en litorales del noroeste y sin descartar rachas localmente muy fuertes en zonas altas del tercio norte. Cierzo moderado en el valle del Ebro, tramontana con intervalos de fuerte en Ampurdán y poniente en el sur de Alborán. En Canarias viento moderado del noroeste.
+    DatosClimaticosCcaaActuales:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: Proveedor de datos
+          examples: [AEMET]
+        ccaa:
+          type: string
+          description: Código Comunidad Autónoma analizada
+          examples: [ext]
+        emision:
+          type: string
+          format: date-time
+          description: Fecha en la que se ha realizado la peticion
+          examples: [2025-12-31T07:13:00Z]
+        diaValido:
+          type: string
+          format: date
+          description: Dia de validez de la peticion
+          examples: [2025-12-31]
+        fenomeno:
+          type: string
+          description: Fenómenos meteorológicos significativos
+          example: >
+            Nieblas, sin descartar que puedan ser localmente densas y persistentes en los valles de los grandes ríos.
+        pronostico:
+          type: string
+          description: Pronóstico actual meteorológico
+          example: >
+            Intervalos nubosos de nubes bajas tendiendo a poco nuboso. Brumas y nieblas, más probables en los valles de los grandes rios, que localmente pueden ser densas y persistentes. Temperaturas sin cambios o en ligero descenso. No se descarta alguna helada débil dispersa, más probable en zonas de montaña del norte. Viento de componente este o variable, flojo.
+        
+
+    HistoricoHoraResponse:
+      type: object
+      required: [type, datos]
+      properties:
+        type:
+          type: string
+          enum: [HORA]  
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatosClimaticosHora'
+    HistoricoDiaResponse:
+      type: object
+      required: [type, datos]
+      properties:
+        type:
+          type: string
+          enum: [DIA]
+        datos: 
+          type: array
+          items:
+            $ref: '#/components/schemas/DatosClimaticosDia'
+    HistoricoSemanaResponse:
+      type: object
+      required: [type, datos]
+      properties:
+        type:
+          type: string
+          enum: [SEMANA]
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatosClimaticosSemana'
+    HistoricoMesResponse:
+      type: object
+      required: [type, datos]
+      properties:
+        type:
+          type: string
+          enum: [MES]
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatosClimaticosMes'
+      
+    DatosClimaticosMes:
+      type: object
+      properties:
+        fecha:
+          type: integer
+          examples: [2019]
+        mes:
+          type: integer
+          examples: [1]
+        numDias:
+          type: integer
+          examples: [31]
+        tempMedia:
+          type: number
+          format: float
+          examples: [1.415]
+        tempMax:
+          type: number
+          format: float
+          examples: [14.83]
+        diaHoraMinTempMax:
+          type: string
+          format: date-time
+          examples: [2015-01-12T13:50:00]
+        tempMin:
+          type: number
+          format: float
+          examples: [-7.12]
+        diaHoraMinTempMin:
+          type: string
+          format: date-time
+          examples: [2015-01-12T07:40:00]
+        humedadMedia:
+          type: number
+          format: float
+          examples: [87.352]
+        humedadMax:
+          type: number
+          format: float
+          examples: [100]
+        diaHoraMinHumMax:
+          type: string
+          format: date-time
+          examples: [2015-01-06T19:50:00]
+        humedadMin:
+          type: number
+          format: float
+          examples: [31.17]
+        diaHoraMinHumMin:
+          type: string
+          format: date-time
+          examples: [2015-01-03T12:00:00]
+        velViento:
+          type: number
+          format: decimal
+          examples: [2.182]
+        precipitacion:
+          type: number
+          format: float
+          examples: [21.756]
+        etpMon:
+          type: number
+          format: float
+          examples: [24.515885900000004]
+        pepMon:
+          type: number
+          format: float
+          examples: [4.628741979599]
+        estacion:
+          type: string
+          examples: [AV01]
+    DatosClimaticosSemana:
+      type: object
+      required: [fecha, semana, tempMedia, tempMax, tempMin, diaHoraTempMax, diaHoraTempMin, humedadMedia, humedadMax, humedadMin, diaHoraHumMax, diaHoraHumMin, velViento, velVientoMax, precipitacion, etpMon, pepMon, estacion]
+      properties:
+        fecha:
+          type: integer
+          examples: [2019]
+        semana: 
+          type: integer
+          examples: [1]
+        tempMedia: 
+          type: number
+          format: float
+          examples: [1.419]
+        tempMax:
+          type: number
+          format: float
+          examples: [13.63]
+        tempMin:
+          type: number
+          format: float
+          examples: [-6.984]
+        diaHoraTempMax:
+          type: string
+          format: date-time
+          examples: [2015-01-02T13:30:00]
+        diaHoraTempMin:
+          type: string
+          format: date-time
+          examples: [2015-01-01T05:10:00]
+        humedadMedia:
+          type: number
+          format: float
+          examples: [75.15]
+        humedadMax:
+          type: number
+          format: float
+          examples: [98.7]
+        humedadMin:
+          type: number
+          format: float
+          examples: [31.17]
+        diaHoraHumMax:
+          type: string
+          format: date-time
+          examples: [2015-01-04T23:30:00]
+        diaHoraHumMin:
+          type: string
+          format: date-time
+          examples: [2015-01-03T12:00:00]
+        velViento: 
+          type: number
+          format: float
+          examples: [1.104]
+        velVientoMax: 
+          type: number
+          format: float
+          examples: [5.635]
+        precipitacion:
+          type: number
+          format: float
+          examples: [0.196]
+        etpMon:
+          type: number
+          format: float
+          examples: [3.7128626000000002]
+        pepMon:
+          type: number
+          format: float
+          examples: [0]
+        estacion:
+          type: string
+          examples: [AV01]
+    DatosClimaticosDia:
+      type: object
+      required: [tempMedia, tempMax, tempMin, humedadMedia, humedadMax, humedadMin, velViento, precipitacion, etpMon, pepMon, estacion, fecha]
+      properties:
+        tempMedia:
+          type: number
+          format: float
+          examples: [-0.155]
+        tempMax:
+          type: number
+          format: float
+          examples: [9.82]
+        horMinTempMax:
+          type: integer
+          examples: [1300]
+        tempMin:
+          type: number
+          format: float
+          examples: [-6.984]
+        horMinTempMin:
+          type: integer
+          examples: [500]
+        humedadMedia:
+          type: number
+          format: float
+        humedadMax:
+          type: number
+          format: float
+          examples: [95.1]
+        horMinHumMax:
+          type: integer
+          examples: [1920]
+        humedadMin:
+          type: number
+          format: float
+          examples: [34.37]
+        horMinHumMin:
+          type: integer
+          examples: [1350]
+        velViento:
+          type: number
+          format: float
+          examples: [1.176]
+        velVientoMax:
+          type: number
+          format: float
+          examples: [2.773]
+        precipitacion: 
+          type: integer
+          examples: [0]
+        etpMon:
+          type: number
+          format: float
+          description: Evapotranspiración Potencial mensual
+          examples: [0.8403987]
+        pepMon: 
+          type: number
+          format: float
+          description: Precipitación mensual promedio
+          examples: [0]
+        estacion:
+          type: string
+          examples: [AV01]
+        fecha:
+          type: string
+          format: date-time
+          examples: [2015-01-01T00:00:00]
+    DatosClimaticosHora:
+      type: object
+      required: [horaMin, fecha, estacion, tempMedia, humedadMedia, precipitacion, velViento]
+      properties:
+        horaMin: 
+          type: integer
+          minimum: 0
+          maximum: 59
+          description: Minutos dentro de la hora de registro
+          examples: [30]
+        tempMedia:
+          type: number
+          format: float
+          examples: [-3.369]
+        humedadMedia:
+          type: number
+          format: float
+          examples: [84.6]
+        velViento:
+          type: number
+          format: float
+          examples: [1.815]
+        precipitacion:
+          type: number
+          format: float
+          examples: [0]
+        estacion:
+          type: string
+          examples: [AV01]
+        fecha:
+          type: string
+          format: date-time
+          examples: [2015-01-01T00:00:00]
+    CCAA:
+     type: object
+     required: [code, name]
+     properties:
+      code:
+        type: string
+        examples: [ext]
+      name: 
+        type: string
+        examples: [Extremadura]  
+    Provincias:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          examples: ["06"]
+        name: 
+          type: string
+          examples: [Badajoz]
+    ParametersError:
+      type: object
+      requiered: [code, message]
+      properties:
+        success:
+          type: boolean
+          examples: [false]
+        code: 
+          type: string
+          examples: ["400"]
+        message:
+          type: string
+          examples: ["Invalid Parameters"]
+    NotFoundError:
+      type: object
+      required: [code, message]
+      properties:
+        success:
+          type: boolean
+          examples: [false]
+        code:
+          type: string
+          examples: ["404"]
+        message:
+          type: string
+          examples: ["Data Not Found"]
+    ProviderError:
+      type: object
+      required: [code, message]
+      properties:
+        success:
+          type: boolean
+          examples: [false]
+        code:
+          type: string
+          examples: ["502"]
+        message:
+          type: string
+          examples: ["Provider exception"]
+      
