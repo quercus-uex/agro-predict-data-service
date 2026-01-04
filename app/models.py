@@ -85,7 +85,10 @@ class MedicionClimatica(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement = True)
     estacion_id = Column(Integer, ForeignKey("estaciones.id"), nullable = False)
-    provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False)
+    provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False),
+    semana = Column(Integer, nullable = True),
+    mes = Column(Integer, nullable = True),
+    anio = Column(Integer, nullable = True),
     timestamp = Column(DateTime, nullable = False, index = True )
 
     humedad = Column(Float, nullable = False)
@@ -99,5 +102,6 @@ class MedicionClimatica(db.Model):
     provincia = relationship("Provincia", back_populates = "mediciones")
 
     __table_args__ = (
-        Index("idx_estacion_timestamp", "estacion_id", "timestamp")
+        Index("idx_estacion_timestamp", "estacion_id", "timestamp"),
+        Index("idx_provincia_timestamp", "provincia_id", "timestamp")
     )

@@ -1,6 +1,6 @@
 from models import Estacion, MedicionClimatica
 from typing import List, Optional
-from datetime import date
+from datetime import datetime
 from sqlalchemy import and_
 from app import db
 
@@ -9,8 +9,8 @@ class HistoricDAO:
     @staticmethod
     def find_historic_metrics_from_estacion_id(
         estacion_id : int, 
-        fec_init : date, 
-        fec_fin: date
+        fec_init : datetime, 
+        fec_fin: datetime
     ) -> Optional[List[MedicionClimatica]]: 
         """Obtener datos de mediciones climaticas sobre datos historicos de una estacion"""
         try:
@@ -36,8 +36,8 @@ class HistoricDAO:
     @staticmethod
     def find_historic_metrics_from_provincia_id(
         provincia_id : int,
-        fec_init: date,
-        fec_fin: date
+        fec_init: datetime,
+        fec_fin: datetime
     ) -> Optional[List[MedicionClimatica]]:
         """Obtiene mediciones climáticas sobre datos históricos de una provincia"""
         try:
