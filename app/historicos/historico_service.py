@@ -4,12 +4,13 @@ from models import MedicionClimatica
 from historico_dto import TipoHistorico, HistHorasDTO, HistDiasDTO, HistSemanasDTO, HistMesesDTO
 from typing import Optional, List, Match
 from collections import defaultdict
+import calendar
 
 class HistoricService:
 
     @staticmethod
     def _get_mediciones_maxmin(datos) : 
-        resultado = defaultdict(dict)
+        resultado = {}
 
         resultado['medicion_temperatura_max'] = max(datos, key = lambda d : d.temperatura) # Coge la tupla completa, si no usara la lambda, pierdo valor de atributos necesarios
         resultado['medicion_temperatura_min'] = min(datos, key = lambda d : d.temperatura)
@@ -19,142 +20,121 @@ class HistoricService:
         return resultado
 
     @staticmethod
-    def _build_historico_hora(mediciones : Optional[List[MedicionClimatica]]):
-        """Construye una lista de DTO por datos agrupados de timestamp horario"""
-        grupos = defaultdict(list) # Definición del agrupador de datos
+    def _build_historico_hora(data : dict):
+        """Construye DTOs diarios usando los datos del DAO"""
+        historicos = []
+        valores = data.get("valores_diarios")
 
-        for m in mediciones: # Recorremos las mediciones obtenidas
-            clave = m.timestamp.replace(minute=0, second=0, microsercond=0) # Normalización del timestamp
-            # Si tenemos datos 12:23:44 - 12:11:10, reemplaza los timestamp por 12:00:00 - 12:00:00, y entran en el mismo grupo
-            
-            grupos[clave].append(m) # Agrupo datos
-
-        historico = []
-
-        for hora, datos in grupos.items(): # Creo un DTO por cada medición agrupada
-            historico.append(
+        for v in valores:
+            historicos.append(
                 HistHorasDTO(
-                    horaMin = hora.hora,
-                    tempMedia = sum(d.temperatura for d in datos) / len(datos),
-                    humedadMedia = sum(d.humedad for d in datos) / len(datos),
-                    velViento = sum(d.velViento for d in datos) / len(datos),
-                    precipitacion = sum(d.precipitacion for d in datos) / len(datos),
-                    estacion = datos[0].estacion.codigo,
-                    fecha = hora
+                    horaMin = v.get("hora"),
+                    tempMedia = v.get("temp_media"),
+                    humedadMedia = v.get("humedad_media"),
+                    velViento = v.get("vel_viento"),
+                    precipitacion = v.get("precipitacion"),
+                    estacion = v.get("estacion"),
+                    fecha = v.get("fecha")
                 )
             )
-        return historico
+
+        return historicos
     
     @staticmethod
-    def _build_historico_dia(mediciones : Optional[List[MedicionClimatica]]):
+    def _build_historico_dia(data : dict):
         """Constuye una lista de DTO por datos agrupados de timestamp diario"""
-        grupos = defaultdict(list)
+        historicos = []
+        valores = data.get("valores_diarios")
+        horas_pico = data.get("horas_pico")
 
-        for m in mediciones:
-            clave = m.timestamp.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
-            grupos[clave].append(m)
-        
-        historico = []
-        for dia, datos in grupos.items():
-
-            mediciones_maxmin = HistoricService._get_mediciones_maxmin(datos)
-
-            historico.append(
+        for v in valores:
+            historicos.append(
                 HistDiasDTO(
-                    tempMedia = sum(d.temperatura for d in datos) / len(datos),
-                    tempMax = mediciones_maxmin.get('medicion_temperatura_max').temperatura,
-                    horMinTempMax = mediciones_maxmin.get('mediciones_maxmin').timestamp.hour,
-                    tempMin = mediciones_maxmin.get('medicion_temperatura_min').temperatura,
-                    horMinTempMin = mediciones_maxmin.get('medicion_temperatura_min').timestamp.hour,
-                    humedadMedia = sum(d.humedad for d in datos) / len(datos),
-                    humedadMax = mediciones_maxmin.get('medicion_humedad_max').temperatura,
-                    horMinHumMax = mediciones_maxmin.get('medicion_humedad_max').timestamp.hour,
-                    humedadMin = mediciones_maxmin.get('medicion_humedad_min').temperatura,
-                    horMinHumMin = mediciones_maxmin.get('medicion_humedad_min').timestamp.hour,
-                    velViento = sum(d.velViento for d in datos) / len(datos),
-                    velVientoMax = max(d.velViento for d in datos),
-                    precipitacion = sum(d.precipitacion for d in datos) / len(datos),
-                    etpMon = sum(d.etpMon for d in datos) / len(datos),
-                    pepMon = sum(d.pepMon for d in datos) / len(datos),
-                    fecha = dia
+                    tempMedia = v.get("temp_media"),
+                    tempMax = v.get("temp_max"),
+                    horMinTempMax = horas_pico.get("hora_temp_max").hour if horas_pico.get("hora_temp_max") else None,
+                    tempMin = v.get("temp_min"),
+                    horMinTempMin = horas_pico.get("hora_temp_min").hour if horas_pico.get("hora_temp_min") else None,
+                    humedadMedia = v.get("humedad_media"),
+                    humedadMax = v.get("humedad_max"),
+                    horMinHumMax = horas_pico.get("hora_humedad_max").hour if horas_pico.get("hora_humedad_max") else None,
+                    humedadMin = v.get("humedad_min"),
+                    horMinHumMin = horas_pico.get("hora_humedad_min").hour if horas_pico.get("horas_humedad_min") else None,
+                    velViento = v.get("vel_viento"),
+                    velVientoMax = v.get("vel_viento_max"),
+                    precipitacion = v.get("precipitacion"),
+                    etpMon = v.get("etp_mon"),
+                    pepMon = v.get("pep_mon"),
+                    estacion = v.get("estacion"),
+                    fecha = v.get("fecha")   
                 )
             )
-        return historico
+
+        return historicos
     
     @staticmethod
-    def _build_historico_semana(medicion : Optional[List[MedicionClimatica]]):
+    def _build_historico_semana(data : dict):
         """Construye una lista DTO por datos agrupados de timestamp semanal"""
-        grupos = defaultdict(list)
-        for m in medicion:
-            clave = m.semana # Agrupo las mediciones por la semana 
-            grupos[clave].append(m)
+        historicos = []
+        valores = data.get("valores_diarios")
+        horas_pico = data.get("horas_pico")
 
-        historico = []
-        for semana, datos in grupos.items():
-            
-            mediciones_minmax = HistoricService._get_mediciones_maxmin(datos)
-            
-            historico.append(
+        for v in valores:
+            historicos.append(
                 HistSemanasDTO(
-                    anio = sum(d.anio for d in datos) / len(datos),
-                    semana = semana,
-                    tempMedia = sum(d.temperatura for d in datos) / len(datos),
-                    tempMax = mediciones_minmax.get('medicion_temperatura_max').temperatura,
-                    tempMin = mediciones_minmax.get('mediciones_temperatura_min').temperatura,
-                    diaHoraTempMax = mediciones_minmax.get('medicion_temperatura_max').timestamp.day,
-                    diaHoraTempMin = mediciones_minmax.get('medicion_temperatura_max').timestamp.day,
-                    humedadMedia = sum(d.humedad for d in datos) / len(datos),
-                    humedadMax = mediciones_minmax.get('medicion_humedad_max').humedad,
-                    humedadMin = mediciones_minmax.get('medicion_humedad_min').humedad,
-                    diaHoraHumMax = mediciones_minmax.get('medicion_humedad_max').timestamp.day,
-                    diaHoraHumMin = mediciones_minmax.get('medicion_humedad_min').timestamp.day,
-                    velViento = sum(d.velViento for d in datos) / len(datos),
-                    velVientoMax = max(d.velViento for d in datos),
-                    precipitacion = sum(d.precipitacion for d in datos) / len(datos),
-                    etpMon = sum(d.etpMon for d in datos) / len(datos),
-                    pepMon = sum(d.pepMon for d in datos) / len(datos)
+                    anio = v.get("anio"),
+                    semana = v.get("semana"),
+                    tempMedia = v.get("temp_media"),
+                    tempMax = v.get("temp_max"),
+                    tempMin = v.get("temp_min"),
+                    diaHoraTempMax = horas_pico.get("hora_temp_max").hour if horas_pico.get("hora_temp_max") else None,
+                    diaHoraTempMin = horas_pico.get("hora_temp_min").hour if horas_pico.get("hora_temp_min") else None,
+                    humedadMedia = v.get("humedad_media"),
+                    humedadMax = v.get("humedad_max"),
+                    humedadMin = v.get("humedad_min"),
+                    diaHoraHumMax = horas_pico.get("hora_humedad_max").hour if horas_pico.get("hora_humedad_max") else None,
+                    diaHoraHumMin = horas_pico.get("hora_humedad_min").hour if horas_pico.get("hora_humedad_min") else None,
+                    velViento = v.get("vel_viento"),
+                    velVientoMax = v.get("vel_viento_max"),
+                    etpMon = v.get("etp_mon"),
+                    pepMon = v.get("pep_mon"), 
                 )
             )
-        return historico
+        
+        return historicos
     
     @staticmethod
-    def _build_historico_mes(medicion : Optional[List[MedicionClimatica]]):
+    def _build_historico_mes(data : dict):
         """Construye una lista DTO por datos agrupados mensuales"""
-        grupos = defaultdict(list)
+        historicos = []
+        valores = data.get("valores_diarios")
+        horas_pico = data.get("horas_pico")
 
-        for m in medicion:
-            clave = m.timestamp.replace(day = 0, hour = 0, minute = 0, second = 0, microsecond = 0)
-            grupos[clave].append(m)
-
-        historico = []
-        for mes, datos in grupos.items():
-            
-            mediciones_minmax = HistoricService._get_mediciones_maxmin(datos)
-
-            historico.append(
+        for v in valores:
+            historicos.append(
                 HistMesesDTO(
-                    anio = sum(d.anio for d in datos) / len(datos),
-                    mes = mes,
-                    numDias = 31 if mes % 2 == 0 else 30,
-                    tempMedia = sum(d.temperatura for d in datos) / len(datos),
-                    tempMax = mediciones_minmax.get('medicion_temperatura_max').temperatura,
-                    diaHoraMinTempMax = mediciones_minmax.get('medicion_temperatura_max').timestamp.day,
-                    tempMin = mediciones_minmax.get('medicion_temperatura_min').temperatura,
-                    diaHoraMinTempMin = mediciones_minmax.get('medicion_temperatura_min').timestamp.day,
-                    humedadMedia = sum(d.humedad for d in datos) / len(datos),
-                    humedadMax = mediciones_minmax.get('medicion_humedad_max').humedad,
-                    diaHoraHumMax = mediciones_minmax.get('medicion_humedad_max').timestamp.humedad,
-                    humedadMin = mediciones_minmax.get('medicion_humedad_min').humedad,
-                    diaHoraHumMin = mediciones_minmax.get('medicion_humedad_min').timestamp.day,
-                    velViento = sum(d.velViento for d in datos) / len(datos),
-                    precipitacion = sum(d.precipitacion for d in datos) / len(datos),
-                    etpMon = sum(d.etpMon for d in datos) / len(datos),
-                    pepMon = sum(d.pepMon for d in datos) / len(datos)
+                    anio = v.get("anio"),
+                    mes = v.get("mes"),
+                    numDias = calendar.monthrange(v.get("anio"), v.get("mes"))[1],
+                    tempMedia = v.get("temp_media"),
+                    tempMax = v.get("temp_max"),
+                    diaHoraMinTempMax = horas_pico.get("hora_temp_max").day if horas_pico.get("hora_temp_max") else None,
+                    tempMin = v.get("temp_min"),
+                    diaHoraMinTempMin = horas_pico.get("hora_temp_min").day if horas_pico.get("hora_temp_min") else None,
+                    humedadMedia = v.get("humedad_media"),
+                    humedadMax = v.get("humedad_max"),
+                    diaHoraHumMax = horas_pico.get("hora_humedad_max").day if horas_pico.get("hora_humedad_max") else None,
+                    diaHoraHumMin = horas_pico.get("hora_humedad_min").day if horas_pico.get("hora_humedad_min") else None,
+                    velViento = v.get("vel_viento"),
+                    precipitacion = v.get("precipitacion"),
+                    etpMon = v.get("etp_mon"),
+                    pepMon = v.get("pep_mon"),
+                    estacion = v.get('estacion') 
                 )
             )
-        return historico
 
-    
+        return historicos
+
     @staticmethod
     def get_historico(
         tipo : TipoHistorico,
@@ -163,30 +143,22 @@ class HistoricService:
         provincia_id : Optional[int] = None,
         estacion_id : Optional[int] = None
     ):
-        if estacion_id:
-            mediciones = HistoricDAO.find_historic_metrics_from_estacion_id(
-                estacion_id, 
-                fec_init, 
-                fec_fin
-            )
         
-        elif provincia_id:
-            mediciones = HistoricDAO.find_historic_metrics_from_provincia_id(
-                provincia_id,
-                fec_init,
-                fec_fin
-            )
-        else:
+        if not (estacion_id or provincia_id):
             raise ValueError("Debe indicarse la estación o provincia")
         
         match tipo:
             case TipoHistorico.HORA:
-                return HistoricService._build_historico_hora(mediciones)
+                data = HistoricDAO.define_computing_data_hora(estacion_id, provincia_id, fec_init, fec_fin)
+                return HistoricService._build_historico_hora(data)
             case TipoHistorico.DIA:
-                return HistoricService._build_historico_dia(mediciones)
+                data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)
+                return HistoricService._build_historico_dia(data)
             case TipoHistorico.SEMANA:
-                return HistoricService._build_historico_semana(mediciones)
+                data = HistoricDAO.define_computing_data_semana(estacion_id, provincia_id, fec_init, fec_fin)
+                return HistoricService._build_historico_semana(data)
             case TipoHistorico.MES:
-                return HistoricService._build_historico_mes(mediciones)
+                data = HistoricDAO.define_compution_data_mes(estacion_id, provincia_id, fec_init, fec_fin)
+                return HistoricService._build_historico_mes(data)
         
         raise NotImplementedError(f"Tipo {tipo} no implementado")    
