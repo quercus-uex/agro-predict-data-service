@@ -52,6 +52,9 @@ class Estacion(db.Model):
     id = Column(Integer, primary_key=True, autoincrement = True)
     codigo = Column(String(20), unique=True, nullable=False)
     nombre = Column(String(100), unique=True, nullable=False)
+    longitud = Column(String(100), nullable=False)
+    latitud = Column(String(100), nullable=False)
+    altitud = Column(Integer, nullable=False)
     provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False)
     finca_id = Column(Integer, ForeignKey("fincas.id"), nullable = False)
 

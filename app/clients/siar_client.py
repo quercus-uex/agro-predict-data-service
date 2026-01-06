@@ -19,8 +19,8 @@ class SiARClient(BaseClient):
     @circuit(cls=CircuitBreakerPersonalizado)
     def get_historical_data_by_date(
             self, 
-            estacion_id : Optional[int],
-            provincia_id : Optional[int],
+            estacion_id : Optional[str],
+            provincia_id : Optional[str],
             tipo : TipoHistorico,
             fec_init : date,
             fec_fin: date
@@ -54,7 +54,7 @@ class SiARClient(BaseClient):
                 return None
 
     @circuit(cls=CircuitBreakerPersonalizado)
-    def get_disponibility(
+    def get_informacion(
             self,
             estaciones : bool = True
         ):
@@ -62,7 +62,7 @@ class SiARClient(BaseClient):
                 if estaciones:
                     url = f"{self.base_info_url}/estacionesInfo"
                 else:
-                     url = f"{self.base_info_url}/provinciasInfo"
+                    url = f"{self.base_info_url}/provinciasInfo"
 
                 response = self._make_request(
                     method = 'GET',
@@ -72,6 +72,8 @@ class SiARClient(BaseClient):
                 if response.status_code >= 500:
                     logger.error("Ha ocurrido un problema con el servicio al que te comunicas")
                     return None
+                
+                return response.json().get('Body').get('data')
                 
             except requests.exceptions.ConnectionError as e:
                 raise Exception(f"Servicio SiAR no disponible: {e}")
