@@ -2,6 +2,7 @@ from clients.siar_client import SiARClient
 from typing import Optional
 from datetime import date
 from historicos.historico_dto import TipoHistorico
+from dateutil.parser import isoparse as parse_iso
 class SiARService:
 
     @staticmethod
@@ -24,22 +25,20 @@ class SiARService:
         for dato in datos:
             lista_datos.append(
                 {
-                    "timestamp" : dato.get('Fecha'),
+                    "timestamp" : parse_iso(dato.get('Fecha')),
                     "temperatura" : dato.get("TempMedia"),
                     "humedad" : dato.get("HumedadMedia"),
                     "vel_viento" : dato.get("VelViento"),
                     "precipitacion" : dato.get("Precipitacion"),
                     "etp_mon" : dato.get("EtPMon"),
-                    "pep_mon" : dato.get("PePMon"),
-                    "codigo_estacion" : dato.get("Estacion"),
-                    "codigo_provincia" : provincia_id
+                    "pep_mon" : dato.get("PePMon")
                 }
             )
 
         return lista_datos
 
     def get_siar_informacion(
-            estaciones : bool = True
+        estaciones : bool = True
     ):
         datos = SiARClient.get_informacion(
             estaciones = estaciones

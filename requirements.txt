@@ -1,6 +1,9 @@
 annotated-types==0.7.0
 blinker==1.9.0
 blueprint==3.4.2
+certifi==2026.1.4
+charset-normalizer==3.4.4
+circuitbreaker==2.1.3
 click==8.3.1
 colorama==0.4.6
 dotenv==0.9.9
@@ -8,6 +11,7 @@ Flask==3.1.2
 flask-cors==6.0.2
 Flask-SQLAlchemy==3.1.1
 greenlet==3.3.0
+idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
 mariadb==1.1.14
@@ -16,8 +20,12 @@ packaging==25.0
 pydantic==2.12.5
 pydantic_core==2.41.5
 PyMySQL==1.1.2
+python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
+requests==2.32.5
+six==1.17.0
 SQLAlchemy==2.0.45
 typing-inspection==0.4.2
 typing_extensions==4.15.0
+urllib3==2.6.2
 Werkzeug==3.1.4

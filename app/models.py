@@ -56,10 +56,10 @@ class Estacion(db.Model):
     latitud = Column(String(100), nullable=False)
     altitud = Column(Integer, nullable=False)
     provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False)
-    finca_id = Column(Integer, ForeignKey("fincas.id"), nullable = False)
+    #finca_id = Column(Integer, ForeignKey("fincas.id"), nullable = False)
 
     mediciones = relationship("MedicionClimatica", back_populates="estacion")
-    finca = relationship("Finca", back_populates = "estaciones")
+    #finca = relationship("Finca", back_populates = "estaciones")
     provincia = relationship("Provincia", back_populates = "estaciones")
 
 class Provincia(db.Model):
