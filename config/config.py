@@ -1,10 +1,18 @@
 import os
 from dotenv import load_dotenv
+from circuitbreaker import CircuitBreaker
+import requests
 
 load_dotenv()
 
 class Config:
-    pass
+    SIAR_SERVICE_DATA_URL = os.getenv('SIAR_SERVICE_DATA_URL')
+    SIAR_SERVICE_INFO_URL = os.getenv('SIAR_SERVICE_INFO_URL')
+
+class CircuitBreakerPersonalizado(CircuitBreaker):
+    FAILURE_THRESHOLD = 7
+    RECOVERY_TIMEOUT = 60
+    EXPECTED_EXCEPTION = requests.exceptions.RequestException
 
 class DevelopementConfig(Config):
     """DEVELOPEMENT CONFIG"""
