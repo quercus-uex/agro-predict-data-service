@@ -6,10 +6,10 @@ from datetime import datetime
 T = TypeVar("T")
 
 class TipoHistorico(str, Enum):
-    HORA = "HORA"
-    DIA = "DIA"
-    SEMANA = "SEMANA"
-    MES = "MES"
+    HORA = "Hora"
+    DIA = "Dia"
+    SEMANA = "Semana"
+    MES = "Mes"
 
 @dataclass
 class HistHorasDTO:
