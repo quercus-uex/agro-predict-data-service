@@ -21,10 +21,8 @@ class Cultivo(db.Model):
     id = Column(Integer, primary_key = True, autoincrement = True)
     nombre = Column(String(100), unique = True, nullable = False)
     grupo = Column(String(50), nullable = False)
-    calendario_id = Column(Integer, ForeignKey("calendario_cultivo.id"), nullable = False)
 
-    calendario = relationship("CalendarioCultivo", back_populates = "cultivo", foreign_keys=[calendario_id])
-    calendarios = relationship("CalendarioCultivo", back_populates = "cultivo_rel", foreign_keys = "CalendarioCultivo.cultivo_id")
+    calendarios = relationship("CalendarioCultivo", back_populates = "cultivo")
     sectores = relationship("Sector", back_populates = "cultivo")
 
 class CalendarioCultivo(db.Model):
@@ -35,26 +33,26 @@ class CalendarioCultivo(db.Model):
     semana = Column(Integer, nullable = False)
     nivel_alerta = Column(Integer, nullable = False)
 
-    cultivo = relationship("Cultivo", back_populates = "calendario", foreign_keys = [cultivo_id])
-    cultivo_rel = relationship("Cultivo", back_populates = "calendarios", foreign_keys = [cultivo_id])
+    cultivo = relationship("Cultivo", back_populates = "calendarios")
 
 class Finca(db.Model):
     __tablename__ = 'fincas'
 
     id = Column(Integer, primary_key = True, autoincrement = True)
-    provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False)
+    #provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False)
+    #estacion_id = Column(Integer, ForeignKey('estaciones.id'), nullable = False)
     nombre = Column(String(50), unique = True, nullable = False)
 
-    estaciones = relationship("Estacion", back_populates = "finca")
+    #estaciones = relationship("Estacion", back_populates = "finca")
     sectores = relationship("Sector", back_populates = "finca")
-    provincia = relationship("Provincia", back_populates = "fincas")
+    #provincia = relationship("Provincia", back_populates = "fincas")
 
 class Estacion(db.Model):
     __tablename__ = 'estaciones'
 
     id = Column(Integer, primary_key=True, autoincrement = True)
     codigo = Column(String(20), unique=True, nullable=False)
-    nombre = Column(String(100), unique=True, nullable=False)
+    nombre = Column(String(100), unique=False, nullable=False)
     longitud = Column(String(100), nullable=False)
     latitud = Column(String(100), nullable=False)
     altitud = Column(Integer, nullable=False)
@@ -75,7 +73,7 @@ class Provincia(db.Model):
 
     ccaa = relationship("CCAA", back_populates="provincias")
     estaciones = relationship("Estacion", back_populates="provincia")
-    fincas = relationship("Finca", back_populates = "provincia")
+    #fincas = relationship("Finca", back_populates = "provincia")
     mediciones = relationship("MedicionClimatica", back_populates="provincia")
     
 class CCAA(db.Model):

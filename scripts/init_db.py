@@ -3,6 +3,7 @@ import logging
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app, db
+from insert_data import job
 
 # Configuracion del logging
 logging.basicConfig(level = logging.INFO)
@@ -21,9 +22,9 @@ with app.app_context():
         connection.close()
         
         # Eliminar tablas existentes (para desarrollo)
-        logger.info("Eliminando tablas existentes...")
-        db.drop_all()
-        logger.info("Tablas eliminadas")
+        #logger.info("Eliminando tablas existentes...")
+        #db.drop_all()
+        #logger.info("Tablas eliminadas")
         
         # Crear todas las tablas
         logger.info("Creando tablas...")
@@ -34,6 +35,10 @@ with app.app_context():
         inspector = db.inspect(db.engine)
         tables = inspector.get_table_names()
         logger.info(f"Tablas creadas: {', '.join(tables)}")
+
+        logger.info("Insertar datos SiAR en tablas")
+        job(app)
+        logger.info("Datos insertados correctamente")
         
     except Exception as e:
         logger.error(f"Error al inicializar la base de datos: {e}")

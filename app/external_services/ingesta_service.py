@@ -69,16 +69,16 @@ class IngestionService:
         )
 
         for d in data:
-
+            # Si se ha especificado en la peticion, inserto las estaciones
             if estaciones:
                 codigo_raw : str = d.get('codigo')
-                codigo_formateado = codigo_raw[0:3] # Segmentación para quedarme con las dos primeras letras de la cadena que indican la provincia
+                codigo_formateado = codigo_raw[0:2] # Segmentación para quedarme con las dos primeras letras de la cadena que indican la provincia
                 
-                provincia : Provincia = Provincia.query.filter_by(codigo_formateado=Provincia.codigo).one()
+                provincia : Provincia = Provincia.query.filter_by(codigo=codigo_formateado).one()
 
                 estacion = Estacion(
                     codigo = d.get('codigo'),
-                    nombre = d.get('nombre'),
+                    nombre = d.get('nombre_estacion'),
                     longitud = d.get('longitud'),
                     latitud = d.get('latitud'),
                     altitud = d.get('altitud'),
@@ -86,19 +86,44 @@ class IngestionService:
                 )
                 # Comprobamos si ya existe la estacion en la BD, para no tener duplicados
                 existe = db.session.query(Estacion.id).filter_by(
-                    codigo=estacion.codigo,
-                    nombre=estacion.nombre,
-                    provincia_id=provincia.id
+                    codigo=estacion.codigo
                 ).first()
 
                 if existe:
                     continue
 
-                db.session.add(estacion)
+                db.session.add(estacion)  
             else:
-                codigo_ccaa = d.get('codigo_ccaa')
+                print(f"Datos de ingestaService: {data}")
+                # Inserto primero las comunidades autonomas
+                if d.get('nombre-comunidades'):
+                    todas_comunidades = d['nombre-comunidades']
+                    print(f"Todas las comunidades: {todas_comunidades}")
+                    continue
+
+                codigo_ccaa_raw : str = d['codigo_ccaa']
+                print(f"Codigo de comunidad autonoma: {codigo_ccaa_raw}")
+                if not codigo_ccaa_raw:
+                    print(f"Elemento sin codigo_ccaa: {d}")
+                    continue
+
+                nombre_ccaa = next((n.strip() for n in todas_comunidades if n.upper().startswith(codigo_ccaa_raw)), None)
                 
-                ccaa : CCAA = CCAA.query.filter_by(codigo_ccaa=CCAA.codigo).one()
+                if not nombre_ccaa:
+                    print(f"No se ha podido encontrar el nombre para {codigo_ccaa_raw}")
+                    continue
+
+                ccaa_existe = CCAA.query.filter_by(codigo=codigo_ccaa_raw).first()
+            
+                if not ccaa_existe:
+                    comunidad_autonoma = CCAA(
+                        codigo = codigo_ccaa_raw,
+                        nombre = nombre_ccaa
+                    )
+                    db.session.add(comunidad_autonoma)
+
+                # Una vez insertadas las comunidades autonomas, inserto las provincias
+                ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_ccaa_raw).first()
                 
                 provincia = Provincia(
                     codigo = d.get('codigo'),
@@ -114,6 +139,6 @@ class IngestionService:
 
                 if existe:
                     continue
-
+                    
                 db.session.add(provincia)
         db.session.commit()

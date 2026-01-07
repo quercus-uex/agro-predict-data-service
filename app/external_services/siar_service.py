@@ -1,9 +1,12 @@
 from ..clients.siar_client import SiARClient
 from typing import Optional
+from app import create_app
 from datetime import date
 from ..historicos.historico_dto import TipoHistorico
 from dateutil.parser import isoparse as parse_iso
 class SiARService:
+    app = create_app()
+    cliente = SiARClient(app)
 
     @staticmethod
     def get_siar_data(
@@ -13,7 +16,7 @@ class SiARService:
         fec_init: date,
         fec_fin: date
     ): 
-        datos = SiARClient.get_historical_data_by_date(
+        datos = SiARService.cliente.get_historical_data_by_date(
             estacion_id = estacion_id,
             provincia_id = provincia_id,
             tipo = tipo,
@@ -40,13 +43,16 @@ class SiARService:
     def get_siar_informacion(
         estaciones : bool = True
     ):
-        datos = SiARClient.get_informacion(
+        datos = SiARService.cliente.get_informacion(
             estaciones = estaciones
         )
 
         lista_datos = []
+        # Insertamos en la lista, datos necesarios para la comunidad autonoma
         for dato in datos:
+            # Si se especifica en la peticion, insertamos en la lista datos de estaciones
             if estaciones: 
+                print(f"Datos: {dato}")
                 lista_datos.append(
                     {
                         "nombre_estacion" : dato.get('Estacion'),
@@ -56,7 +62,29 @@ class SiARService:
                         "altitud" : dato.get('Altitud')
                     }
                 )
-            else:
+            # Insertamos en la lista, datos necesarios para las provincias
+            else: 
+                lista_datos.append(
+                    {
+                        "nombre-comunidades": [
+                            "EXTREMADURA",
+                            "ARAGON",
+                            "ASTURIAS",
+                            "BALEARES",
+                            "CANARIAS",
+                            "CANTABRIA",
+                            "CASTILLA-LA MANCHA",
+                            "CASTILLA Y LEON",
+                            "CATALUNIA",
+                            "MADRID",
+                            "MURCIA",
+                            "GALICIA",
+                            "RIOJA",
+                            "NAVARRA",
+                            "PAIS VASCO"
+                        ]
+                    }
+                )
                 lista_datos.append(
                     {
                         "nombre" : dato.get('Provincia'),
@@ -64,3 +92,4 @@ class SiARService:
                         "codigo_ccaa" : dato.get('Codigo_CCAA')
                     }
                 )
+        return lista_datos

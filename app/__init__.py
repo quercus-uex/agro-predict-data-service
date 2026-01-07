@@ -2,14 +2,16 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
+from config.config import Config
 import os
 
 load_dotenv()
 db = SQLAlchemy()
 
-def create_app():
+def create_app(config_class = Config):
     app = Flask(__name__)
 
+    app.config.from_object(config_class)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("SQLALCHEMY_DATABASE_URL")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 

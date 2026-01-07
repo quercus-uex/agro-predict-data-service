@@ -5,13 +5,14 @@ from ..historicos.historico_dto import TipoHistorico
 from flask import current_app
 from circuitbreaker import circuit
 from config.config import CircuitBreakerPersonalizado
+from flask import Flask
 import requests
 import logging
 
 logger = logging.getLogger(__name__)
 
 class SiARClient(BaseClient):
-    def __init__(self, app):
+    def __init__(self, app : Flask):
         super().__init__(app, "siar_service")
         self.base_data_url = app.config.get('SIAR_SERVICE_DATA_URL')
         self.base_info_url = app.config.get('SIAR_SERVICE_INFO_URL')
@@ -72,8 +73,8 @@ class SiARClient(BaseClient):
                 if response.status_code >= 500:
                     logger.error("Ha ocurrido un problema con el servicio al que te comunicas")
                     return None
-                
-                return response.json().get('Body').get('data')
+                logger.info(f"Respuesta INFO: {response.json}")
+                return response.json().get('data')
                 
             except requests.exceptions.ConnectionError as e:
                 raise Exception(f"Servicio SiAR no disponible: {e}")

@@ -6,26 +6,46 @@ import sys, os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from app import db
+
 from app.external_services.ingesta_service import IngestionService
 from app.historicos.historico_dto import TipoHistorico
 
-def job():
+from app.models import *
+
+def eliminar_datos_tablas(app):
+    # Elimino datos de tablas (para desarrollo)
+    db.session.execute(db.text('SET FOREIGN_KEY_CHECKS = 0'))
+        
+    # Eliminar todas en cualquier orden
+    for modelo in [MedicionClimatica, Sector, Estacion, 
+                    CalendarioCultivo, Cultivo, Provincia, CCAA]:
+        count = modelo.query.delete()
+        print(f"  - {modelo.__tablename__}: {count} registros eliminados")
+    
+    db.session.execute(db.text('SET FOREIGN_KEY_CHECKS = 1'))
+    db.session.commit()
+
+    print("Eliminado datos de las tablas en la base de datos")
+
+
+def job(app):
     """Carga de datos en la base de datos con los datos SiAR"""
     # Carga de estaciones
+    """IngestionService.ingest_info(
+        estaciones = False
+    )"""
+
+    # Carga de provincias
     IngestionService.ingest_info(
         estaciones = True
     )
 
-    # Carga de provincias
-    IngestionService.ingest_info(
-        estaciones = False
-    )
-
     # Carga de datos diarios sobre Cáceres
-    IngestionService.ingest_data(
+    """IngestionService.ingest_data(
         codigo_estacion_id = None,
         codigo_provincia_id = "CC",
         tipo = TipoHistorico.DIA,
         fec_init = date(2024,1,1),
         fec_fin = date(2024,1,1)
-    )
+    )"""
