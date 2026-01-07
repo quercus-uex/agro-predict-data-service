@@ -13,7 +13,7 @@ class Sector(db.Model):
     cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = True)
 
     finca = relationship("Finca", back_populates = "sectores")
-    cultivo = relationship("Cultivo", back_populates = "cultivo")
+    cultivo = relationship("Cultivo", back_populates = "sectores")
 
 class Cultivo(db.Model):
     __tablename__ = 'cultivos'
@@ -23,7 +23,9 @@ class Cultivo(db.Model):
     grupo = Column(String(50), nullable = False)
     calendario_id = Column(Integer, ForeignKey("calendario_cultivo.id"), nullable = False)
 
-    calendario = relationship("CalendarioCultivo", back_populates = "cultivo")
+    calendario = relationship("CalendarioCultivo", back_populates = "cultivo", foreign_keys=[calendario_id])
+    calendarios = relationship("CalendarioCultivo", back_populates = "cultivo_rel", foreign_keys = "CalendarioCultivo.cultivo_id")
+    sectores = relationship("Sector", back_populates = "cultivo")
 
 class CalendarioCultivo(db.Model):
     __tablename__ = 'calendario_cultivo'
@@ -33,7 +35,8 @@ class CalendarioCultivo(db.Model):
     semana = Column(Integer, nullable = False)
     nivel_alerta = Column(Integer, nullable = False)
 
-    cultivo = relationship("Cultivo", back_populates = "calendarios")
+    cultivo = relationship("Cultivo", back_populates = "calendario", foreign_keys = [cultivo_id])
+    cultivo_rel = relationship("Cultivo", back_populates = "calendarios", foreign_keys = [cultivo_id])
 
 class Finca(db.Model):
     __tablename__ = 'fincas'
@@ -73,7 +76,8 @@ class Provincia(db.Model):
     ccaa = relationship("CCAA", back_populates="provincias")
     estaciones = relationship("Estacion", back_populates="provincia")
     fincas = relationship("Finca", back_populates = "provincia")
-
+    mediciones = relationship("MedicionClimatica", back_populates="provincia")
+    
 class CCAA(db.Model):
     __tablename__ = 'ccaa'
 

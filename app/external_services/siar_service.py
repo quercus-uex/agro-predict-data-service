@@ -1,7 +1,7 @@
-from clients.siar_client import SiARClient
+from ..clients.siar_client import SiARClient
 from typing import Optional
 from datetime import date
-from historicos.historico_dto import TipoHistorico
+from ..historicos.historico_dto import TipoHistorico
 from dateutil.parser import isoparse as parse_iso
 class SiARService:
 

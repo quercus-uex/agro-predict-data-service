@@ -1,9 +1,9 @@
 from app import db
 from typing import Optional
 from datetime import date
-from historicos.historico_dto import TipoHistorico
+from ..historicos.historico_dto import TipoHistorico
 from .siar_service import SiARService
-from models import MedicionClimatica, Estacion, Provincia, CCAA
+from ..models import MedicionClimatica, Estacion, Provincia, CCAA
 class IngestionService:
 
     @staticmethod
@@ -45,6 +45,7 @@ class IngestionService:
                 etp_mon = d.get('etp_mon'),
                 pep_mon = d.get('pep_mon')
             )
+            print(medicion, flush=True)
             # Comprobamos si existe ya el dato a insertar, para evitar duplicados
             existe = db.session.query(MedicionClimatica.id).filter_by(
                 estacion_id=estacion.id,

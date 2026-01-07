@@ -1,5 +1,5 @@
 import logging
-from clients.siar_client import SiARClient
+from .siar_client import SiARClient
 from flask import app
 
 logger = logging.getLogger(__name__)

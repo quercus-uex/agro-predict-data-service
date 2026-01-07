@@ -1,6 +1,6 @@
 # Controlador de HISTORICOS
-from __init__ import historic_bp
-from globals import log
+from . import historic_bp
+from ..globals.log_decorator import log
 from flask import request
 
 @historic_bp.route('/climate/historical/provincias')

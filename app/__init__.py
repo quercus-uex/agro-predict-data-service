@@ -15,6 +15,10 @@ def create_app():
 
     db.init_app(app)
 
+    # Importación de modelos explicitamente, así el db_create_all() conoce la estructura del modelo
+    with app.app_context():
+        from . import models
+
     # Registro de los Blueprints
     from .actuales import actuales_bp
     app.register_blueprint(actuales_bp)
