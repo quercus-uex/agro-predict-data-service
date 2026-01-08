@@ -1,7 +1,7 @@
-from historico_dao import HistoricDAO
+from .historico_dao import HistoricDAO
 from datetime import datetime, timedelta
-from models import MedicionClimatica
-from historico_dto import *
+from ..models import MedicionClimatica
+from .historico_dto import *
 from typing import Optional, List, Match
 from collections import defaultdict
 import calendar
@@ -30,9 +30,10 @@ class HistoricService:
         return historicos
     
     @staticmethod
-    def _build_historico_dia(data : dict):
+    def _build_historico_dia(data):
         """Constuye una lista de DTO por datos agrupados de timestamp diario"""
         historicos = []
+        print(f"Datos diarios: {data}", flush=True)
         valores = data.get("valores_diarios")
         horas_pico = data.get("horas_pico")
 
@@ -85,8 +86,10 @@ class HistoricService:
                     diaHoraHumMin = horas_pico.get("hora_humedad_min") if horas_pico.get("hora_humedad_min") else None,
                     velViento = v.get("vel_viento"),
                     velVientoMax = v.get("vel_viento_max"),
+                    precipitacion = v.get("precipitacion"),
                     etpMon = v.get("etp_mon"),
                     pepMon = v.get("pep_mon"), 
+                    estacion = v.get("estacion")
                 )
             )
         

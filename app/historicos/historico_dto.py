@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import List, Generic, TypeVar, Optional
 from dataclasses import dataclass
+from pydantic import ConfigDict
 from datetime import datetime
 
 T = TypeVar("T")
@@ -40,6 +41,8 @@ class HistDiasDTO:
     pepMon: float
     estacion: str
     fecha: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 @dataclass
 class HistSemanasDTO:

@@ -1,8 +1,9 @@
-from models import MedicionClimatica
+from ..models import MedicionClimatica, Estacion
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy import and_, select, func, or_
 from app import db
+from ..globals.row2dict_converter import row2dict_converter, row2dict_list
 
 class HistoricDAO:
 
@@ -90,20 +91,22 @@ class HistoricDAO:
                 .limit(1)
             )
 
-            result = db.session.execute(query).first() if result else None
+            result = db.session.execute(query).first() 
+            
+            return result if result else None
 
         horas_pico = {
-            "hora_temp_max": HistoricDAO.obtener_horas_criticas(
+            "hora_temp_max": obtener_horas_criticas(
                 "temperatura"
             ),
-            "hora_temp_min": HistoricDAO.obtener_horas_criticas(
+            "hora_temp_min": obtener_horas_criticas(
                 "temperatura", 
                 asc = True
             ),
-            "hora_humedad_max": HistoricDAO.obtener_horas_criticas(
+            "hora_humedad_max": obtener_horas_criticas(
                 "humedad"
             ),
-            "hora_humedad_min": HistoricDAO.obtener_horas_criticas(
+            "hora_humedad_min": obtener_horas_criticas(
                 "humedad", 
                 asc = True
             )
@@ -123,7 +126,7 @@ class HistoricDAO:
         try:
             query = (
                 select(
-                    func.date_trunc('hour', MedicionClimatica.timestamp).label('hora'),
+                    func.date_format(MedicionClimatica.timestamp, '%H:00:00').label('hora'),
                     func.avg(MedicionClimatica.temperatura).label('temp_media'),
                     func.avg(MedicionClimatica.humedad).label('humedad_media'),
                     func.avg(MedicionClimatica.vel_viento).label('vel_viento'),
@@ -164,6 +167,8 @@ class HistoricDAO:
     ):
         """Obtiene los datos computados necesarios para cargar un DTO diario"""
         try:
+            fecha_truncada = func.date(MedicionClimatica.timestamp).label("fecha")
+            
             queryGlobal = (
                 select(
                     func.avg(MedicionClimatica.temperatura).label('temp_media'),
@@ -177,24 +182,34 @@ class HistoricDAO:
                     func.sum(MedicionClimatica.precipitacion).label("precipitacion"),
                     func.avg(MedicionClimatica.etp_mon).label("etp_mon"),
                     func.avg(MedicionClimatica.pep_mon).label("pep_mon"),
-                    MedicionClimatica.estacion.label('estacion'),
-                    func.date_trunc("day", MedicionClimatica.timestamp).label("fecha")
+                    MedicionClimatica.estacion_id.label('estacion'),
+                    fecha_truncada
                 )
                 .where(
-                    or_(
-                        MedicionClimatica.estacion_id == estacion_id,
-                        MedicionClimatica.provincia_id == provincia_id
-                    ),
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
                 )
-                .group_by("fecha")
-                .order_by("fecha")
+            )
+
+            print(f"Dia de comienzo y fin: {fec_init} - {fec_fin}")
+
+            if estacion_id:
+                queryGlobal = queryGlobal.where(MedicionClimatica.estacion_id == estacion_id)
+            elif provincia_id:
+                queryGlobal = queryGlobal.where(Estacion.provincia_id == provincia_id)
+            
+            queryGlobal = (
+                queryGlobal
+                .group_by(fecha_truncada)
+                .order_by(fecha_truncada)
             )
 
             valores_globales = db.session.execute(queryGlobal).all()
+            print(f"Valores globales dia: {valores_globales}", flush = True)
+ 
+            valores_diarios = row2dict_converter(valores_globales)
 
             return {
-                "valores_diarios": [dict(row._mapping) for row in valores_globales],
+                "valores_diarios": valores_diarios,
                 "horas_pico": HistoricDAO.define_horas_pico(
                     estacion_id,
                     provincia_id,
@@ -216,9 +231,12 @@ class HistoricDAO:
     ):
         """Obtiene los datos computados necesarios para cargar un DTO semanal"""
         try:
+            
+            anio_truncado = func.date_format(MedicionClimatica.timestamp, '%Y').label('anio')
+
             queryGlobal = (
                 select(
-                    func.date_trunc("year", MedicionClimatica.timestamp).label('anio'),
+                    anio_truncado,
                     MedicionClimatica.semana.label('semana'),
                     func.avg(MedicionClimatica.temperatura).label('temp_media'),
                     func.max(MedicionClimatica.temperatura).label('temp_max'),
@@ -231,21 +249,30 @@ class HistoricDAO:
                     func.avg(MedicionClimatica.etp_mon).label('etp_mon'),
                     func.avg(MedicionClimatica.pep_mon).label('pep_mon')
                 )
+                .join(
+                    Estacion, MedicionClimatica.estacion_id == Estacion.id
+                )
                 .where(
-                    or_(
-                        MedicionClimatica.estacion_id == estacion_id,
-                        MedicionClimatica.provincia_id == provincia_id
-                    ),
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
                 )
-                .group_by("anio", MedicionClimatica.semana)
-                .order_by("anio", MedicionClimatica.semana)
+            )
+
+            if estacion_id:
+                queryGlobal = queryGlobal.where(MedicionClimatica.estacion_id == estacion_id)
+            elif provincia_id:
+                queryGlobal = queryGlobal.where(Estacion.provincia_id == provincia_id)
+
+            queryGlobal = (
+                queryGlobal
+                .group_by(anio_truncado, MedicionClimatica.semana)
+                .order_by(anio_truncado, MedicionClimatica.semana)
             )
 
             valores_globales = db.session.execute(queryGlobal).all()
-            
+            valores_semanales = row2dict_converter(valores_globales)
+
             return {
-                "valores_diarios": [dict(row._mapping) for row in valores_globales],
+                "valores_diarios": valores_semanales,
                 "horas_pico": HistoricDAO.define_horas_pico(
                     estacion_id,
                     provincia_id,
@@ -268,8 +295,8 @@ class HistoricDAO:
         try:
             queryGlobal = (
                 select (
-                    func.date_trunc("year", MedicionClimatica.timestamp).label('anio'),
-                    func.data_trunc("month", MedicionClimatica.timestamp).label('mes'),
+                    func.date_format(MedicionClimatica.timestamp, '%Y').label('anio'),
+                    func.data_format(MedicionClimatica.timestamp, '%m').label('mes'),
                     func.avg(MedicionClimatica.temperatura).label('temp_media'),
                     func.max(MedicionClimatica.temperatura).label('temp_max'),
                     func.min(MedicionClimatica.temperatura).label('temp_min'),

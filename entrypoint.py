@@ -2,7 +2,6 @@
 from app import create_app
 from config import config
 from app import db
-from scripts import insert_data
 
 def main():
     # Creación de la configuración de la aplicación
