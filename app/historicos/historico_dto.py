@@ -82,6 +82,7 @@ class HistMesesDTO:
     etpMon: float
     pepMon: float
     estacion: str   
+    
 ######### GENERICO PROVINCIAS #########
 @dataclass
 class ProvinciaHistDTO(Generic[T]):

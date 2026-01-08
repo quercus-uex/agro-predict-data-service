@@ -52,9 +52,9 @@ def job(app):
 
     # Carga masiva de datos
     IngestionService.ingest_range(
-        codigo_estacion_id = None,
-        codigo_provincia_id = "CC",
-        tipo = TipoHistorico.DIA,
+        codigo_estacion_id = "CC01",
+        codigo_provincia_id = None,
+        tipo = TipoHistorico.HORA,
         fec_init = date(2024, 2, 2),
         fec_fin = date(2024, 2, 17)
     )

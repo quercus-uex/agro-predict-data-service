@@ -61,51 +61,6 @@ class HistoricDAO:
             return []
     
     @staticmethod
-    def define_computing_data_hora(
-        estacion_id: Optional[int],
-        provincia_id: Optional[int],
-        fec_init: datetime,
-        fec_fin: datetime
-    ):
-        """Obtiene los datos computados necesarios para cargar un DTO horario"""
-        try:
-            query = (
-                select(
-                    func.date_trunc('hour', MedicionClimatica.timestamp).label('hora'),
-                    func.avg(MedicionClimatica.temperatura).label('temp_media'),
-                    func.avg(MedicionClimatica.humedad).label('humedad_media'),
-                    func.avg(MedicionClimatica.vel_viento).label('vel_viento'),
-                    func.sum(MedicionClimatica.precipitacion).label('precipitacion'),
-                    MedicionClimatica.estacion.label('estacion'),
-                    MedicionClimatica.timestamp.label('fecha')
-                )
-                .where(
-                    or_(
-                        MedicionClimatica.estacion_id == estacion_id,
-                        MedicionClimatica.provincia_id == provincia_id
-                    ),
-                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
-                )
-                .group_by(
-                    "hora"
-                )
-                .order_by(
-                    "hora"
-                )
-            )
-
-            valores_globales = db.session.execute(query).all()
-
-            return {
-                "valores_diarios": [dict(row._mapping) for row in valores_globales]
-            }
-        except Exception as e:
-            print(f"Error computando los datos horarios: {e}")
-            return []
-
-    
-
-    @staticmethod
     def define_horas_pico(
         estacion_id: Optional[int],
         provincia_id: Optional[int],
@@ -155,6 +110,50 @@ class HistoricDAO:
         }
 
         return horas_pico
+
+
+    @staticmethod
+    def define_computing_data_hora(
+        estacion_id: Optional[int],
+        provincia_id: Optional[int],
+        fec_init: datetime,
+        fec_fin: datetime
+    ):
+        """Obtiene los datos computados necesarios para cargar un DTO horario"""
+        try:
+            query = (
+                select(
+                    func.date_trunc('hour', MedicionClimatica.timestamp).label('hora'),
+                    func.avg(MedicionClimatica.temperatura).label('temp_media'),
+                    func.avg(MedicionClimatica.humedad).label('humedad_media'),
+                    func.avg(MedicionClimatica.vel_viento).label('vel_viento'),
+                    func.sum(MedicionClimatica.precipitacion).label('precipitacion'),
+                    MedicionClimatica.estacion.label('estacion'),
+                    MedicionClimatica.timestamp.label('fecha')
+                )
+                .where(
+                    or_(
+                        MedicionClimatica.estacion_id == estacion_id,
+                        MedicionClimatica.provincia_id == provincia_id
+                    ),
+                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
+                )
+                .group_by(
+                    "hora"
+                )
+                .order_by(
+                    "hora"
+                )
+            )
+
+            valores_globales = db.session.execute(query).all()
+
+            return {
+                "valores_diarios": [dict(row._mapping) for row in valores_globales]
+            }
+        except Exception as e:
+            print(f"Error computando los datos horarios: {e}")
+            return []
 
     @staticmethod
     def define_computing_data_dia(
