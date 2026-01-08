@@ -1,6 +1,6 @@
 from app import db
 from typing import Optional
-from datetime import date
+from datetime import date, timedelta
 from ..historicos.historico_dto import TipoHistorico
 from .siar_service import SiARService
 from ..models import MedicionClimatica, Estacion, Provincia, CCAA
@@ -28,12 +28,12 @@ class IngestionService:
             anio, semana, _ = d_timestamp.isocalendar()
             
             # Mapeo de estacion y provincia 
-            estacion : Estacion = Estacion.query.filter_by(codigo_estacion_id=Estacion.codigo).one()
-            provincia : Provincia = Provincia.query.filter_by(codigo_provincia_id=Provincia.codigo).one()
+            estacion : Estacion = Estacion.query.filter_by(codigo=codigo_estacion_id).first()
+            provincia : Provincia = Provincia.query.filter_by(codigo=codigo_provincia_id).first()
 
             medicion = MedicionClimatica(
-                estacion_id = estacion.id,
-                provincia_id = provincia.id,
+                estacion_id = estacion.id if estacion else None,
+                provincia_id = provincia.id if provincia else None,
                 semana = semana,
                 mes = d_timestamp.month,
                 anio = anio,
@@ -48,8 +48,12 @@ class IngestionService:
             print(medicion, flush=True)
             # Comprobamos si existe ya el dato a insertar, para evitar duplicados
             existe = db.session.query(MedicionClimatica.id).filter_by(
-                estacion_id=estacion.id,
-                timestamp=d_timestamp
+                temperatura=medicion.temperatura,
+                humedad=medicion.humedad,
+                vel_viento=medicion.vel_viento,
+                precipitacion=medicion.precipitacion,
+                etp_mon=medicion.etp_mon,
+                pep_mon=medicion.pep_mon
             ).first()
 
             if existe:
@@ -142,3 +146,36 @@ class IngestionService:
                     
                 db.session.add(provincia)
         db.session.commit()
+
+    DIAS_BLOQUES = 7 # Dias por bloques de carga
+    def ingest_range(
+        codigo_estacion_id : Optional[str],
+        codigo_provincia_id : Optional[str],
+        tipo : TipoHistorico,
+        fec_init : date,
+        fec_fin : date
+    ):
+        actual = fec_init
+
+        total_days = (fec_fin - fec_init).days + 1
+        print(f"Inicio de carga masiva de datos: {fec_init} -> {fec_fin}")
+
+        while actual <= fec_fin:
+            bloque_fin = min(actual + timedelta(days=IngestionService.DIAS_BLOQUES - 1), fec_fin)
+
+            print(f"\nCargando bloque {actual} → {bloque_fin}")
+
+            try:
+                IngestionService.ingest_data(
+                    codigo_estacion_id=codigo_estacion_id,
+                    codigo_provincia_id=codigo_provincia_id,
+                    tipo=tipo,
+                    fec_init=actual,
+                    fec_fin=bloque_fin
+                )
+                print(f"✔️ Bloque cargado correctamente")
+            except Exception as e:
+                print(f"❌ Error cargando {actual} → {bloque_fin}: {e}")
+
+            actual = bloque_fin + timedelta(days=1)
+        print("\nCarga masiva finalizada.")

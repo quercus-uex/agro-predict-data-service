@@ -37,15 +37,24 @@ def job(app):
     )"""
 
     # Carga de provincias
-    IngestionService.ingest_info(
+    """IngestionService.ingest_info(
         estaciones = True
-    )
+    )"""
 
     # Carga de datos diarios sobre Cáceres
     """IngestionService.ingest_data(
-        codigo_estacion_id = None,
-        codigo_provincia_id = "CC",
+        codigo_estacion_id = "CC02",
+        codigo_provincia_id = None,
         tipo = TipoHistorico.DIA,
         fec_init = date(2024,1,1),
         fec_fin = date(2024,1,1)
     )"""
+
+    # Carga masiva de datos
+    IngestionService.ingest_range(
+        codigo_estacion_id = None,
+        codigo_provincia_id = "CC",
+        tipo = TipoHistorico.DIA,
+        fec_init = date(2024, 2, 2),
+        fec_fin = date(2024, 2, 17)
+    )

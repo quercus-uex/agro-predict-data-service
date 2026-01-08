@@ -89,8 +89,8 @@ class MedicionClimatica(db.Model):
     __tablename__ = 'mediciones_climaticas'
 
     id = Column(Integer, primary_key=True, autoincrement = True)
-    estacion_id = Column(Integer, ForeignKey("estaciones.id"), nullable = False)
-    provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False)
+    estacion_id = Column(Integer, ForeignKey("estaciones.id"), nullable = True)
+    provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = True)
     semana = Column(Integer, nullable = True)
     mes = Column(Integer, nullable = True)
     anio = Column(Integer, nullable = True)

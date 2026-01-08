@@ -28,9 +28,9 @@ class SiARClient(BaseClient):
         ) : 
             try:
                 if estacion_id and not provincia_id:
-                    url = f"{self.base_data_url}/{tipo}/estaciones?id={estacion_id}&fechaInicial={fec_init}&fechaFinal={fec_fin}"
+                    url = f"{self.base_data_url}/{tipo.value}/estaciones?id={estacion_id}&fechaInicial={fec_init}&fechaFinal={fec_fin}"
                 elif not estacion_id and provincia_id:
-                    url = f"{self.base_data_url}/{tipo}/provincias?id={provincia_id}$fechaInicial={fec_init}&fechaFinal={fec_fin}"
+                    url = f"{self.base_data_url}/{tipo.value}/provincias?id={provincia_id}&fechaInicial={fec_init}&fechaFinal={fec_fin}"
 
                 response = self._make_request(
                     method = 'GET',
