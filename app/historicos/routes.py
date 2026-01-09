@@ -21,14 +21,14 @@ def historicalProvincial():
         type = request.args.get('type', 'HORA')
         start_date = request.args.get('startDate', '2025-12-31')
         end_date = request.args.get('endDate', '2025-12-31')
-
+        
         if not all([province_code, type, start_date, end_date]):
             raise APIException(
                 message = "Todos los parámetros deben de estar definidos",
                 status = 400,
                 error = 'Invalid parameters'
             )
-
+        
         # Conversión de string a entero
         province_code = convertir_tipo(province_code, 'int')
         type_historico = convertir_tipo(type, 'tipo_historico')

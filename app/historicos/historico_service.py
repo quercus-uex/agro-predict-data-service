@@ -9,7 +9,10 @@ import calendar
 class HistoricService:
 
     @staticmethod
-    def _build_historico_hora(data : dict):
+    def _build_historico_hora(
+        data,
+        estacion_id
+    ):
         """Construye DTOs diarios usando los datos del DAO"""
         historicos = []
         valores = data.get("valores_diarios")
@@ -23,6 +26,7 @@ class HistoricService:
                     velViento = v.get("vel_viento"),
                     precipitacion = v.get("precipitacion"),
                     estacion = v.get("estacion"),
+                    estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
                     fecha = v.get("fecha")
                 )
             )
@@ -30,40 +34,52 @@ class HistoricService:
         return historicos
     
     @staticmethod
-    def _build_historico_dia(data):
+    def _build_historico_dia(
+        data,
+        estacion_id
+    ):
         """Constuye una lista de DTO por datos agrupados de timestamp diario"""
         historicos = []
-        print(f"Datos diarios: {data}", flush=True)
+        print(f"Datos: {data}", flush = True)
         valores = data.get("valores_diarios")
         horas_pico = data.get("horas_pico")
-
+        print(f"Estacion: {estacion_id}", flush = True)
         for v in valores:
-            historicos.append(
-                HistDiasDTO(
-                    tempMedia = v.get("temp_media"),
-                    tempMax = v.get("temp_max"),
-                    horMinTempMax = horas_pico.get("hora_temp_max") if horas_pico.get("hora_temp_max") else None,
-                    tempMin = v.get("temp_min"),
-                    horMinTempMin = horas_pico.get("hora_temp_min") if horas_pico.get("hora_temp_min") else None,
-                    humedadMedia = v.get("humedad_media"),
-                    humedadMax = v.get("humedad_max"),
-                    horMinHumMax = horas_pico.get("hora_humedad_max") if horas_pico.get("hora_humedad_max") else None,
-                    humedadMin = v.get("humedad_min"),
-                    horMinHumMin = horas_pico.get("hora_humedad_min") if horas_pico.get("horas_humedad_min") else None,
-                    velViento = v.get("vel_viento"),
-                    velVientoMax = v.get("vel_viento_max"),
-                    precipitacion = v.get("precipitacion"),
-                    etpMon = v.get("etp_mon"),
-                    pepMon = v.get("pep_mon"),
-                    estacion = v.get("estacion"),
-                    fecha = v.get("fecha")   
-                )
-            )
+            dto_kwargs = {
+                "tempMedia": v.get("temp_media"),
+                "tempMax": v.get("temp_max"),
+                "horMinTempMax": horas_pico.get("hora_temp_max") if horas_pico.get("hora_temp_max") else None,
+                "tempMin": v.get("temp_min"),
+                "horMinTempMin": horas_pico.get("hora_temp_min") if horas_pico.get("hora_temp_min") else None,
+                "humedadMedia": v.get("humedad_media"),
+                "humedadMax": v.get("humedad_max"),
+                "horMinHumMax": horas_pico.get("hora_humedad_max") if horas_pico.get("hora_humedad_max") else None,
+                "humedadMin": v.get("humedad_min"),
+                "horMinHumMin": horas_pico.get("hora_humedad_min") if horas_pico.get("hora_humedad_min") else None,
+                "velViento": v.get("vel_viento"),
+                "velVientoMax": v.get("vel_viento_max"),
+                "precipitacion": v.get("precipitacion"),
+                "etpMon": v.get("etp_mon"),
+                "pepMon": v.get("pep_mon"),
+                "estacion": v.get("estacion"),
+                "provincia": v.get("provincia"),
+                "fecha": v.get("fecha")
+            }
+
+            if estacion_id is None:
+                dto_kwargs["estaciones"] = data.get("estaciones_usadas")
+            else:
+                dto_kwargs["estaciones"] = None
+
+            historicos.append(HistDiasDTO(**dto_kwargs))
 
         return historicos
     
     @staticmethod
-    def _build_historico_semana(data : dict):
+    def _build_historico_semana(
+        data,
+        estacion_id
+    ):
         """Construye una lista DTO por datos agrupados de timestamp semanal"""
         historicos = []
         valores = data.get("valores_diarios")
@@ -89,14 +105,19 @@ class HistoricService:
                     precipitacion = v.get("precipitacion"),
                     etpMon = v.get("etp_mon"),
                     pepMon = v.get("pep_mon"), 
-                    estacion = v.get("estacion")
+                    estacion = v.get("estacion"),
+                    estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
+                    provincia = v.get("provincia")
                 )
             )
         
         return historicos
     
     @staticmethod
-    def _build_historico_mes(data : dict):
+    def _build_historico_mes(
+        data,
+        estacion_id
+    ):
         """Construye una lista DTO por datos agrupados mensuales"""
         historicos = []
         valores = data.get("valores_diarios")
@@ -121,7 +142,9 @@ class HistoricService:
                     precipitacion = v.get("precipitacion"),
                     etpMon = v.get("etp_mon"),
                     pepMon = v.get("pep_mon"),
-                    estacion = v.get('estacion') 
+                    estacion = v.get("estacion"),
+                    estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
+                    provincia = v.get("provincia") 
                 )
             )
 
@@ -142,7 +165,7 @@ class HistoricService:
         match tipo:
             case TipoHistorico.HORA:
                 data = HistoricDAO.define_computing_data_hora(estacion_id, provincia_id, fec_init, fec_fin)
-                items =  HistoricService._build_historico_hora(data)
+                items =  HistoricService._build_historico_hora(data, estacion_id)
 
                 return HistoricService.comprobar_devolucion(
                     estacion_id = estacion_id,
@@ -153,7 +176,7 @@ class HistoricService:
 
             case TipoHistorico.DIA:
                 data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)
-                items = HistoricService._build_historico_dia(data)
+                items = HistoricService._build_historico_dia(data, estacion_id)
 
                 return HistoricService.comprobar_devolucion(
                     estacion_id = estacion_id,
@@ -164,7 +187,7 @@ class HistoricService:
             
             case TipoHistorico.SEMANA:
                 data = HistoricDAO.define_computing_data_semana(estacion_id, provincia_id, fec_init, fec_fin)
-                items = HistoricService._build_historico_semana(data)
+                items = HistoricService._build_historico_semana(data, estacion_id)
 
                 return HistoricService.comprobar_devolucion(
                     estacion_id = estacion_id,
@@ -175,7 +198,7 @@ class HistoricService:
             
             case TipoHistorico.MES:
                 data = HistoricDAO.define_compution_data_mes(estacion_id, provincia_id, fec_init, fec_fin)
-                items = HistoricService._build_historico_mes(data)
+                items = HistoricService._build_historico_mes(data, estacion_id)
 
                 return HistoricService.comprobar_devolucion(
                     estacion_id = estacion_id,

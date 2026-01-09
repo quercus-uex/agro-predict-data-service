@@ -20,6 +20,8 @@ class HistHorasDTO:
     velViento: float
     precipitacion: float
     estacion: str
+    estaciones : Optional[List[str]]
+    provincia : str
     fecha: datetime 
 
 @dataclass
@@ -40,6 +42,8 @@ class HistDiasDTO:
     etpMon: float
     pepMon: float
     estacion: str
+    estaciones: Optional[List[str]]
+    provincia : str
     fecha: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -63,7 +67,9 @@ class HistSemanasDTO:
     precipitacion: float
     etpMon: float
     pepMon: float
-    estacion: str    
+    estacion: str  
+    estaciones : Optional[List[str]]  
+    provincia : str
 
 @dataclass
 class HistMesesDTO:
@@ -85,6 +91,8 @@ class HistMesesDTO:
     etpMon: float
     pepMon: float
     estacion: str   
+    estaciones : Optional[List[str]]
+    provincia : str
     
 ######### GENERICO PROVINCIAS #########
 @dataclass
