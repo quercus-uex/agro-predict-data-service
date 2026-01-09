@@ -247,7 +247,8 @@ class HistoricDAO:
                     func.max(MedicionClimatica.vel_viento).label('vel_viento_max'),
                     func.sum(MedicionClimatica.precipitacion).label('precipitacion'),
                     func.avg(MedicionClimatica.etp_mon).label('etp_mon'),
-                    func.avg(MedicionClimatica.pep_mon).label('pep_mon')
+                    func.avg(MedicionClimatica.pep_mon).label('pep_mon'),
+                    MedicionClimatica.estacion_id.label('estacion')
                 )
                 .where(
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
