@@ -36,7 +36,7 @@ class SiARClient(BaseClient):
                     method = 'GET',
                     url = url
                 )
-
+                
                 if response.status_code == 404:
                     logger.error(f"No se han encontrado datos para la los parámetros indicados")
                     return None
@@ -45,7 +45,7 @@ class SiARClient(BaseClient):
                     return None
 
                 response.raise_for_status()
-
+                
                 return response.json().get('data')
             
             except requests.exceptions.ConnectionError as e:

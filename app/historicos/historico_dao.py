@@ -249,9 +249,6 @@ class HistoricDAO:
                     func.avg(MedicionClimatica.etp_mon).label('etp_mon'),
                     func.avg(MedicionClimatica.pep_mon).label('pep_mon')
                 )
-                .join(
-                    Estacion, MedicionClimatica.estacion_id == Estacion.id
-                )
                 .where(
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
                 )
@@ -310,20 +307,26 @@ class HistoricDAO:
                     MedicionClimatica.estacion.label('estacion')
                 )
                 .where(
-                    or_(
-                        MedicionClimatica.estacion_id == estacion_id,
-                        MedicionClimatica.provincia_id == provincia_id
-                    ),
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
                 )
+            )
+            
+            if estacion_id:
+                queryGlobal = queryGlobal.where(MedicionClimatica.estacion_id == estacion_id)
+            elif provincia_id:
+                queryGlobal = queryGlobal.where(Estacion.provincia_id == provincia_id)
+
+            queryGlobal = (
+                queryGlobal
                 .group_by(MedicionClimatica.mes, MedicionClimatica.anio)
                 .order_by(MedicionClimatica.mes, MedicionClimatica.anio)
             )
-            
+
             valores_globales = db.session.execute(queryGlobal).all()
+            valores_meses = row2dict_converter(valores_globales)
             
             return {
-                "valores_diarios": [dict(row._mapping) for row in valores_globales],
+                "valores_diarios": valores_meses,
                 "horas_pico": HistoricDAO.define_horas_pico(
                     estacion_id,
                     provincia_id,

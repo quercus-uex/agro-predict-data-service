@@ -24,6 +24,7 @@ class SiARService:
             fec_fin = fec_fin
         )
         
+
         lista_datos = []
         for dato in datos:
             lista_datos.append(
@@ -34,7 +35,8 @@ class SiARService:
                     "vel_viento" : dato.get("VelViento"),
                     "precipitacion" : dato.get("Precipitacion"),
                     "etp_mon" : dato.get("EtPMon"),
-                    "pep_mon" : dato.get("PePMon")
+                    "pep_mon" : dato.get("PePMon"),
+                    "estacion" : dato.get("Estacion")
                 }
             )
 

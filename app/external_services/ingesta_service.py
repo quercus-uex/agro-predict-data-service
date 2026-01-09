@@ -20,7 +20,7 @@ class IngestionService:
             tipo = tipo,
             fec_init = fec_init,
             fec_fin = fec_fin  
-        )
+        )     
 
         for d in data:
             
@@ -28,7 +28,7 @@ class IngestionService:
             anio, semana, _ = d_timestamp.isocalendar()
             
             # Mapeo de estacion y provincia 
-            estacion : Estacion = Estacion.query.filter_by(codigo=codigo_estacion_id).first()
+            estacion : Estacion = Estacion.query.filter_by(codigo=d["estacion"]).first()
             provincia : Provincia = Provincia.query.filter_by(codigo=codigo_provincia_id).first()
 
             medicion = MedicionClimatica(
