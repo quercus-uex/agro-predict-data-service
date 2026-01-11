@@ -8,6 +8,8 @@ load_dotenv()
 class Config:
     SIAR_SERVICE_DATA_URL = os.getenv('SIAR_SERVICE_DATA_URL')
     SIAR_SERVICE_INFO_URL = os.getenv('SIAR_SERVICE_INFO_URL')
+    AEMET_SERVICE_CURRENT_URL = os.getenv('AEMET_SERVICE_CURRENT_URL')
+    AEMET_SERVICE_FUTURE_URL = os.getenv('AEMET_SERVICE_FUTURE_URL')
 
 class CircuitBreakerPersonalizado(CircuitBreaker):
     FAILURE_THRESHOLD = 7

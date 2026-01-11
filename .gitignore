@@ -7,4 +7,5 @@ htmlcov/
 .tox/
 docs/_build/
 .env
-app/logs
+app/logs/*
+!app/logs/.gitkeep
