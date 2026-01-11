@@ -3,8 +3,44 @@ from typing import Optional
 from datetime import date, timedelta
 from ..historicos.historico_dto import TipoHistorico
 from .siar_service import SiARService
-from ..models import MedicionClimatica, Estacion, Provincia, CCAA
+from ..models import MedicionClimatica, Estacion, Provincia, CCAA, Predicciones
+from ..clients.aemet_client import TipoPrediccion, TipoZona
+from .aemet_service import AemetService
 class IngestionService:
+
+    @staticmethod
+    def ingest_aemet_data(
+        tipo_zona : TipoZona,
+        tipo_prediccion : TipoPrediccion,
+        codigo_zona : Optional[str],
+        fecha : date
+    ):
+        data = AemetService.get_aemet_data(
+            tipo_prediccion = tipo_prediccion,
+            tipo_zona = tipo_zona,
+            codigo_zona = codigo_zona,
+            fecha = fecha
+        )
+
+        # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
+        predicciones = Predicciones(
+            **data
+        )
+
+        existe = db.session.query(Predicciones.id).filter_by(
+            tipo_prediccion = predicciones.tipo_prediccion,
+            tipo_zona = predicciones.tipo_zona,
+            codigo_zona = predicciones.codigo_zona,
+            fecha_prediccion = predicciones.fecha_prediccion,
+            fecha_elaboracion = predicciones.fecha_elaboracion
+        )
+
+        if existe:
+            return
+        
+        db.session.add(predicciones)
+        db.session.commit()
+
 
     @staticmethod
     def ingest_data(
@@ -45,7 +81,6 @@ class IngestionService:
                 etp_mon = d.get('etp_mon'),
                 pep_mon = d.get('pep_mon')
             )
-            print(medicion, flush=True)
             # Comprobamos si existe ya el dato a insertar, para evitar duplicados
             existe = db.session.query(MedicionClimatica.id).filter_by(
                 temperatura=medicion.temperatura,

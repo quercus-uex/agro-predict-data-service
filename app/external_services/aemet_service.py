@@ -1,5 +1,5 @@
 from ..clients.aemet_client import AemetClient, TipoZona, TipoPrediccion
-from ...helpers.aemet_parser import AemetParser
+from helpers.aemet_parser import AemetParser
 from app import create_app
 from typing import Optional
 from datetime import date, datetime
@@ -14,9 +14,9 @@ class AemetService:
     @staticmethod
     def get_aemet_data(
         tipo_zona : TipoZona,
-        tipo_prediccion : TipoPrediccion,
+        tipo_prediccion : Optional[TipoPrediccion],
         codigo_zona : Optional[str],
-        fecha : date
+        fecha : Optional[date]
     ):
         texto = None
 

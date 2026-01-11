@@ -10,6 +10,7 @@ from app import db
 
 from app.external_services.ingesta_service import IngestionService
 from app.historicos.historico_dto import TipoHistorico
+from app.clients.aemet_client import TipoPrediccion, TipoZona
 
 from app.models import *
 
@@ -42,13 +43,13 @@ def job(app):
     )"""
 
     # Carga de datos diarios sobre Cáceres
-    IngestionService.ingest_data(
+    """IngestionService.ingest_data(
         codigo_estacion_id = None,
         codigo_provincia_id = "CC",
         tipo = TipoHistorico.DIA,
         fec_init = date(2024,1,8),
         fec_fin = date(2024,1,8)
-    )
+    )"""
 
     # Carga masiva de datos
     """IngestionService.ingest_range(
@@ -58,3 +59,12 @@ def job(app):
         fec_init = date(2024, 2, 2),
         fec_fin = date(2024, 2, 17)
     )"""
+
+    # Cargar datos de AEMET
+    ## Cargar datos predictivos de hoy para extremadura
+    IngestionService.ingest_aemet_data(
+        tipo_zona = TipoZona.CCAA,
+        tipo_prediccion = None,
+        codigo_zona = "ext",
+        fecha = None
+    )

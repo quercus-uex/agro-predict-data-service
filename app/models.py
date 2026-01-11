@@ -125,12 +125,12 @@ class Predicciones(db.Model):
     codigo_zona = Column(String(10), nullable = True)
 
     # Fechas
-    fecha_prediccion = Column(Date, nullable = False),
-    fecha_elaboracion = Column(DateTime)
+    fecha_prediccion = Column(Date, nullable = False)
+    fecha_elaboracion = Column(DateTime, nullable = False)
 
 
     # Texto original
-    texto_original = Column(Text, nullabel = False)
+    texto_original = Column(Text, nullable = False)
 
     # Datos específicos recogidos
     estado_cielo = Column(String(100), nullable = True)
@@ -141,6 +141,8 @@ class Predicciones(db.Model):
     cotas_nieve = Column(String(100), nullable = True)
     existencia_helada = Column(String(100), nullable = True)
     zona_helada  = Column(String(100), nullable = True)
+
+    ccaa = relationship("CCAA", back_populates="predicciones")
 
     __table_args__ = (
         Index("idx_pred_tipo_fecha", "tipo_zona", "fecha_prediccion"),

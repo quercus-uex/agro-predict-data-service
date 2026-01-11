@@ -1,0 +1,1 @@
+> Ahora mismo los tipos enumerados de aemet se encuentran dentro del aemet_client, cuando implemente los módulos actuales y futuros, tengo que incluirlos dentro de los DTO que son donde tienen que ir.
