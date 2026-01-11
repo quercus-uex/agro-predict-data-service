@@ -1,6 +1,6 @@
 # Donde se almacenarán los modelos para pasarlos a la BD
 from typing import List
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Index
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Index, Date, Text
 from sqlalchemy.orm import relationship
 from app import db
 
@@ -110,4 +110,39 @@ class MedicionClimatica(db.Model):
         Index("idx_estacion_timestamp", "estacion_id", "timestamp"),
         Index("idx_provincia_timestamp", "provincia_id", "timestamp"),
         Index("idx_anio_semana", "anio", "semana")
+    )
+
+class Predicciones(db.Model):
+    __tablename__ = "predicciones"
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+
+    # Tipo de prediccion : actual / tomorrow / aftertomorrow
+    tipo_prediccion = Column(String(20), nullable = False)
+
+    # Zona : ccaa / nacional / provincial
+    tipo_zona = Column(String(20), nullable = False)
+    codigo_zona = Column(String(10), nullable = True)
+
+    # Fechas
+    fecha_prediccion = Column(Date, nullable = False),
+    fecha_elaboracion = Column(DateTime)
+
+
+    # Texto original
+    texto_original = Column(Text, nullabel = False)
+
+    # Datos específicos recogidos
+    estado_cielo = Column(String(100), nullable = True)
+    tendencia_temp_max = Column(String(50), nullable = True)
+    tendencia_temp_min = Column(String(50), nullable = True)
+    rachas_viento = Column(String(100), nullable = True)
+    precipitaciones = Column(String(100), nullable = True)
+    cotas_nieve = Column(String(100), nullable = True)
+    existencia_helada = Column(String(100), nullable = True)
+    zona_helada  = Column(String(100), nullable = True)
+
+    __table_args__ = (
+        Index("idx_pred_tipo_fecha", "tipo_zona", "fecha_prediccion"),
+        Index("idx_zona_fecha", "codigo_zona", "fecha_prediccion")
     )

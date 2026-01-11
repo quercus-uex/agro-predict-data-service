@@ -9,3 +9,4 @@ docs/_build/
 .env
 app/logs/*
 !app/logs/.gitkeep
+prueba-regex.txt
