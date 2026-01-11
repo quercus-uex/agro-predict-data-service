@@ -4,7 +4,6 @@ from datetime import datetime
 class AemetParser:
 
     def parse(
-        self, 
         texto : str
     ) -> dict:
         """
