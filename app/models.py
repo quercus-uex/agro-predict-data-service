@@ -1,6 +1,6 @@
 # Donde se almacenarán los modelos para pasarlos a la BD
 from typing import List
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Index, Date, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Index, Date, Text, Boolean
 from sqlalchemy.orm import relationship
 from app import db
 
@@ -83,7 +83,8 @@ class CCAA(db.Model):
     codigo = Column(String(20), unique = True, nullable = False)
     nombre = Column(String(50), unique = True, nullable = False)
 
-    provincias = relationship("Provincia", back_populates="ccaa")
+    provincias = relationship("Provincia", back_populates = "ccaa")
+    predicciones = relationship("Predicciones", back_populates = "ccaa")
 
 class MedicionClimatica(db.Model):
     __tablename__ = 'mediciones_climaticas'
@@ -116,6 +117,9 @@ class Predicciones(db.Model):
     __tablename__ = "predicciones"
 
     id = Column(Integer, primary_key = True, autoincrement = True)
+    
+    # Foreign key con CCAA
+    ccaa_id = Column(Integer, ForeignKey("ccaa.id"), nullable = True)
 
     # Tipo de prediccion : actual / tomorrow / aftertomorrow
     tipo_prediccion = Column(String(20), nullable = False)
@@ -139,7 +143,7 @@ class Predicciones(db.Model):
     rachas_viento = Column(String(100), nullable = True)
     precipitaciones = Column(String(100), nullable = True)
     cotas_nieve = Column(String(100), nullable = True)
-    existencia_helada = Column(String(100), nullable = True)
+    existencia_helada = Column(Boolean, nullable = True)
     zona_helada  = Column(String(100), nullable = True)
 
     ccaa = relationship("CCAA", back_populates="predicciones")

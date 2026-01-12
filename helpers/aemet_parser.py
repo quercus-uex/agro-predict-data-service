@@ -1,6 +1,6 @@
 import re
-from datetime import datetime
-
+from datetime import datetime, date
+from app.globals.mapeo_meeses import mes_a_entero
 class AemetParser:
 
     def parse(
@@ -41,12 +41,32 @@ class AemetParser:
         result["cota_nieve"] = nieve.group(1) if nieve else None
 
         # Existencia de heladas
-        heladas_existe = re.search(r"([Nn]o [^.]+\n+(\w+))", texto, re.IGNORECASE)
-        result["existencia_helada"] = heladas_existe.group(1) if heladas_existe else None
+        heladas_existe = re.search(r"heladas", texto, re.IGNORECASE)
+        helada_puede_existir = re.search(r"([Nn]o [^.]+\n+(\w+)+[^.]+\.)", texto, re.IGNORECASE)
+        if heladas_existe or helada_puede_existir:
+            result["existencia_helada"] = True
 
         # Zona de heladas
-        if heladas_existe:
-            zona_heladas = re.search(r"([Nn]o [^.]+\n+(\w+)+[^.]+\.)", texto, re.IGNORECASE)
-            result["zona_helada"] = zona_heladas.group(1) if zona_heladas else None
+        if heladas_existe or helada_puede_existir:
+            zona_heladas_condicional = re.search(r"([Nn]o [^.]+\n+(\w+)+[^.]+\.)", texto, re.IGNORECASE)
+            if not zona_heladas_condicional:
+                zona_heladas_confirmadas = re.search(r"[Hh]eladas[^.]+\.", texto, re.IGNORECASE)
+            zona_heladas = zona_heladas_condicional or zona_heladas_confirmadas
 
+            result["zona_helada"] = zona_heladas.group(0) if zona_heladas else None
+
+        # Fecha de prediccion:
+        fecha_prediccion = re.search(r"DÍA\s+(\d{1,2})\s+DE\s+([A-ZÁÉÍÓÚ]+)\s+DE\s+(\d{4})", texto, re.IGNORECASE)
+        
+        if fecha_prediccion:
+            dia = int(fecha_prediccion.group(1))
+            mes_texto = fecha_prediccion.group(2).lower()
+            anio = int(fecha_prediccion.group(3))
+            mes = mes_a_entero(mes_texto)
+            print(f"mes: {mes}")
+            fecha = date(anio, mes, dia)
+
+            result["fecha_prediccion"] = fecha
+
+        print(f"Resultados parser: {result}")
         return result

@@ -64,7 +64,7 @@ def job(app):
     ## Cargar datos predictivos de hoy para extremadura
     IngestionService.ingest_aemet_data(
         tipo_zona = TipoZona.CCAA,
-        tipo_prediccion = None,
+        tipo_prediccion = "actual",
         codigo_zona = "ext",
-        fecha = None
+        fecha = date(2026,1,12)
     )
