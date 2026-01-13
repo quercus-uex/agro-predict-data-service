@@ -138,6 +138,7 @@ class Predicciones(db.Model):
 
     # Datos específicos recogidos
     estado_cielo = Column(String(100), nullable = True)
+    tendencia_temp_general = Column(String(100), nullable = True)
     tendencia_temp_max = Column(String(50), nullable = True)
     tendencia_temp_min = Column(String(50), nullable = True)
     rachas_viento = Column(String(100), nullable = True)

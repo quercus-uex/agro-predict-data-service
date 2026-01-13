@@ -3,6 +3,8 @@ from helpers.aemet_parser import AemetParser
 from app import create_app
 from typing import Optional
 from datetime import date, datetime
+from ..external_communication.rabbitmq_send import RabbitMQPublisher
+from ..external_communication.rabbitmq_config import RabbitMQConfig
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,10 +44,18 @@ class AemetService:
             return None
         
         # Obtenemos datos parseados obtenidos del texto de respuesta por Aemet
-        parseo = AemetParser.parse(texto = texto)
+        # Esto será un respaldo por si no obtengo datos del broker
+        #parseo = AemetParser.parse(texto = texto)
+        
+        # Configuramos la conexion con el broker
+        conexion = RabbitMQConfig.init_config()
+        # Creamos la publicacion en la cola
+        RabbitMQPublisher.create_publish(conexion, texto)
+        # Obtenemos la respuesta de la cola
 
-        # Construimos el json para enviar
-        json_final = {
+        # Formateamos el json recibido incluyendo datos obtenidos con el parser
+
+        """json_final = {
             "tipo_prediccion" : tipo_prediccion,
             "tipo_zona" : tipo_zona,
             "codigo_zona" : codigo_zona,
@@ -53,6 +63,7 @@ class AemetService:
             "fecha_elaboracion" : datetime.now(),
             "texto_original" : texto,
             "estado_cielo" : parseo["estado_cielo"],
+            "tendencia_temp_general" : parseo["tendencia_temp_general"],
             "tendencia_temp_max" : parseo["tendencia_temp_max"],
             "tendencia_temp_min" : parseo["tendencia_temp_min"],
             "rachas_viento" : parseo["viento"],
@@ -60,6 +71,7 @@ class AemetService:
             "cotas_nieve" : parseo["cota_nieve"],
             "existencia_helada" : parseo["existencia_helada"],
             "zona_helada" : parseo["zona_helada"]
-        }
+        }"""
+        json_final = {}
 
         return json_final

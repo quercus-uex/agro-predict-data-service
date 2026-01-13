@@ -34,16 +34,16 @@ class IngestionService:
             tipo_prediccion = predicciones.tipo_prediccion,
             tipo_zona = predicciones.tipo_zona,
             codigo_zona = predicciones.codigo_zona,
-            fecha_prediccion = predicciones.fecha_prediccion,
-            fecha_elaboracion = predicciones.fecha_elaboracion
+            fecha_prediccion = predicciones.fecha_prediccion
         ).first()
 
         if existe:
             print("Entro")
             return
         
-        db.session.add(predicciones)
-        db.session.commit()
+        #Tiene que ser los datos que reciba del broker
+        #db.session.add(predicciones)
+        #db.session.commit()
 
 
     @staticmethod

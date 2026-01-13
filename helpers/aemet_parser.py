@@ -20,6 +20,13 @@ class AemetParser:
         else:
             result["estado_cielo"] = None
         
+        # Tendencia general de temperatura
+        match_temp_general = re.search(
+            r"Temperaturas\s+(sin\n?cambios|en ligero ascenso|en ligero descenso)",
+            texto, re.IGNORECASE)
+        result["tendencia_temp_general"] = match_temp_general.group(1) if match_temp_general else None
+
+        print(f"Temperatura general: {result["tendencia_temp_general"]}")
         # Tendencia temperatura maxima
         match_max = re.search(r"máximas? en (\w+)", texto, re.IGNORECASE)
         result["tendencia_temp_max"] = match_max.group(1) if match_max else None
