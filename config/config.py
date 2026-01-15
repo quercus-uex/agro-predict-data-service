@@ -10,7 +10,8 @@ class Config:
     SIAR_SERVICE_INFO_URL = os.getenv('SIAR_SERVICE_INFO_URL')
     AEMET_SERVICE_CURRENT_URL = os.getenv('AEMET_SERVICE_CURRENT_URL')
     AEMET_SERVICE_FUTURE_URL = os.getenv('AEMET_SERVICE_FUTURE_URL')
-    QUEUE_NAME = os.getenv('QUEUE_NAME')
+    QUEUE_IN_NAME = os.getenv('QUEUE_IN_NAME')
+    QUEUE_OUT_NAME = os.getenv('QUEUE_OUT_NAME')
     RABBITMQ_CONNECTION = os.getenv('RABBITMQ_CONNECTION')
 
 class CircuitBreakerPersonalizado(CircuitBreaker):

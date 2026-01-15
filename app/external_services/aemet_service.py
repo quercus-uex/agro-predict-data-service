@@ -5,6 +5,7 @@ from typing import Optional
 from datetime import date, datetime
 from ..external_communication.rabbitmq_send import RabbitMQPublisher
 from ..external_communication.rabbitmq_config import RabbitMQConfig
+from ..external_communication.rabbitmq_receive import RabbitMQConsumer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,11 +48,15 @@ class AemetService:
         # Esto será un respaldo por si no obtengo datos del broker
         #parseo = AemetParser.parse(texto = texto)
         
+        logger.info("========== RABBITMQ COMMUNICATION ==========")
         # Configuramos la conexion con el broker
         conexion = RabbitMQConfig.init_config()
+        print("Conexion con el broker establecida", flush = True)
         # Creamos la publicacion en la cola
         RabbitMQPublisher.create_publish(conexion, texto)
+        print("Se ha enviado el texto de aemet por la cola del broker", flush = True)
         # Obtenemos la respuesta de la cola
+        #RabbitMQConsumer(conexion)
 
         # Formateamos el json recibido incluyendo datos obtenidos con el parser
 
