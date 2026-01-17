@@ -41,9 +41,9 @@ class IngestionService:
             print("Entro")
             return
         
-        #Tiene que ser los datos que reciba del broker
-        #db.session.add(predicciones)
-        #db.session.commit()
+        #[✔]Tiene que ser los datos que reciba del broker
+        db.session.add(predicciones)
+        db.session.commit()
 
 
     @staticmethod

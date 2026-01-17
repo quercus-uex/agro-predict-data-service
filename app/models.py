@@ -146,6 +146,7 @@ class Predicciones(db.Model):
     cotas_nieve = Column(String(100), nullable = True)
     existencia_helada = Column(Boolean, nullable = True)
     zona_helada  = Column(String(100), nullable = True)
+    aparicion_nieblas = Column(String(100), nullable = True)
 
     ccaa = relationship("CCAA", back_populates="predicciones")
 
