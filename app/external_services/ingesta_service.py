@@ -23,7 +23,6 @@ class IngestionService:
         )
 
         ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_zona.upper()).first()
-        print(f"ccaa: {ccaa}, codigo-zona: {codigo_zona.upper()}")
         # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
         predicciones = Predicciones(
             ccaa_id = ccaa.id if ccaa else None,

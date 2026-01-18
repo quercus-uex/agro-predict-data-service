@@ -90,4 +90,6 @@ class AemetService:
             "aparicion_nieblas" : json.get("aparicion_de_nieblas")
         }
 
+        print(f"Json final: {json_final}")
+
         return json_final

@@ -5,7 +5,7 @@ from rabbitmq_amqp_python_client import (
     Environment
 )
 from typing import List
-import pickle
+import json
 
 # Clase encargada de manejar los mensajes
 class MessageHandler(AMQPMessagingHandler):
@@ -14,29 +14,30 @@ class MessageHandler(AMQPMessagingHandler):
         self._count = 0
         self.consumer = None # Referencia al consumidor para que el handler pueda pararlo
 
-    def set_consmer(self, consumer):
+    def set_consumer(self, consumer):
         self.consumer = consumer
 
     def bytes_2_text(self, body):
         if isinstance(body, memoryview):
-            return pickle.loads(body) # Deserializo el objeto de bytes que serializé con pickle al enviarlo
+            #return pickle.loads(body) # Deserializo el objeto de bytes que serializé con pickle al enviarlo
+            body = bytes(body)
         if isinstance(body, (bytes, bytearray)):
             return body.decode("utf-8")
         
         return str(body)
 
-    def on_message(self, event : Event):
-        # Almacenamos el contenido del cuerpo del mensaje que está en la cola
-        body_undecoded = event.message.body
-               
-        # Guardo el mensaje para reotornarlo luego
-        self.last_message = self.bytes_2_text(body_undecoded)
+    def on_message(self, event: Event):
+        # memoryview -> bytes -> JSON
+        body = event.message.body
+        if isinstance(body, memoryview):
+            body = bytes(body)
+        self.last_message = json.loads(body.decode("utf-8"))
 
-        # Acepto el mensaje recibido para eliminarlo de la cola
+        # Aceptar el mensaje
         self.delivery_context.accept(event)
 
-        # Para de esperar más mensajes una vez ya se ha leido un evento
-        if self.consumer:  
+        # Detener el consumidor al leer un solo mensaje
+        if self.consumer:
             self.consumer.stop()
 
 class RabbitMQConsumer():
@@ -44,11 +45,12 @@ class RabbitMQConsumer():
         obj : tuple[Connection, Environment, List[str]]
     ):
         handler = MessageHandler()
+
         # Creo el consumidor del evento con la clase de manejador de mensajes
         consumer = obj[0].consumer(destination = obj[2][1], message_handler = handler)
 
         # Construyo la referencia al consumidor
-        handler.set_consmer(consumer = consumer)
+        handler.set_consumer(consumer = consumer)
         
         # Inicio el consumidor
         consumer.run()
