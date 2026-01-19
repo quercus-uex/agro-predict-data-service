@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from enum import Enum
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, TypeVar, Generic, List
+
+T = TypeVar("T")
 
 class TipoZona(str, Enum):
     CCAA = "ccaa"
@@ -29,3 +31,26 @@ class ActualesFuturosDTO:
     existenciaHeladas : Optional[bool]
     zonaHeladas : Optional[str]
     aparicionNieblas : Optional[str]
+    provincia : Optional[str]
+    ccaa : Optional[str]
+
+##### GENERICO CCAA #####
+@dataclass
+class CccaaActualFuturoDTO(Generic[T]):
+    type_prediction : TipoPrediccion
+    type_zone : TipoZona
+    datos : List[T]
+
+##### GENERICO PROVINCIA #####
+@dataclass
+class ProvinciaActualFuturoDTO(Generic[T]):
+    type_prediction : TipoPrediccion
+    type_zone : TipoZona
+    datos : List[T]
+
+##### GENERICO NACION ######
+@dataclass
+class NacionActualFuturoDTO(Generic[T]):
+    type_prediction : TipoPrediccion
+    type_zone : TipoZona
+    datos : List[T]

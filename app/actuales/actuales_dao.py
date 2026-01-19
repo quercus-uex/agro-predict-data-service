@@ -1,18 +1,19 @@
 from sqlalchemy import select, and_
-from models import Predicciones
+from models import Predicciones, Provincia, CCAA
 from app import db
 
 class ActualesDAO:
     # Variable global que obtiene todas las columnas de la tabla Predicciones
     # menos el texto completo de AEMET almacenado
+    EXCLUIR = {"texto_original", "provincia_id", "ccaa_id"}
     columnas = [
         c for c in Predicciones.__table__.columns
-        if c.name != "texto_original"
+        if c.name not in ActualesDAO.EXCLUIR
     ]
 
     @staticmethod
     def define_computing_current_ccaa(
-        ccaa_id : str
+        ccaa_id : int
     ) : 
         """
         Obtiene los datos climáticos actuales sobre la comunidad autónoma pasada
@@ -21,7 +22,8 @@ class ActualesDAO:
         try:
             query = (
                 select(
-                    *ActualesDAO.columnas
+                    *ActualesDAO.columnas,
+                    CCAA.codigo.label('ccaa') if ccaa_id else None
                 )
                 .where(
                     and_(
@@ -30,12 +32,16 @@ class ActualesDAO:
                         Predicciones.tipo_zona == "ccaa"
                     )
                 )
+                .join(CCAA, Predicciones.ccaa)
                 .order_by(Predicciones.fecha_prediccion.desc())
                 .limit(1)
             )
 
             result = db.session.execute(query).fetchone()
-            return result
+            return {
+                "valores_actuales" : result,
+                "servicios_usados" : "AEMET"
+            }
 
         except Exception as e:
             print(f"Error obteniendo datos actuales de {ccaa_id} : {e}")
@@ -62,7 +68,10 @@ class ActualesDAO:
             )
 
             result = db.session.execute(query).fetchone()
-            return result
+            return {
+                "valores_actuales" : result,
+                "servicios_usados" : "AEMET"
+            }
         
         except Exception as e:
             print(f"Error obteniendo datos actuales nacionales : {e}")
@@ -70,7 +79,7 @@ class ActualesDAO:
 
     @staticmethod
     def define_computing_current_provincia(
-        provincia_id : str
+        provincia_id : int
     ) : 
         """
         Obtiene los datos climáticos actuales sobre la provincia especificada
@@ -80,7 +89,8 @@ class ActualesDAO:
 
             query = (
                 select(
-                    *ActualesDAO.columnas
+                    *ActualesDAO.columnas,
+                    Provincia.codigo.label("provincia") if provincia_id else None
                 )
                 .where(
                     and_(
@@ -89,12 +99,16 @@ class ActualesDAO:
                         Predicciones.tipo_zona == "provincial"
                     )
                 )
+                .join(Provincia, Predicciones.provincia)
                 .order_by(Predicciones.fecha_prediccion.desc())
                 .limit(1)
             )
 
             result = db.session.execute(query).fetchone()
-            return result
+            return {
+                "valores_actuales" : result,
+                "servicios_usados" : "AEMET"
+            }
         
         except Exception as e:
             print(f"Error obteniendo datos actuales sobre la provincia {provincia_id} : {e}")
