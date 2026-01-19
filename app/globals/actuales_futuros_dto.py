@@ -11,6 +11,7 @@ class TipoZona(str, Enum):
     PROVINCIAL = "provincial"
 
 class TipoPrediccion(str, Enum):
+    ACTUAL = "actual"
     TOMORROW = "tomorrow"
     AFTERTOMORROW = "aftertomorrow"
 
