@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from ..historicos.historico_dto import TipoHistorico
 from .siar_service import SiARService
 from ..models import MedicionClimatica, Estacion, Provincia, CCAA, Predicciones
-from ..clients.aemet_client import TipoPrediccion, TipoZona
+from app.globals.actuales_futuros_dto import TipoPrediccion, TipoZona
 from .aemet_service import AemetService
 class IngestionService:
 
@@ -23,9 +23,11 @@ class IngestionService:
         )
 
         ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_zona.upper()).first()
+        provincia : Provincia = Provincia.query.filter_by(codigo=codigo_zona.upper()).first()
         # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
         predicciones = Predicciones(
             ccaa_id = ccaa.id if ccaa else None,
+            provincia_id = provincia.id if provincia else None,
             **data
         )
 

@@ -121,6 +121,9 @@ class Predicciones(db.Model):
     # Foreign key con CCAA
     ccaa_id = Column(Integer, ForeignKey("ccaa.id"), nullable = True)
 
+    # Foreign key con Provincia
+    provincia_id = Column(Integer, ForeignKey("provincias.id", nullable = True))
+
     # Tipo de prediccion : actual / tomorrow / aftertomorrow
     tipo_prediccion = Column(String(20), nullable = False)
 
@@ -148,7 +151,8 @@ class Predicciones(db.Model):
     zona_helada  = Column(String(100), nullable = True)
     aparicion_nieblas = Column(String(100), nullable = True)
 
-    ccaa = relationship("CCAA", back_populates="predicciones")
+    ccaa = relationship("CCAA", back_populates = "predicciones")
+    provincia = relationship("Provincia", back_populates = "predicciones")
 
     __table_args__ = (
         Index("idx_pred_tipo_fecha", "tipo_zona", "fecha_prediccion"),

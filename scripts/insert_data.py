@@ -10,7 +10,7 @@ from app import db
 
 from app.external_services.ingesta_service import IngestionService
 from app.historicos.historico_dto import TipoHistorico
-from app.clients.aemet_client import TipoPrediccion, TipoZona
+from app.globals.actuales_futuros_dto import TipoPrediccion, TipoZona
 
 from app.models import *
 

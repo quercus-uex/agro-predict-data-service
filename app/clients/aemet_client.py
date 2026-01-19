@@ -8,17 +8,9 @@ from config.config import CircuitBreakerPersonalizado
 from flask import Flask
 import requests
 import logging
+from app.globals.actuales_futuros_dto import TipoZona, TipoPrediccion
 
 logger = logging.getLogger(__name__)
-
-class TipoZona(str, Enum):
-    CCAA = "ccaa"
-    NACIONAL = "nacional"
-    PROVINCIAL = "provincial"
-
-class TipoPrediccion(str, Enum):
-    TOMORROW = "tomorrow"
-    AFTERTOMORROW = "aftertomorrow"
 
 class AemetClient(BaseClient):
     def __init__(self, app : Flask):
