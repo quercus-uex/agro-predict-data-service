@@ -1,14 +1,17 @@
 from sqlalchemy import select, and_
-from models import Predicciones, Provincia, CCAA
+from ..models import Predicciones, Provincia, CCAA
+from ..globals.row2dict_converter import row2dict_converter
 from app import db
 
 class ActualesDAO:
     # Variable global que obtiene todas las columnas de la tabla Predicciones
     # menos el texto completo de AEMET almacenado
+    global EXCLUIR 
     EXCLUIR = {"texto_original", "provincia_id", "ccaa_id"}
+
     columnas = [
         c for c in Predicciones.__table__.columns
-        if c.name not in ActualesDAO.EXCLUIR
+        if c.name not in EXCLUIR
     ]
 
     @staticmethod
@@ -19,11 +22,15 @@ class ActualesDAO:
         Obtiene los datos climáticos actuales sobre la comunidad autónoma pasada
         por parámetros.
         """
+
         try:
+            
+            if ccaa_id:
+                ActualesDAO.columnas.append(CCAA.codigo.label("ccaa"))
+
             query = (
                 select(
-                    *ActualesDAO.columnas,
-                    CCAA.codigo.label('ccaa') if ccaa_id else None
+                    *ActualesDAO.columnas
                 )
                 .where(
                     and_(
@@ -38,10 +45,13 @@ class ActualesDAO:
             )
 
             result = db.session.execute(query).fetchone()
-            return {
-                "valores_actuales" : result,
-                "servicios_usados" : "AEMET"
-            }
+
+            if result is None:
+                return None
+
+            valores_comarcales = row2dict_converter(result)
+
+            return valores_comarcales
 
         except Exception as e:
             print(f"Error obteniendo datos actuales de {ccaa_id} : {e}")
@@ -68,10 +78,13 @@ class ActualesDAO:
             )
 
             result = db.session.execute(query).fetchone()
-            return {
-                "valores_actuales" : result,
-                "servicios_usados" : "AEMET"
-            }
+            
+            if result is None:
+                return None
+            
+            valores_nacionales = row2dict_converter(result)
+
+            return valores_nacionales
         
         except Exception as e:
             print(f"Error obteniendo datos actuales nacionales : {e}")
@@ -105,10 +118,13 @@ class ActualesDAO:
             )
 
             result = db.session.execute(query).fetchone()
-            return {
-                "valores_actuales" : result,
-                "servicios_usados" : "AEMET"
-            }
+            
+            if result is None:
+                return None
+            
+            valores_provinciales = row2dict_converter(result)
+
+            return valores_provinciales
         
         except Exception as e:
             print(f"Error obteniendo datos actuales sobre la provincia {provincia_id} : {e}")

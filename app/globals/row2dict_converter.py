@@ -1,26 +1,33 @@
 from datetime import datetime
 from decimal import Decimal
+from sqlalchemy import Row
+
+def _convert_value(value):
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, (Decimal, float)):
+        return float(value)
+    if value is None:
+        return None
+    return value
+
 
 def row2dict_converter(data):
-    valores = []
-    for row in data:
-        row_dict = {}
-        for key, value in row._mapping.items():
-            if isinstance(value, datetime):
-                row_dict[key] = value.isoformat()
-            elif isinstance(value, (Decimal, float)):
-                row_dict[key] = float(value)
-            elif value is None:
-                row_dict[key] = None
-            else:
-                try:
-                    row_dict[key] = value
-                except TypeError:
-                    row_dict[key] = str(value)
+    # Caso 1: una sola fila
+    if isinstance(data, Row):
+        return {
+            key: _convert_value(value)
+            for key, value in data._mapping.items()
+        }
 
-        valores.append(row_dict)
-    
-    return valores
+    # Caso 2: iterable de filas
+    return [
+        {
+            key: _convert_value(value)
+            for key, value in row._mapping.items()
+        }
+        for row in data
+    ]
 
 def row2dict_list(rows):
     return [row2dict_converter(r) for r in rows]

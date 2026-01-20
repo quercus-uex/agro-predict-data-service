@@ -17,21 +17,21 @@ class TipoPrediccion(str, Enum):
 
 @dataclass
 class ActualesFuturosDTO:
-    tipoPrediccion : TipoPrediccion
-    tipoZona : TipoZona
-    codigoZona : str
-    fechaPrediccion : date
-    fechaElaboracion : datetime
-    estadoCielo : Optional[str]
-    tendenciaTempGeneral : Optional[str]
-    tendenciaTempMax : Optional[str]
-    tendenciaTempMin : Optional[str]
-    rachasViento : Optional[str]
+    tipo_prediccion : TipoPrediccion
+    tipo_zona : TipoZona
+    codigo_zona : str
+    fecha_prediccion : date
+    fecha_elaboracion : datetime
+    estado_cielo : Optional[str]
+    tendencia_temp_general : Optional[str]
+    tendencia_temp_max : Optional[str]
+    tendencia_temp_min : Optional[str]
+    rachas_viento : Optional[str]
     precipitaciones : Optional[str]
-    cotasNieve : Optional[str]
-    existenciaHeladas : Optional[bool]
-    zonaHeladas : Optional[str]
-    aparicionNieblas : Optional[str]
+    cotas_nieve : Optional[str]
+    existencia_heladas : Optional[bool]
+    zona_heladas : Optional[str]
+    aparicion_nieblas : Optional[str]
     provincia : Optional[str]
     ccaa : Optional[str]
 

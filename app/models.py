@@ -75,6 +75,7 @@ class Provincia(db.Model):
     estaciones = relationship("Estacion", back_populates="provincia")
     #fincas = relationship("Finca", back_populates = "provincia")
     mediciones = relationship("MedicionClimatica", back_populates="provincia")
+    predicciones = relationship("Predicciones", back_populates = "provincia")
     
 class CCAA(db.Model):
     __tablename__ = 'ccaa'
@@ -122,7 +123,7 @@ class Predicciones(db.Model):
     ccaa_id = Column(Integer, ForeignKey("ccaa.id"), nullable = True)
 
     # Foreign key con Provincia
-    provincia_id = Column(Integer, ForeignKey("provincias.id", nullable = True))
+    provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = True)
 
     # Tipo de prediccion : actual / tomorrow / aftertomorrow
     tipo_prediccion = Column(String(20), nullable = False)

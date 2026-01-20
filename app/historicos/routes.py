@@ -4,9 +4,10 @@ from ..globals.log_decorator import log
 from flask import request
 from helpers.ApiExceptions import APIException
 from app.historicos.historico_service import HistoricService
-from helpers.convertidor_tipo import convertir_tipo
 from flask import jsonify
 from ..globals.dto2dict import dataclass_to_json
+from .historico_dto import TipoHistorico
+from app.globals.convertidor_tipo import convertir_tipo
 import logging
 import json
 
@@ -30,8 +31,8 @@ def historicalProvincial():
             )
         
         # Conversión de string a entero
-        province_code = convertir_tipo(province_code, 'int')
-        type_historico = convertir_tipo(type, 'tipo_historico')
+        province_code = convertir_tipo(province_code, int)
+        type_historico = convertir_tipo(type, TipoHistorico)
         logger.info(f"Codigo de provincia: {province_code}")
        
         datos = HistoricService.get_historico(
@@ -82,8 +83,8 @@ def historicalEstacion():
             )
         
         estacion_code_format = estacion_code_raw[2:len(estacion_code_raw)]
-        estacion_code = convertir_tipo(estacion_code_format, 'int')
-        type_historico = convertir_tipo(type, 'tipo_historico')
+        estacion_code = convertir_tipo(estacion_code_format, int)
+        type_historico = convertir_tipo(type, TipoHistorico)
 
         datos = HistoricService.get_historico(
             tipo = type_historico,

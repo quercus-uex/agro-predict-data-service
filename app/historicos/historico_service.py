@@ -40,10 +40,8 @@ class HistoricService:
     ):
         """Constuye una lista de DTO por datos agrupados de timestamp diario"""
         historicos = []
-        print(f"Datos: {data}", flush = True)
         valores = data.get("valores_diarios")
         horas_pico = data.get("horas_pico")
-        print(f"Estacion: {estacion_id}", flush = True)
         for v in valores:
             dto_kwargs = {
                 "tempMedia": v.get("temp_media"),

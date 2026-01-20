@@ -1,6 +1,6 @@
 from typing import Optional
-from actuales_dao import ActualesDAO
-from globals.actuales_futuros_dto import ActualesFuturosDTO, CccaaActualFuturoDTO, ProvinciaActualFuturoDTO, NacionActualFuturoDTO, TipoPrediccion, TipoZona
+from .actuales_dao import ActualesDAO
+from ..globals.actuales_futuros_dto import ActualesFuturosDTO, CccaaActualFuturoDTO, ProvinciaActualFuturoDTO, NacionActualFuturoDTO, TipoPrediccion, TipoZona
 
 class ActualService:
 
@@ -14,26 +14,24 @@ class ActualService:
         Construye DTOs actuales en base a los datos proporcionados
         """
         # Como datos solo va a tener un objeto json, no es necesario implementar estructuras de datos complejas ni bucles for
-        valores = data.get("valores_actuales")
-
         return ActualesFuturosDTO(
-            tipoPrediccion = valores.get("tipo_prediccion"),
-            tipoZona = valores.get("tipo_zona"),
-            codigoZona = valores.get("codigo_zona"),
-            fechaPrediccion = valores.get("fecha_prediccion"),
-            fechaElaboracion = valores.get("fecha_elaboracion"),
-            estadoCielo = valores.get("estado_cielo"),
-            tendenciaTempGeneral = valores.get("tendencia_temp_general"),
-            tendenciaTempMax = valores.get("tendencia_temp_max"),
-            tendenciaTempMin = valores.get("tendencia_temp_min"),
-            rachasViento = valores.get("rachas_viento"),
-            precipitaciones = valores.get("precipitaciones"),
-            cotasNieve = valores.get("cotas_nieve"),
-            existenciaHeladas = valores.get("existencias_heladas"),
-            zonaHeladas = valores.get("zona_helada"),
-            aparicionNieblas = valores.get("aparicion_nieblas"),
-            provincia = valores.get("provincia") if province_id else None,
-            ccaa = valores.get("ccaa") if cca_id else None
+            tipo_prediccion = data.get("tipo_prediccion"),
+            tipo_zona = data.get("tipo_zona"),
+            codigo_zona = data.get("codigo_zona"),
+            fecha_prediccion = data.get("fecha_prediccion"),
+            fecha_elaboracion = data.get("fecha_elaboracion"),
+            estado_cielo = data.get("estado_cielo"),
+            tendencia_temp_general = data.get("tendencia_temp_general"),
+            tendencia_temp_max = data.get("tendencia_temp_max"),
+            tendencia_temp_min = data.get("tendencia_temp_min"),
+            rachas_viento = data.get("rachas_viento"),
+            precipitaciones = data.get("precipitaciones"),
+            cotas_nieve = data.get("cotas_nieve"),
+            existencia_heladas = data.get("existencias_heladas"),
+            zona_heladas = data.get("zona_helada"),
+            aparicion_nieblas = data.get("aparicion_nieblas"),
+            provincia = data.get("provincia") if province_id else None,
+            ccaa = data.get("ccaa") if cca_id else None
         )
 
 

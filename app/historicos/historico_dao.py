@@ -259,7 +259,6 @@ class HistoricDAO:
                     fec_init,
                     fec_fin
                 )
-
             return diccionario_datos
             
         except Exception as e:
