@@ -1,6 +1,6 @@
 from typing import Optional
-from .actuales_dao import ActualesDAO
 from ..globals.actuales_futuros_dto import ActualesFuturosDTO, CccaaActualFuturoDTO, ProvinciaActualFuturoDTO, NacionActualFuturoDTO, TipoPrediccion, TipoZona
+from .actuales_dao import ActualesDAO
 
 class ActualService:
 
@@ -47,7 +47,11 @@ class ActualService:
             raise ValueError("Debe indicarse solo la comunidad autonoma o la provincia, no las dos a la vez")
         
         if ccaa_id:
-            data = ActualesDAO.define_computing_current_ccaa(ccaa_id = ccaa_id)
+            data = ActualesDAO._get_predicciones(
+                tipo_prediccion = "actual",
+                tipo_zona = "ccaa",
+                zona_id = ccaa_id 
+            )
             items = ActualService._build_actuales(
                 data = data,
                 cca_id = ccaa_id,
@@ -61,7 +65,11 @@ class ActualService:
             )
 
         elif province_id:
-            data = ActualesDAO.define_computing_current_provincia(provincia_id = province_id)
+            data = ActualesDAO._get_predicciones(
+                tipo_prediccion = "actual",
+                tipo_zona = "provincial",
+                zona_id = province_id
+            )
             items = ActualService._build_actuales(
                 data = data,
                 ccaa_id = ccaa_id,
@@ -75,7 +83,10 @@ class ActualService:
             )
         
         else:
-            data = ActualesDAO.define_computing_current_nacional()
+            data = ActualesDAO._get_predicciones(
+                tipo_prediccion = "actual",
+                tipo_zona = "nacional"
+            )
             items = ActualService._build_actuales(
                 data = data,
                 cca_id = ccaa_id,
