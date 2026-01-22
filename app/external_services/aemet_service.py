@@ -1,5 +1,5 @@
 from ..clients.aemet_client import AemetClient
-from app.globals.actuales_futuros_dto import TipoZona, TipoPrediccion
+from app.forecast.forecast_dto import TipoZona, TipoPrediccion
 from helpers.aemet_parser import AemetParser
 from app import create_app
 from typing import Optional

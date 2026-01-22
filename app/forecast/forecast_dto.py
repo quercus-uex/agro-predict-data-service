@@ -16,7 +16,7 @@ class TipoPrediccion(str, Enum):
     AFTERTOMORROW = "aftertomorrow"
 
 @dataclass
-class ActualesFuturosDTO:
+class ForecastDTO:
     tipo_prediccion : TipoPrediccion
     tipo_zona : TipoZona
     codigo_zona : str

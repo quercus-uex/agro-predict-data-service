@@ -8,7 +8,7 @@ from config.config import CircuitBreakerPersonalizado
 from flask import Flask
 import requests
 import logging
-from app.globals.actuales_futuros_dto import TipoZona, TipoPrediccion
+from app.forecast.forecast_dto import TipoZona, TipoPrediccion
 
 logger = logging.getLogger(__name__)
 

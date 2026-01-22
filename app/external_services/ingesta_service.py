@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from ..historicos.historico_dto import TipoHistorico
 from .siar_service import SiARService
 from ..models import MedicionClimatica, Estacion, Provincia, CCAA, Predicciones
-from app.globals.actuales_futuros_dto import TipoPrediccion, TipoZona
+from app.forecast.forecast_dto import TipoPrediccion, TipoZona
 from .aemet_service import AemetService
 class IngestionService:
 

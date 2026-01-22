@@ -21,10 +21,6 @@ def create_app(config_class = Config):
     with app.app_context():
         from . import models
 
-    # Registro de los Blueprints
-    from .actuales import actuales_bp
-    app.register_blueprint(actuales_bp)
-
     from .calendario import calendario_bp
     app.register_blueprint(calendario_bp)
 
@@ -34,8 +30,8 @@ def create_app(config_class = Config):
     from .historicos import historic_bp
     app.register_blueprint(historic_bp)
 
-    from .pronostico import pronostico_bp
-    app.register_blueprint(pronostico_bp)
+    from .forecast import forecast_bp
+    app.register_blueprint(forecast_bp)
 
     return app
 

@@ -1,9 +1,9 @@
 from ..models import Predicciones, Provincia, CCAA
 from sqlalchemy import select, and_
 from app import db
-from .row2dict_converter import row2dict_converter
+from ..globals.row2dict_converter import row2dict_converter
 
-class PrediccionesDAO:
+class ForecastDAO:
     
     EXCLUIR = {"texto_original", "provincia_id", "ccaa_id"}
 
@@ -11,7 +11,7 @@ class PrediccionesDAO:
     def _base_columns(extra_columns = None):
         cols = [
             c for c in Predicciones.__table__.columns
-            if c.name not in PrediccionesDAO.EXCLUIR
+            if c.name not in ForecastDAO.EXCLUIR
         ]
 
         if extra_columns:
@@ -51,7 +51,7 @@ class PrediccionesDAO:
             
             query = (
                 select(
-                    *PrediccionesDAO._base_columns(extra_columns = extra_columns) 
+                    *ForecastDAO._base_columns(extra_columns = extra_columns) 
                 )
                 .where(
                     and_(*filtros)
