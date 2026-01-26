@@ -10,30 +10,36 @@ class Sector(db.Model):
     id = Column(Integer, primary_key = True, autoincrement = True)
     nombre = Column(String(50), unique = True, nullable = False)
     finca_id = Column(Integer, ForeignKey("fincas.id"), nullable = False)
-    cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = True)
+    #cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = True)
 
     finca = relationship("Finca", back_populates = "sectores")
-    cultivo = relationship("Cultivo", back_populates = "sectores")
+    #cultivo = relationship("Cultivo", back_populates = "sectores")
 
-class Cultivo(db.Model):
-    __tablename__ = 'cultivos'
+class Plaga(db.Model):
+    __tablename__ = 'plagas'
 
     id = Column(Integer, primary_key = True, autoincrement = True)
+    public_id = Column(String(5), nullable = False)
     nombre = Column(String(100), unique = True, nullable = False)
-    grupo = Column(String(50), nullable = False)
+    agente_causante = Column(String(100), nullable = False)
+    momento_critico = Column(String(300), nullable = True)
+    observaciones = Column(String(1000), nullable = True)
+    mas_info = Column(String(300), nullable = True)
+    tipo = Column(String(50), nullable = False)
 
-    calendarios = relationship("CalendarioCultivo", back_populates = "cultivo")
-    sectores = relationship("Sector", back_populates = "cultivo")
+    calendarios = relationship("CalendarioPlaga", back_populates = "plaga")
 
-class CalendarioCultivo(db.Model):
-    __tablename__ = 'calendario_cultivo'
+class CalendarioPlaga(db.Model):
+    __tablename__ = 'calendario_plaga'
 
     id = Column(Integer, primary_key = True, autoincrement = True)
-    cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = False)
+    cultivo_id = Column(String(50), nullable = False)
+    plaga_id = Column(Integer, ForeignKey("plagas.id"), nullable = False)
+    grupo = Column(String(50), nullable = False)
     semana = Column(Integer, nullable = False)
     nivel_alerta = Column(Integer, nullable = False)
 
-    cultivo = relationship("Cultivo", back_populates = "calendarios")
+    plaga = relationship("Plaga", back_populates = "calendarios")
 
 class Finca(db.Model):
     __tablename__ = 'fincas'

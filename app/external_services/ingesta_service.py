@@ -3,9 +3,20 @@ from typing import Optional
 from datetime import date, timedelta
 from ..historicos.historico_dto import TipoHistorico
 from .siar_service import SiARService
-from ..models import MedicionClimatica, Estacion, Provincia, CCAA, Predicciones
+from ..models import (
+    MedicionClimatica, 
+    Estacion, 
+    Provincia, 
+    CCAA, 
+    Predicciones,
+    Plaga,
+    CalendarioPlaga
+)
+
 from app.forecast.forecast_dto import TipoPrediccion, TipoZona
 from .aemet_service import AemetService
+from .itacyl_service import ItacylService
+
 class IngestionService:
 
     @staticmethod
@@ -46,6 +57,87 @@ class IngestionService:
         db.session.add(predicciones)
         db.session.commit()
 
+    @staticmethod
+    def ingest_itacyl_data(
+        cultivo : Optional[int],
+        grupo : Optional[str]
+    ):
+        data = ItacylService.get_itacyl_datos(
+            cultivo = cultivo,
+            grupo = grupo
+        )
+
+        # Extraigo todas los calendarios almacenados en la db
+        # Para comprobar futuros repetidos
+        existing_calendars = set(
+            (c.cultivo_id, c.grupo, c.semana)
+            for c in db.session.query(
+                CalendarioPlaga.cultivo_id,
+                CalendarioPlaga.grupo,
+                CalendarioPlaga.semana
+            ).all()
+        )
+
+        # Extraigo todas las plagas almacenadas en la db
+        # Para comprobar futuros repetidos
+        existing_plagas = set(
+            (p.public_id, p.nombre, p.agente_causante, p.momento_critico, p.tipo)
+            for p in db.session.query(
+                Plaga.public_id,
+                Plaga.nombre,
+                Plaga.agente_causante,
+                Plaga.momento_critico,
+                Plaga.tipo
+            ).all()
+        )
+
+        # Itero sobre los datos recibidos
+        for d in data:
+            plaga_key = (
+                d.get('id'),
+                d.get('nombre'),
+                d.get('agente_causante'),
+                d.get('momento_critico'),
+                d.get('tipo')
+            )
+
+            if plaga_key not in existing_plagas:
+                plaga = Plaga(
+                    public_id = d.get('id'),
+                    nombre = d.get('nombre'),
+                    agente_causante = d.get('agente_causante'),
+                    momento_critico = d.get('momento_critico'),
+                    observaciones = d.get('observaciones'),
+                    mas_info = d.get('enlace'),
+                    tipo = d.get('tipo')
+                )
+
+                db.session.add(plaga)
+                db.session.flush() # Debo de enviar los cambios a la bd antes del commit para que lo use el calendario
+                existing_plagas.add(plaga_key) # Evito duplicados en el procesamiento de datos
+
+            # Calendarios
+            for calendario_item in d.get('calendario_de_productos', []):
+                for c in calendario_item.get('calendar', []):
+                    calendario_key = (
+                        cultivo if cultivo else "General",
+                        grupo,
+                        c.get('week')
+                    )
+                    if calendario_key not in existing_calendars:
+                        calendario = CalendarioPlaga(
+                            cultivo_id = cultivo,
+                            plaga_id = plaga.id,
+                            grupo = grupo,
+                            semana = c.get('week'),
+                            nivel_alerta = c.get('alertLevel')
+                        )
+
+                        db.session.add(calendario)
+                        existing_calendars.add(calendario)
+
+        db.session.commit()
+            
 
     @staticmethod
     def ingest_data(

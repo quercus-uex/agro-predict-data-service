@@ -19,8 +19,8 @@ def eliminar_datos_tablas(app):
     db.session.execute(db.text('SET FOREIGN_KEY_CHECKS = 0'))
         
     # Eliminar todas en cualquier orden
-    for modelo in [MedicionClimatica, Sector, Estacion, 
-                    CalendarioCultivo, Cultivo, Provincia, CCAA]:
+    for modelo in [MedicionClimatica, Estacion, 
+                    Plaga, CalendarioPlaga, Provincia, CCAA]:
         count = modelo.query.delete()
         print(f"  - {modelo.__tablename__}: {count} registros eliminados")
     
@@ -62,9 +62,15 @@ def job(app):
 
     # Cargar datos de AEMET
     ## Cargar datos predictivos de hoy para extremadura
-    IngestionService.ingest_aemet_data(
+    """IngestionService.ingest_aemet_data(
         tipo_zona = TipoZona.CCAA,
         tipo_prediccion = TipoPrediccion.TOMORROW,
         codigo_zona = "ext",
         fecha = date(2026,1,17)
+    )"""
+
+    # Cargar datos de ITACyL
+    IngestionService.ingest_itacyl_data(
+        cultivo = 1,
+        grupo = "cereales"
     )
