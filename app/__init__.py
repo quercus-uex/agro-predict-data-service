@@ -21,7 +21,7 @@ def create_app(config_class = Config):
     with app.app_context():
         from . import models
 
-    from .calendario import calendario_bp
+    from .plagas import calendario_bp
     app.register_blueprint(calendario_bp)
 
     from .catalogo import catalogo_bp
