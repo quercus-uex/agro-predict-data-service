@@ -24,9 +24,6 @@ def create_app(config_class = Config):
     from .plagas import calendario_bp
     app.register_blueprint(calendario_bp)
 
-    from .catalogo import catalogo_bp
-    app.register_blueprint(catalogo_bp)
-
     from .historicos import historic_bp
     app.register_blueprint(historic_bp)
 
