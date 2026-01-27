@@ -7,7 +7,7 @@ from flask import Flask
 from enum import Enum
 import requests
 import logging
-from ..globals.grupo_plagas import GrupoPlaga
+from app.plagas.plagas_dto import GrupoPlaga
 
 logger = logging.getLogger(__name__)
 

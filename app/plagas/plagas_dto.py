@@ -1,5 +1,10 @@
 from dataclasses import dataclass
 from typing import List
+from enum import Enum
+
+class GrupoPlaga(Enum):
+    CEREALES = "cereales"
+    LEGUMINOSAS = "leguminosas"
 
 @dataclass
 class CalendarioDTO:
@@ -19,4 +24,4 @@ class PlagaDTO:
     mas_info : str
     tipo : str
 
-    calendarios : List[CalendarioDTO]
+    calendario : List[CalendarioDTO]

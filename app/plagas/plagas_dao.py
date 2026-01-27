@@ -2,26 +2,48 @@ from ..models import Plaga, CalendarioPlaga
 from sqlalchemy import select, and_
 from app import db
 from ..globals.row2dict_converter import row2dict_converter
-from typing import Optional
+from sqlalchemy.inspection import inspect
 
 class PlagasDAO:
 
     @staticmethod
-    def _get_plagas():
+    def _get_plagas(
+        tipo : str
+    ):
         try:
             # Query que obtiene todas las plagas de la bd
             query_plagas = (
                 select(
-                    Plaga
+                    Plaga # Obtengo filas de objetos ORM
+                )
+                .join(CalendarioPlaga)
+                .where(
+                    and_(
+                        Plaga.id == CalendarioPlaga.plaga_id,
+                        Plaga.tipo == tipo
+                    )
                 )
                 .order_by(
                     Plaga.public_id.desc()
                 )
             )
 
-            resultado_plagas = db.session.execute(query_plagas)
-
-            return resultado_plagas.scalars().all()
+            resultados = (
+                db.session.execute(query_plagas)
+                .scalars()
+                .unique()
+                .all()
+            )
+            # Como tengo filas de objetos ORM, no puedo usar row2dict_converter
+            plagas = [
+                {
+                    c.key: getattr(p, c.key)  # Creamos el diccionario obteniendo los valores de las columnas del objeto ORM
+                    for c in inspect(p).mapper.column_attrs # Recorre las columnas del objeto ORM
+                }
+                for p in resultados
+            ]
+            
+            return plagas
         
         except Exception as e:
             print(f"Error leyendo datos de la bd sobre plagas: {e}")
@@ -38,17 +60,30 @@ class PlagasDAO:
                 )
                 .join(Plaga)
                 .where(
-                    CalendarioPlaga.plaga_id == Plaga.public_id
+                    CalendarioPlaga.plaga_id == Plaga.id
                 )
                 .order_by(
                     CalendarioPlaga.plaga_id.desc()
                 )
             )
 
-            result_calendario = db.session.execute(query_calendario_plagas)
+            resultados = (
+                db.session.execute(query_calendario_plagas)
+                .scalars()
+                .unique()
+                .all()
+            )
 
-            return result_calendario.scalars().all()
-        
+            calendarios = [
+                {
+                    c.key: getattr(p, c.key)  # Creamos el diccionario obteniendo los valores de las columnas del objeto ORM
+                    for c in inspect(p).mapper.column_attrs # Recorre las columnas del objeto ORM
+                }
+                for p in resultados
+            ]
+            
+            return calendarios
+            
         except Exception as e:
             print(f"Error leyendo datos del calendario de plagas: {e}")
             return None
