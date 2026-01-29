@@ -2,8 +2,8 @@ import sys, os
 import logging
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import create_app, db
-from insert_data import job
+from app import create_app
+from app.extensions import db
 
 # Configuracion del logging
 logging.basicConfig(level = logging.INFO)
@@ -14,6 +14,7 @@ app = create_app()
 # Inicialización de la estructura de la base de datos
 with app.app_context():
     try:
+        from insert_data import job
         logger.info("Verificando conexión a la base de datos...")
         
         # Verificar conexión

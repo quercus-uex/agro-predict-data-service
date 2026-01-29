@@ -1,6 +1,6 @@
 from ..models import Predicciones, Provincia, CCAA
 from sqlalchemy import select, and_
-from app import db
+from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
 
 class ForecastDAO:

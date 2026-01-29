@@ -1,7 +1,6 @@
-from ..clients.aemet_client import AemetClient
 from app.forecast.forecast_dto import TipoZona, TipoPrediccion
 from helpers.aemet_parser import AemetParser
-from app import create_app
+from flask import current_app
 from typing import Optional
 from datetime import date, datetime
 from ..external_communication.rabbitmq_send import RabbitMQPublisher
@@ -14,11 +13,19 @@ import ast
 logger = logging.getLogger(__name__)
 
 class AemetService:
-    app = create_app()
-    cliente = AemetClient(app)
+    _cliente = None
 
-    @staticmethod
+    @classmethod
+    def _get_cliente(cls):
+        """Lazy initialization: crea el cliente solo cuando se necesita"""
+        if cls._cliente is None:
+            from ..clients.aemet_client import AemetClient
+            cls._cliente = AemetClient(app=current_app)
+        return cls._cliente
+
+    @classmethod
     def get_aemet_data(
+        cls,
         tipo_zona : TipoZona,
         tipo_prediccion : Optional[TipoPrediccion],
         codigo_zona : Optional[str],
@@ -28,8 +35,9 @@ class AemetService:
 
         # Llamada a AemetClient 
         ## Obtener datos predictivos
+        cliente = cls._get_cliente()
         if tipo_prediccion in [TipoPrediccion.TOMORROW, TipoPrediccion.AFTERTOMORROW]:
-            texto = AemetService.cliente.get_future_data_by_zone(
+            texto = cliente.get_future_data_by_zone(
                 tipo_prediccion = tipo_prediccion,
                 tipo_zone = tipo_zona,
                 ccaa_code = codigo_zona if tipo_zona == TipoZona.CCAA else None,
@@ -37,7 +45,7 @@ class AemetService:
                 fecha = fecha
             ) 
         else: ## Obtener datos de hoy
-            texto = AemetService.cliente.get_current_data_by_zone(
+            texto = cliente.get_current_data_by_zone(
                 tipo = tipo_zona,
                 ccaa_code = codigo_zona if tipo_zona == TipoZona.CCAA else None,
                 provincia_code = codigo_zona if tipo_zona == TipoZona.PROVINCIAL else None

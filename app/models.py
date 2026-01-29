@@ -1,8 +1,29 @@
 # Donde se almacenarán los modelos para pasarlos a la BD
 from typing import List
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Index, Date, Text, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Index, Date, Text, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
-from app import db
+from .extensions import db
+
+class IngestaStatus(db.Model):
+    __tablename__ = 'ingesta_status'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    dataset = Column(String(30), nullable = False) # Historico / Actual / Futuro
+    tipo = Column(String(20), nullable = False) # Hora / Dia / Mes
+    year = Column(Integer, nullable = False)
+    month = Column(Integer, nullable = False)
+    day = Column(Integer, nullable = False)
+
+    status = Column(String(20), nullable = False) # Pending / Loading / Ready
+
+    started_at = Column(DateTime, nullable = False)
+    finished_at = Column(DateTime, nullable = True)
+    error_message = Column(Text, nullable = True)
+
+    # Constraint para evitar valores duplicados
+    __table_args__ = (
+        UniqueConstraint('dataset', 'tipo', 'year'),
+    )
 
 class Sector(db.Model):
     __tablename__ = 'sectores'

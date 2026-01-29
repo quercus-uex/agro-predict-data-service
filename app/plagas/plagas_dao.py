@@ -1,6 +1,6 @@
 from ..models import Plaga, CalendarioPlaga
 from sqlalchemy import select, and_
-from app import db
+from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
 from sqlalchemy.inspection import inspect
 

@@ -1,22 +1,31 @@
-from ..clients.siar_client import SiARClient
 from typing import Optional
-from app import create_app
+from flask import current_app
 from datetime import date
-from ..historicos.historico_dto import TipoHistorico
 from dateutil.parser import isoparse as parse_iso
-class SiARService:
-    app = create_app()
-    cliente = SiARClient(app)
 
-    @staticmethod
+class SiARService:
+
+    _cliente = None
+
+    @classmethod
+    def _get_cliente(cls):
+        """Lazy initialization: crea el cliente solo cuando se necesita"""
+        if cls._cliente is None:
+            from ..clients.siar_client import SiARClient
+            cls._cliente = SiARClient(app=current_app)
+        return cls._cliente
+
+    @classmethod
     def get_siar_data(
+        cls,
         estacion_id: Optional[str],
         provincia_id: Optional[str],
-        tipo: TipoHistorico,
+        tipo,
         fec_init: date,
         fec_fin: date
     ): 
-        datos = SiARService.cliente.get_historical_data_by_date(
+        cliente = cls._get_cliente()
+        datos = cliente.get_historical_data_by_date(
             estacion_id = estacion_id,
             provincia_id = provincia_id,
             tipo = tipo,
@@ -42,10 +51,13 @@ class SiARService:
 
         return lista_datos
 
+    @classmethod
     def get_siar_informacion(
+        cls,
         estaciones : bool = True
     ):
-        datos = SiARService.cliente.get_informacion(
+        cliente = cls._get_cliente()
+        datos = cliente.get_informacion(
             estaciones = estaciones
         )
 
@@ -54,7 +66,6 @@ class SiARService:
         for dato in datos:
             # Si se especifica en la peticion, insertamos en la lista datos de estaciones
             if estaciones: 
-                print(f"Datos: {dato}")
                 lista_datos.append(
                     {
                         "nombre_estacion" : dato.get('Estacion'),

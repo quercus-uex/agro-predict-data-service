@@ -1,7 +1,6 @@
 # Punto de entrada de la aplicación. Se crea la aplicación y se lanza el servidor de desarrollo
 from app import create_app
 from config import config
-from app import db
 
 def main():
     # Creación de la configuración de la aplicación

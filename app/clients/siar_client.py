@@ -1,7 +1,6 @@
 from .base_client import BaseClient
 from typing import Optional
 from datetime import date
-from ..historicos.historico_dto import TipoHistorico
 from flask import current_app
 from circuitbreaker import circuit
 from config.config import CircuitBreakerPersonalizado
@@ -13,16 +12,16 @@ logger = logging.getLogger(__name__)
 
 class SiARClient(BaseClient):
     def __init__(self, app : Flask):
-        super().__init__(app, "siar_service")
-        self.base_data_url = app.config.get('SIAR_SERVICE_DATA_URL')
-        self.base_info_url = app.config.get('SIAR_SERVICE_INFO_URL')
+        super().__init__(app = app, service_name = "siar_service")
+        self.base_data_url = app.config['SIAR_SERVICE_DATA_URL'],
+        self.base_info_url = app.config['SIAR_SERVICE_INFO_URL']
 
     @circuit(cls=CircuitBreakerPersonalizado)
     def get_historical_data_by_date(
         self, 
         estacion_id : Optional[str],
         provincia_id : Optional[str],
-        tipo : TipoHistorico,
+        tipo,
         fec_init : date,
         fec_fin: date
     ) : 

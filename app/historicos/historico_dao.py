@@ -2,7 +2,7 @@ from ..models import MedicionClimatica, Estacion, Provincia
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy import and_, select, func, or_
-from app import db
+from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
 
 class HistoricDAO:

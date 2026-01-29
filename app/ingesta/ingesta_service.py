@@ -1,8 +1,8 @@
-from app import db
+from app.extensions import db
 from typing import Optional
-from datetime import date, timedelta
-from ..historicos.historico_dto import TipoHistorico
-from .siar_service import SiARService
+from datetime import date, timedelta, datetime
+from ..external_services.siar_service import SiARService
+from ..ingesta.ingesta_dao import IngestaDAO
 from ..models import (
     MedicionClimatica, 
     Estacion, 
@@ -14,8 +14,8 @@ from ..models import (
 )
 
 from app.forecast.forecast_dto import TipoPrediccion, TipoZona
-from .aemet_service import AemetService
-from .itacyl_service import ItacylService
+from ..external_services.aemet_service import AemetService
+from ..external_services.itacyl_service import ItacylService
 
 class IngestionService:
 
@@ -26,36 +26,68 @@ class IngestionService:
         codigo_zona : Optional[str],
         fecha : date
     ):
-        data = AemetService.get_aemet_data(
-            tipo_prediccion = tipo_prediccion,
-            tipo_zona = tipo_zona,
-            codigo_zona = codigo_zona,
-            fecha = fecha
+        # Actualizamos el estado almacenado a LOADING porque se van a cargar los datos
+        IngestaDAO.actualizar_estado(
+            status = 'LOADING',
+            dataset = 'actual_futuro',
+            tipo = tipo_prediccion.value,
+            year = fecha.day,
+            month = fecha.month,
+            day = fecha.day
         )
 
-        ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_zona.upper()).first()
-        provincia : Provincia = Provincia.query.filter_by(codigo=codigo_zona.upper()).first()
-        # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
-        predicciones = Predicciones(
-            ccaa_id = ccaa.id if ccaa else None,
-            provincia_id = provincia.id if provincia else None,
-            **data
-        )
+        try:
+            data = AemetService.get_aemet_data(
+                tipo_prediccion = tipo_prediccion,
+                tipo_zona = tipo_zona,
+                codigo_zona = codigo_zona,
+                fecha = fecha
+            )
 
-        existe = db.session.query(Predicciones.id).filter_by(
-            tipo_prediccion = predicciones.tipo_prediccion,
-            tipo_zona = predicciones.tipo_zona,
-            codigo_zona = predicciones.codigo_zona,
-            fecha_prediccion = predicciones.fecha_prediccion
-        ).first()
+            ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_zona.upper()).first()
+            provincia : Provincia = Provincia.query.filter_by(codigo=codigo_zona.upper()).first()
+            # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
+            predicciones = Predicciones(
+                ccaa_id = ccaa.id if ccaa else None,
+                provincia_id = provincia.id if provincia else None,
+                **data
+            )
 
-        if existe:
-            print("Entro")
-            return
+            existe = db.session.query(Predicciones.id).filter_by(
+                tipo_prediccion = predicciones.tipo_prediccion,
+                tipo_zona = predicciones.tipo_zona,
+                codigo_zona = predicciones.codigo_zona,
+                fecha_prediccion = predicciones.fecha_prediccion
+            ).first()
+
+            if existe:
+                return
+            
+            #[✔]Tiene que ser los datos que reciba del broker
+            db.session.add(predicciones)
+            db.session.commit()
+
+            # Todo ha salido bien por lo que cambiamos el estado de los datos solicitados READY
+            IngestaDAO.actualizar_estado(
+                status = 'READY',
+                dataset = 'actual_futuro',
+                tipo = tipo_prediccion.value,
+                year = fecha.day,
+                month = fecha.month,
+                day = fecha.day
+            )
         
-        #[✔]Tiene que ser los datos que reciba del broker
-        db.session.add(predicciones)
-        db.session.commit()
+        except Exception as e:
+            # Algo fallo, por lo que cambiamos el estado a FAILED
+            IngestaDAO.actualizar_estado(
+                status = 'FAILED',
+                dataset = 'actual_futuro',
+                tipo = tipo_prediccion.value,
+                year = fecha.day,
+                month = fecha.month,
+                day = fecha.day,
+                error = str(e)
+            )
 
     @staticmethod
     def ingest_itacyl_data(
@@ -143,58 +175,89 @@ class IngestionService:
     def ingest_data(
         codigo_estacion_id : Optional[str],
         codigo_provincia_id : Optional[str],
-        tipo : TipoHistorico,
+        tipo,
         fec_init : date,
         fec_fin: date
     ):
-        data = SiARService.get_siar_data(
-            estacion_id = codigo_estacion_id,
-            provincia_id = codigo_provincia_id,
-            tipo = tipo,
-            fec_init = fec_init,
-            fec_fin = fec_fin  
-        )     
+        # Actualizamos el estado almacenado a LOADING porque se van a cargar los datos
+        IngestaDAO.actualizar_estado(
+            status = 'LOADING',
+            dataset = 'historico',
+            tipo = tipo.value,
+            year = fec_init.day,
+            month = fec_init.month,
+            day = fec_init.day
+        )
 
-        for d in data:
-            
-            d_timestamp = d["timestamp"]
-            anio, semana, _ = d_timestamp.isocalendar()
-            
-            # Mapeo de estacion y provincia 
-            estacion : Estacion = Estacion.query.filter_by(codigo=d["estacion"]).first()
-            provincia : Provincia = Provincia.query.filter_by(codigo=codigo_provincia_id).first()
+        try:
+            data = SiARService.get_siar_data(
+                estacion_id = codigo_estacion_id,
+                provincia_id = codigo_provincia_id,
+                tipo = tipo,
+                fec_init = fec_init,
+                fec_fin = fec_fin  
+            )     
 
-            medicion = MedicionClimatica(
-                estacion_id = estacion.id if estacion else None,
-                provincia_id = provincia.id if provincia else None,
-                semana = semana,
-                mes = d_timestamp.month,
-                anio = anio,
-                timestamp = d_timestamp,
-                humedad = d.get('humedad'),
-                temperatura = d.get('temperatura'),
-                vel_viento = d.get('vel_viento'),
-                precipitacion = d.get('precipitacion'),
-                etp_mon = d.get('etp_mon'),
-                pep_mon = d.get('pep_mon')
+            for d in data:
+                
+                d_timestamp = d["timestamp"]
+                anio, semana, _ = d_timestamp.isocalendar()
+                
+                # Mapeo de estacion y provincia 
+                estacion : Estacion = Estacion.query.filter_by(codigo=d["estacion"]).first()
+                provincia : Provincia = Provincia.query.filter_by(codigo=codigo_provincia_id).first()
+
+                medicion = MedicionClimatica(
+                    estacion_id = estacion.id if estacion else None,
+                    provincia_id = provincia.id if provincia else None,
+                    semana = semana,
+                    mes = d_timestamp.month,
+                    anio = anio,
+                    timestamp = d_timestamp,
+                    humedad = d.get('humedad'),
+                    temperatura = d.get('temperatura'),
+                    vel_viento = d.get('vel_viento'),
+                    precipitacion = d.get('precipitacion'),
+                    etp_mon = d.get('etp_mon'),
+                    pep_mon = d.get('pep_mon')
+                )
+                # Comprobamos si existe ya el dato a insertar, para evitar duplicados
+                existe = db.session.query(MedicionClimatica.id).filter_by(
+                    temperatura=medicion.temperatura,
+                    humedad=medicion.humedad,
+                    vel_viento=medicion.vel_viento,
+                    precipitacion=medicion.precipitacion,
+                    etp_mon=medicion.etp_mon,
+                    pep_mon=medicion.pep_mon
+                ).first()
+
+                if existe:
+                    continue
+
+                # Almacenamos los datos en la base de datos
+                db.session.add(medicion)
+
+            IngestaDAO.actualizar_estado(
+                status = 'READY',
+                dataset = 'historico',
+                tipo = tipo.value,
+                year = fec_init.day,
+                month = fec_init.month,
+                day = fec_init.day
             )
-            # Comprobamos si existe ya el dato a insertar, para evitar duplicados
-            existe = db.session.query(MedicionClimatica.id).filter_by(
-                temperatura=medicion.temperatura,
-                humedad=medicion.humedad,
-                vel_viento=medicion.vel_viento,
-                precipitacion=medicion.precipitacion,
-                etp_mon=medicion.etp_mon,
-                pep_mon=medicion.pep_mon
-            ).first()
-
-            if existe:
-                continue
-
-            # Almacenamos los datos en la base de datos
-            db.session.add(medicion)
-        # Cuando estén todos los datos formados correctamente, se confirma la inserción de los datos
-        db.session.commit()
+            # Cuando estén todos los datos formados correctamente, se confirma la inserción de los datos
+            db.session.commit()
+        
+        except Exception as e:
+            IngestaDAO.actualizar_estado(
+                status = 'FAILED',
+                dataset = 'historico',
+                tipo = tipo.value,
+                year = fec_init.day,
+                month = fec_init.month,
+                day = fec_init.day,
+                error = str(e)
+            )
     
     @staticmethod
     def ingest_info(
@@ -283,7 +346,7 @@ class IngestionService:
     def ingest_range(
         codigo_estacion_id : Optional[str],
         codigo_provincia_id : Optional[str],
-        tipo : TipoHistorico,
+        tipo,
         fec_init : date,
         fec_fin : date
     ):

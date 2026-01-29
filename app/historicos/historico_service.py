@@ -1,9 +1,11 @@
 from .historico_dao import HistoricDAO
-from datetime import datetime, timedelta
-from ..models import MedicionClimatica
+from datetime import datetime
+from ..models import IngestaStatus
 from .historico_dto import *
-from typing import Optional, List, Match
-from collections import defaultdict
+from ..ingesta.ingesta_dto import ProcesoIngestaDTO
+from ..ingesta.ingesta_dao import IngestaDAO
+from app.ingestion.ingestion_launcher import lanzar_ingesta_background
+import threading
 import calendar
 
 class HistoricService:
@@ -160,52 +162,104 @@ class HistoricService:
         if not (estacion_id or provincia_id):
             raise ValueError("Debe indicarse la estación o provincia")
         
-        match tipo:
-            case TipoHistorico.HORA:
-                data = HistoricDAO.define_computing_data_hora(estacion_id, provincia_id, fec_init, fec_fin)
-                items =  HistoricService._build_historico_hora(data, estacion_id)
+        # Obtenemos el estado de ingesta buscado
+        estado : IngestaStatus = IngestaDAO.obtener_estado(
+            dataset = 'historico',
+            tipo = tipo.value,
+            year = fec_init.year,
+            month = fec_init.month,
+            day = fec_init.day
+        )
 
-                return HistoricService.comprobar_devolucion(
-                    estacion_id = estacion_id,
-                    provincia_id = provincia_id,
-                    tipo = tipo,
-                    datos = items
+        if estado:
+            # Si no se encuentran los datos solicitados en la BD informamos al cliente
+            if estado.status in ('PENDING', 'LOADING'):
+                return ProcesoIngestaDTO(
+                    status = estado.status,
+                    datos_solicitados = TipoHistorico.value,
+                    started_at = datetime.now(),
+                    finished_at = None
                 )
+            # Datos ya se encuentran en la BD
+            if estado.status == 'READY':
+                match tipo:
+                    case TipoHistorico.HORA:
+                        data = HistoricDAO.define_computing_data_hora(estacion_id, provincia_id, fec_init, fec_fin)
+                        items =  HistoricService._build_historico_hora(data, estacion_id)
 
-            case TipoHistorico.DIA:
-                data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)
-                items = HistoricService._build_historico_dia(data, estacion_id)
+                        return HistoricService.comprobar_devolucion(
+                            estacion_id = estacion_id,
+                            provincia_id = provincia_id,
+                            tipo = tipo,
+                            datos = items
+                        )
 
-                return HistoricService.comprobar_devolucion(
-                    estacion_id = estacion_id,
-                    provincia_id = provincia_id,
-                    tipo = tipo,
-                    datos = items
+                    case TipoHistorico.DIA:
+                        data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)    
+                        items = HistoricService._build_historico_dia(data, estacion_id)
+
+                        return HistoricService.comprobar_devolucion(
+                            estacion_id = estacion_id,
+                            provincia_id = provincia_id,
+                            tipo = tipo,
+                            datos = items
+                        )
+                    
+                    case TipoHistorico.SEMANA:
+                        data = HistoricDAO.define_computing_data_semana(estacion_id, provincia_id, fec_init, fec_fin)
+                        items = HistoricService._build_historico_semana(data, estacion_id)
+
+                        return HistoricService.comprobar_devolucion(
+                            estacion_id = estacion_id,
+                            provincia_id = provincia_id,
+                            tipo = tipo,
+                            datos = items
+                        )
+                    
+                    case TipoHistorico.MES:
+                        data = HistoricDAO.define_compution_data_mes(estacion_id, provincia_id, fec_init, fec_fin)
+                        items = HistoricService._build_historico_mes(data, estacion_id)
+
+                        return HistoricService.comprobar_devolucion(
+                            estacion_id = estacion_id,
+                            provincia_id = provincia_id,
+                            tipo = tipo,
+                            datos = items
+                        )
+                
+                raise NotImplementedError(f"Tipo {tipo} no implementado")    
+        # Si no se ha comenzado con el proceso de incluir datos nuevos solicitados en la BD se comienza
+        else:
+            IngestaDAO.create(
+                status = 'PENDING',
+                dataset = 'historico',
+                tipo = tipo.value,
+                year = fec_init.year,
+                month = fec_init.month,
+                day = fec_init.day,
+                started_at = datetime.now(),
+                finished_at = None,
+                error_message = None
+            )
+
+            # Hilo independiente al main que inserta datos
+            lanzar_ingesta_background(
+                args = (
+                   estacion_id,
+                   provincia_id,
+                   tipo,
+                   fec_init,
+                   fec_fin 
                 )
-            
-            case TipoHistorico.SEMANA:
-                data = HistoricDAO.define_computing_data_semana(estacion_id, provincia_id, fec_init, fec_fin)
-                items = HistoricService._build_historico_semana(data, estacion_id)
+            )
 
-                return HistoricService.comprobar_devolucion(
-                    estacion_id = estacion_id,
-                    provincia_id = provincia_id,
-                    tipo = tipo,
-                    datos = items
-                )
-            
-            case TipoHistorico.MES:
-                data = HistoricDAO.define_compution_data_mes(estacion_id, provincia_id, fec_init, fec_fin)
-                items = HistoricService._build_historico_mes(data, estacion_id)
-
-                return HistoricService.comprobar_devolucion(
-                    estacion_id = estacion_id,
-                    provincia_id = provincia_id,
-                    tipo = tipo,
-                    datos = items
-                )
-        
-        raise NotImplementedError(f"Tipo {tipo} no implementado")    
+            # Se informa al usuario mientras el hilo va insertando datos
+            return ProcesoIngestaDTO(
+                status = 'PENDING',
+                datos_solicitados = TipoHistorico.value,
+                started_at = datetime.now(),
+                finished_at = None
+            )
     
     @staticmethod
     def comprobar_devolucion(

@@ -1,21 +1,29 @@
-from ..clients.itacyl_client import ItacylClient
-from app import create_app
 from typing import Optional
+from flask import current_app
 import logging
 import json
 
 logger = logging.getLogger(__name__)
 
 class ItacylService:
-    app = create_app()
-    client = ItacylClient(app)
+    _cliente = None
 
-    @staticmethod
+    @classmethod
+    def _get_cliente(cls):
+        """Lazy initialization: crea el cliente solo cuando se necesita"""
+        if cls._cliente is None:
+            from ..clients.itacyl_client import ItacylClient
+            cls._cliente = ItacylClient(app=current_app)
+        return cls._cliente
+
+    @classmethod
     def get_itacyl_datos(
+        cls,
         cultivo : Optional[int],
         grupo : Optional[str]
     ) :
-        datos = ItacylService.client.get_itacyl_data(
+        cliente = cls._get_cliente()
+        datos = cliente.get_itacyl_data(
             cultivo = cultivo,
             grupo = grupo
         )

@@ -6,11 +6,9 @@ import sys, os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import db
+from app.extensions import db
 
-from app.external_services.ingesta_service import IngestionService
-from app.historicos.historico_dto import TipoHistorico
-from app.forecast.forecast_dto import TipoPrediccion, TipoZona
+from app.ingesta.ingesta_service import IngestionService
 
 from app.models import *
 
