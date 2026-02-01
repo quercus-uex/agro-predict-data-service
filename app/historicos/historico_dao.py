@@ -8,57 +8,28 @@ from ..globals.row2dict_converter import row2dict_converter
 class HistoricDAO:
 
     @staticmethod
-    def find_historic_metrics_from_estacion_id(
-        estacion_id : int, 
-        fec_init : datetime, 
-        fec_fin: datetime
-    ) -> Optional[List[MedicionClimatica]]: 
-        """Obtener datos de mediciones climaticas sobre datos historicos de una estacion"""
+    def obtener_id_provincia_por_str(
+        provincia_id : str
+    ) : 
+        """
+        Obtiene el id de la provincia almacenada en la BD sobre el código de provincia recibido por parámetro
+        
+        :param provincia_id: Código de la provincia
+        :type provincia_id: str
+        """
         try:
             query = (
-                select(MedicionClimatica)
-                .where(
-                    and_(
-                        MedicionClimatica.estacion_id == estacion_id,
-                        MedicionClimatica.timestamp > fec_init,
-                        MedicionClimatica.timestamp > fec_fin 
-                    )
+                select(
+                    Provincia.id
+                ).where(
+                    Provincia.codigo == provincia_id
                 )
-                .order_by(MedicionClimatica.timestamp)
             )
 
-            result = db.session.execute(query)
-            return result.scalars().all() # Devuelve una lista de objectos de tipo MedicionClimatica
+            return db.session.execute(query).scalar()
         
         except Exception as e:
-            print(f"Error buscando la estacion {estacion_id} : {e}")
-            return []
-        
-    @staticmethod
-    def find_historic_metrics_from_provincia_id(
-        provincia_id : int,
-        fec_init: datetime,
-        fec_fin: datetime
-    ) -> Optional[List[MedicionClimatica]]:
-        """Obtiene mediciones climáticas sobre datos históricos de una provincia"""
-        try:
-            query = (
-                select(MedicionClimatica)
-                .where(
-                    and_(
-                        MedicionClimatica.provincia_id == provincia_id,
-                        MedicionClimatica.timestamp > fec_init,
-                        MedicionClimatica.timestamp > fec_fin
-                    )
-                )
-                .order_by(MedicionClimatica.timestamp)
-            )
-
-            result = db.session.execute(query)
-            return result.scalars().all()
-
-        except Exception as e:
-            print(f"Error buscando la provincia {provincia_id} : {e}")
+            print(f"Error obteniendo el id de la provincia: {e}")
             return []
     
     @staticmethod

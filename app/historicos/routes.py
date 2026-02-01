@@ -1,13 +1,14 @@
 # Controlador de HISTORICOS
 from . import historic_bp
 from ..globals.log_decorator import log
-from flask import request
+from flask import request, current_app
 from helpers.ApiExceptions import APIException
 from app.historicos.historico_service import HistoricService
 from flask import jsonify
 from ..globals.dto2dict import dataclass_to_json
 from .historico_dto import TipoHistorico
 from app.globals.convertidor_tipo import convertir_tipo
+from datetime import datetime
 import logging
 import json
 
@@ -30,12 +31,14 @@ def historicalProvincial():
                 error = 'Invalid parameters'
             )
         
-        # Conversión de string a entero
-        province_code = convertir_tipo(province_code, int)
+        # Conversión de tipos
         type_historico = convertir_tipo(type, TipoHistorico)
-        logger.info(f"Codigo de provincia: {province_code}")
-       
+        start_date = convertir_tipo(start_date, datetime)
+        end_date = convertir_tipo(end_date, datetime)
+        print(start_date, flush = True)       
+
         datos = HistoricService.get_historico(
+            current_app._get_current_object(),
             tipo = type_historico,
             fec_init = start_date,
             fec_fin = end_date,
@@ -85,8 +88,11 @@ def historicalEstacion():
         estacion_code_format = estacion_code_raw[2:len(estacion_code_raw)]
         estacion_code = convertir_tipo(estacion_code_format, int)
         type_historico = convertir_tipo(type, TipoHistorico)
+        start_date = convertir_tipo(start_date, datetime)
+        end_date = convertir_tipo(end_date, datetime)
 
         datos = HistoricService.get_historico(
+            current_app._get_current_object(),
             tipo = type_historico,
             fec_init = start_date,
             fec_fin = end_date,

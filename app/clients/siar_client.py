@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class SiARClient(BaseClient):
     def __init__(self, app : Flask):
         super().__init__(app = app, service_name = "siar_service")
-        self.base_data_url = app.config['SIAR_SERVICE_DATA_URL'],
+        self.base_data_url = app.config['SIAR_SERVICE_DATA_URL']
         self.base_info_url = app.config['SIAR_SERVICE_INFO_URL']
 
     @circuit(cls=CircuitBreakerPersonalizado)
@@ -27,9 +27,9 @@ class SiARClient(BaseClient):
     ) : 
         try:
             if estacion_id and not provincia_id:
-                url = f"{self.base_data_url}/{tipo.value}/estaciones?id={estacion_id}&fechaInicial={fec_init}&fechaFinal={fec_fin}"
+                url = f"{self.base_data_url}/{tipo.value}/estaciones?Id={estacion_id}&FechaInicial={fec_init}&FechaFinal={fec_fin}"
             elif not estacion_id and provincia_id:
-                url = f"{self.base_data_url}/{tipo.value}/provincias?id={provincia_id}&fechaInicial={fec_init}&fechaFinal={fec_fin}"
+                url = f"{self.base_data_url}/{tipo.value}/provincias?Id={provincia_id}&FechaInicial={fec_init}&FechaFinal={fec_fin}"
 
             response = self._make_request(
                 method = 'GET',

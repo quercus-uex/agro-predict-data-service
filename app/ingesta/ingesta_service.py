@@ -31,7 +31,7 @@ class IngestionService:
             status = 'LOADING',
             dataset = 'actual_futuro',
             tipo = tipo_prediccion.value,
-            year = fecha.day,
+            year = fecha.year,
             month = fecha.month,
             day = fecha.day
         )
@@ -72,7 +72,7 @@ class IngestionService:
                 status = 'READY',
                 dataset = 'actual_futuro',
                 tipo = tipo_prediccion.value,
-                year = fecha.day,
+                year = fecha.year,
                 month = fecha.month,
                 day = fecha.day
             )
@@ -184,9 +184,10 @@ class IngestionService:
             status = 'LOADING',
             dataset = 'historico',
             tipo = tipo.value,
-            year = fec_init.day,
+            year = fec_init.year,
             month = fec_init.month,
-            day = fec_init.day
+            day = fec_init.day,
+            zona = "provincia" if codigo_provincia_id else "estacion"
         )
 
         try:
@@ -241,9 +242,10 @@ class IngestionService:
                 status = 'READY',
                 dataset = 'historico',
                 tipo = tipo.value,
-                year = fec_init.day,
+                year = fec_init.year,
                 month = fec_init.month,
-                day = fec_init.day
+                day = fec_init.day,
+                zona = "provincia" if codigo_provincia_id else "estacion"
             )
             # Cuando estén todos los datos formados correctamente, se confirma la inserción de los datos
             db.session.commit()
@@ -256,6 +258,7 @@ class IngestionService:
                 year = fec_init.day,
                 month = fec_init.month,
                 day = fec_init.day,
+                zona = "provincia" if codigo_provincia_id else "estacion",
                 error = str(e)
             )
     

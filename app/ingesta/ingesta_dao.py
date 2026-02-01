@@ -7,11 +7,12 @@ from typing import Optional
 class IngestaDAO:
     @staticmethod
     def obtener_estado(
-        dataset = str,
-        tipo = str,
-        year = int,
-        month = int,
-        day = int
+        dataset : str,
+        tipo : str,
+        year : int,
+        month : int,
+        day : int,
+        zona : str
     ):
         try:
             query = (
@@ -24,16 +25,18 @@ class IngestaDAO:
                         IngestaStatus.tipo == tipo,
                         IngestaStatus.year == year,
                         IngestaStatus.month == month,
-                        IngestaStatus.day == day
+                        IngestaStatus.day == day,
+                        IngestaStatus.zona == zona
                     )
                 )
             )
 
-            result = (
-                db.session.execute(query)
-                .scalar()
-                .unique()
-            )
+            result = db.session.execute(query).scalar_one_or_none()
+
+            print(f"Resultado : {result}")
+
+            if not result:
+                return None
 
             status = {
                 s.key : getattr(result, s.key)
@@ -54,6 +57,7 @@ class IngestaDAO:
         year : int,
         month : int,
         day : int,
+        zona : str,
         started_at : datetime,
         finished_at : Optional[datetime],
         error_message : Optional[str]
@@ -66,6 +70,7 @@ class IngestaDAO:
                 month = month,
                 day = day,
                 status = status,
+                zona = zona,
                 started_at = started_at,
                 finished_at = finished_at if finished_at else None,
                 error_message = error_message if error_message else None
@@ -76,35 +81,44 @@ class IngestaDAO:
 
         except Exception as e:
             print(f"Error creando un nuevo estado de ingesta : {e}")
+            db.session.rollback()
             return None
         
     @staticmethod
     def actualizar_estado(
         status : str,
-        dataset = str,
-        tipo = str,
-        year = int,
-        month = int,
-        day = int,
-        error = Optional[str]
+        dataset : str,
+        tipo : str,
+        year : int,
+        month : int,
+        day : int,
+        zona : str,
+        error : Optional[str]
     ):
-        query = (
-            update(
-                IngestaStatus
-            )
-            .where(
-                and_(
-                    IngestaStatus.dataset == dataset,
-                    IngestaStatus.tipo == tipo,
-                    IngestaStatus.year == year,
-                    IngestaStatus.month == month,
-                    IngestaStatus.day == day
+        try:
+            print("actualizo el estado", flush = True)
+            query = (
+                update(
+                    IngestaStatus
+                )
+                .where(
+                    and_(
+                        IngestaStatus.dataset == dataset,
+                        IngestaStatus.tipo == tipo,
+                        IngestaStatus.year == year,
+                        IngestaStatus.month == month,
+                        IngestaStatus.day == day,
+                        IngestaStatus.zona == zona
+                    )
+                )
+                .values(
+                    status = status,
+                    error_message = error if error else None
                 )
             )
-            .values(
-                status = status,
-                error_message = error if error else None
-            )
-        )
 
-        db.session.execute(query)
+            db.session.execute(query)
+        except Exception as e:
+            print(f"Algo fue mal actualizando el estado de ingesta: {e}")
+            db.session.rollback()
+            return None

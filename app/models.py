@@ -20,9 +20,14 @@ class IngestaStatus(db.Model):
     finished_at = Column(DateTime, nullable = True)
     error_message = Column(Text, nullable = True)
 
+    zona = Column(String(20), nullable = False)
+
     # Constraint para evitar valores duplicados
     __table_args__ = (
-        UniqueConstraint('dataset', 'tipo', 'year'),
+        UniqueConstraint(
+            'dataset', 'tipo', 'year', 'month', 'day',
+            name = 'uq_ingesta_dataset_fecha'
+        ),
     )
 
 class Sector(db.Model):

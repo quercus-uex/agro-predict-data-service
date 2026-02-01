@@ -4,11 +4,57 @@ from ..models import IngestaStatus
 from .historico_dto import *
 from ..ingesta.ingesta_dto import ProcesoIngestaDTO
 from ..ingesta.ingesta_dao import IngestaDAO
-from app.ingestion.ingestion_launcher import lanzar_ingesta_background
+from flask import current_app
+from app.ingesta.ingesta_service import IngestionService
 import threading
 import calendar
 
 class HistoricService:
+
+    @staticmethod
+    def _ingesta_thread(
+        app,
+        codigo_estacion_id ,
+        codigo_provincia_id,
+        tipo,
+        fec_init,
+        fec_fin
+    ):
+        with app.app_context():
+            IngestionService.ingest_data(
+                codigo_estacion_id = codigo_estacion_id,
+                codigo_provincia_id = codigo_provincia_id,
+                tipo = tipo,
+                fec_init = fec_init,
+                fec_fin = fec_fin
+            )
+
+    @staticmethod
+    def lanzar_ingesta_background(
+        app,
+        codigo_estacion_id ,
+        codigo_provincia_id,
+        tipo,
+        fec_init,
+        fec_fin
+    ):
+        """
+        Configuración de hilo en segundo plano que 
+        almacena datos solicitados en la base de datos
+        """
+        thread = threading.Thread(
+            target = HistoricService._ingesta_thread,
+            args = (
+                app,
+                codigo_estacion_id,
+                codigo_provincia_id,
+                tipo,
+                fec_init,
+                fec_fin
+            ),
+            daemon = True
+        )
+        thread.start()
 
     @staticmethod
     def _build_historico_hora(
@@ -152,13 +198,14 @@ class HistoricService:
 
     @staticmethod
     def get_historico(
+        app,
         tipo : TipoHistorico,
         fec_init : datetime,
         fec_fin : datetime,
-        provincia_id : Optional[int] = None,
+        provincia_id : Optional[str] = None,
         estacion_id : Optional[int] = None
     ):
-        
+        print(f"Thread running: {threading.current_thread().name}")
         if not (estacion_id or provincia_id):
             raise ValueError("Debe indicarse la estación o provincia")
         
@@ -168,20 +215,26 @@ class HistoricService:
             tipo = tipo.value,
             year = fec_init.year,
             month = fec_init.month,
-            day = fec_init.day
+            day = fec_init.day,
+            zona = "provincia" if estacion_id else "estacion"
         )
+
+        print(f"Estado : {estado}")
 
         if estado:
             # Si no se encuentran los datos solicitados en la BD informamos al cliente
-            if estado.status in ('PENDING', 'LOADING'):
+            if estado['status'] in ('PENDING', 'LOADING'):
                 return ProcesoIngestaDTO(
-                    status = estado.status,
-                    datos_solicitados = TipoHistorico.value,
+                    status = estado['status'],
+                    datos_solicitados = tipo.value,
                     started_at = datetime.now(),
                     finished_at = None
                 )
             # Datos ya se encuentran en la BD
-            if estado.status == 'READY':
+            if estado['status'] == 'READY':
+                provincia_id = HistoricDAO.obtener_id_provincia_por_str(provincia_id = provincia_id)
+                print(f"Provincia_id {provincia_id}")
+
                 match tipo:
                     case TipoHistorico.HORA:
                         data = HistoricDAO.define_computing_data_hora(estacion_id, provincia_id, fec_init, fec_fin)
@@ -237,26 +290,26 @@ class HistoricService:
                 year = fec_init.year,
                 month = fec_init.month,
                 day = fec_init.day,
+                zona = "provincia" if provincia_id else "estacion",
                 started_at = datetime.now(),
                 finished_at = None,
                 error_message = None
             )
 
             # Hilo independiente al main que inserta datos
-            lanzar_ingesta_background(
-                args = (
-                   estacion_id,
-                   provincia_id,
-                   tipo,
-                   fec_init,
-                   fec_fin 
-                )
+            HistoricService.lanzar_ingesta_background(
+                app,
+                estacion_id,
+                provincia_id_str,
+                tipo,
+                fec_init,
+                fec_fin 
             )
 
             # Se informa al usuario mientras el hilo va insertando datos
             return ProcesoIngestaDTO(
                 status = 'PENDING',
-                datos_solicitados = TipoHistorico.value,
+                datos_solicitados = tipo.value,
                 started_at = datetime.now(),
                 finished_at = None
             )
