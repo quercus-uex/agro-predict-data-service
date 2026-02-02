@@ -2,7 +2,7 @@ from . import forecast_bp
 from ..globals.log_decorator import log
 from helpers.ApiExceptions import APIException
 from .forecast_service import ForecastService
-from flask import jsonify, request
+from flask import jsonify, request, current_app
 from ..globals.dto2dict import dataclass_to_json
 from ..globals.convertidor_tipo import convertir_tipo
 from .forecast_dto import TipoPrediccion, TipoZona
@@ -40,6 +40,7 @@ def pronostico_actual_ccaa(
         type_prediccion = convertir_tipo(prediccion, TipoPrediccion)
 
         datos = ForecastService.get_forecast(
+            current_app._get_current_object(),
             ccaa_id = ccaa,
             provincia_id = provincia,
             tipo_prediccion = type_prediccion,

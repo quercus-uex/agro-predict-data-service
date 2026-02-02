@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import date, datetime
 from .forecast_dto import (
     ForecastDTO, 
     TipoPrediccion, 
@@ -7,7 +8,12 @@ from .forecast_dto import (
     ProvinciaActualFuturoDTO, 
     NacionActualFuturoDTO
 )
+from ..ingesta.ingesta_dto import ProcesoIngestaDTO
+from ..models import IngestaStatus
+from ..ingesta.ingesta_dao import IngestaDAO
+from ..ingesta.ingesta_thread import lanzar_ingesta_background
 from .forecast_dao import ForecastDAO
+from ..ingesta.ingesta_service import IngestionService
 
 class ForecastService:
 
@@ -52,6 +58,7 @@ class ForecastService:
     
     @staticmethod
     def get_forecast(
+        app,
         ccaa_id : Optional[int],
         provincia_id : Optional[int],
         tipo_prediccion : TipoPrediccion,
@@ -61,59 +68,146 @@ class ForecastService:
         if (ccaa_id and provincia_id) : 
             raise ValueError("Debe indicarse como máximo uno de los dos identificadores de zonas permitidos : `provincia_id`, `ccaa_id`")
         
-        if ccaa_id:
-            data = ForecastDAO._get_predicciones(
-                tipo_prediccion = tipo_prediccion,
-                tipo_zona = tipo_zona,
-                zona_id = ccaa_id
-            )
-
-            items = ForecastService._build_forecast(
-                data = data,
-                ccaa_id = ccaa_id,
-                provincia_id = None
-            )
-
-            return CccaaActualFuturoDTO(
-                type_prediction = tipo_prediccion,
-                type_zone = tipo_zona,
-                datos = items
-            )
-
-        elif provincia_id:
-            data = ForecastDAO._get_predicciones(
-                tipo_prediccion = tipo_prediccion,
-                tipo_zona = tipo_zona,
-                zona_id = provincia_id
-            )
-
-            items = ForecastService._build_forecast(
-                data = data,
-                ccaa_id = None,
-                provincia_id = provincia_id
-            )
-
-            return ProvinciaActualFuturoDTO(
-                type_prediction = tipo_prediccion,
-                type_zone = tipo_zona,
-                datos = items  
-            )
+        # Obtengo la fecha de hoy, que es la fecha en la que se consultan los datos
+        hoy = date.today()
         
+        # Obtenemos el estado de ingesta buscado
+        estado : IngestaStatus = IngestaDAO.obtener_estado(
+            dataset = "actual_futuro",
+            tipo = tipo_prediccion.value,
+            year = hoy.year,
+            month = hoy.month,
+            day = hoy.day,
+            zona = tipo_zona.value
+        )
+
+        print(f"Estado - {estado}", flush = True)
+
+        if estado:
+            # Si no se encuentran los datos solicitados en la BD informamos al cliente
+            if estado['status'] in ('PENDING', 'LOADING'):
+                print("Estado pendiente o cargando", flush = True)
+                return ProcesoIngestaDTO(
+                    status = estado['status'],
+                    datos_solicitados = tipo_prediccion.value,
+                    started_at = datetime.now(),
+                    finished_at = None
+                )
+            # Los datos ya se encuentran en la BD
+            elif estado['status'] == 'READY':
+                print("Los datos ya se encuentran en la db, necesitado ayuda threas")
+                if ccaa_id:
+                    data = ForecastDAO._get_predicciones(
+                        tipo_prediccion = tipo_prediccion,
+                        tipo_zona = tipo_zona,
+                        zona_id = ccaa_id
+                    )
+
+                    items = ForecastService._build_forecast(
+                        data = data,
+                        ccaa_id = ccaa_id,
+                        provincia_id = None
+                    )
+
+                    return CccaaActualFuturoDTO(
+                        type_prediction = tipo_prediccion,
+                        type_zone = tipo_zona,
+                        datos = items
+                    )
+
+                elif provincia_id:
+                    data = ForecastDAO._get_predicciones(
+                        tipo_prediccion = tipo_prediccion,
+                        tipo_zona = tipo_zona,
+                        zona_id = provincia_id
+                    )
+
+                    items = ForecastService._build_forecast(
+                        data = data,
+                        ccaa_id = None,
+                        provincia_id = provincia_id
+                    )
+
+                    return ProvinciaActualFuturoDTO(
+                        type_prediction = tipo_prediccion,
+                        type_zone = tipo_zona,
+                        datos = items  
+                    )
+                
+                else:
+                    data = ForecastDAO._get_predicciones(
+                        tipo_prediccion = tipo_prediccion,
+                        tipo_zona = tipo_zona,
+                        zona_id = None
+                    )
+
+                    items = ForecastService._build_forecast(
+                        data = data,
+                        ccaa_id = None,
+                        provincia_id = None
+                    )
+
+                    return NacionActualFuturoDTO(
+                        type_prediction = tipo_prediccion,
+                        type_zone = tipo_zona,
+                        datos = items
+                    )
+        elif ForecastDAO._get_predicciones(
+            tipo_prediccion = tipo_prediccion.value, 
+            tipo_zona = tipo_zona.value, 
+            zona_id = ccaa_id if ccaa_id else provincia_id
+            ) is not None:
+            print("Datos ya en db, no es necesario thread", flush = True)
+            IngestaDAO.create(
+                status = 'READY',
+                dataset = 'actual_futuro',
+                tipo = tipo_prediccion.value,
+                year = hoy.year,
+                month = hoy.month,
+                day = hoy.day,
+                zona = tipo_zona.value,
+                started_at = datetime.now(),
+                finished_at = datetime.now(),
+                error_message = None
+            )
+             
+             # Retornamos READY para que el usuario sepa que tiene que refrescar
+            return ProcesoIngestaDTO(
+                status = 'READY',
+                datos_solicitados = tipo_prediccion.value,
+                started_at = datetime.now(),
+                finished_at = datetime.now()
+            )
+        # Si no se ha comenzado con el proceso de incluir datos nuevos solicitados en la BD se comienza
         else:
-            data = ForecastDAO._get_predicciones(
-                tipo_prediccion = tipo_prediccion,
-                tipo_zona = tipo_zona,
-                zona_id = None
+            print("Empieza el thread", flush = True)
+            IngestaDAO.create(
+                status = 'PENDING',
+                dataset = 'actual_futuro',
+                tipo = tipo_prediccion.value,
+                year = hoy.year,
+                month = hoy.month,
+                day = hoy.day,
+                zona = tipo_zona.value,
+                started_at = datetime.now(),
+                finished_at = None,
+                error_message = None
             )
 
-            items = ForecastService._build_forecast(
-                data = data,
-                ccaa_id = None,
-                provincia_id = None
+            # Hilo independiente al main que inserta datos
+            lanzar_ingesta_background(
+                app,
+                IngestionService.ingest_aemet_data,
+                tipo_zona,
+                tipo_prediccion,
+                ccaa_id if ccaa_id else provincia_id,
+                hoy
             )
 
-            return NacionActualFuturoDTO(
-                type_prediction = tipo_prediccion,
-                type_zone = tipo_zona,
-                datos = items
+            # Se informa al usuario mientras el hilo va insertando datos
+            return ProcesoIngestaDTO(
+                status = 'PENDING',
+                datos_solicitados = tipo_prediccion.value,
+                started_at = datetime.now(),
+                finished_at = None
             )

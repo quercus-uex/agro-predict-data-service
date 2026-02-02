@@ -1,4 +1,3 @@
-from app.forecast.forecast_dto import TipoZona, TipoPrediccion
 from helpers.aemet_parser import AemetParser
 from flask import current_app
 from typing import Optional
@@ -26,8 +25,8 @@ class AemetService:
     @classmethod
     def get_aemet_data(
         cls,
-        tipo_zona : TipoZona,
-        tipo_prediccion : Optional[TipoPrediccion],
+        tipo_zona,
+        tipo_prediccion : Optional[str],
         codigo_zona : Optional[str],
         fecha : Optional[date]
     ):
@@ -36,21 +35,24 @@ class AemetService:
         # Llamada a AemetClient 
         ## Obtener datos predictivos
         cliente = cls._get_cliente()
-        if tipo_prediccion in [TipoPrediccion.TOMORROW, TipoPrediccion.AFTERTOMORROW]:
+        if tipo_prediccion.value in ["tomorrow", "aftertomorrow"]:
+            print("Texto futuro", flush = True)
             texto = cliente.get_future_data_by_zone(
                 tipo_prediccion = tipo_prediccion,
                 tipo_zone = tipo_zona,
-                ccaa_code = codigo_zona if tipo_zona == TipoZona.CCAA else None,
-                provincia_code = codigo_zona if tipo_zona == TipoZona.PROVINCIAL else None,
+                ccaa_code = codigo_zona if tipo_zona.value == "ccaa" else None,
+                provincia_code = codigo_zona if tipo_zona.value == "provincial" else None,
                 fecha = fecha
             ) 
         else: ## Obtener datos de hoy
+            print("Texto actual", flush = True)
             texto = cliente.get_current_data_by_zone(
                 tipo = tipo_zona,
-                ccaa_code = codigo_zona if tipo_zona == TipoZona.CCAA else None,
-                provincia_code = codigo_zona if tipo_zona == TipoZona.PROVINCIAL else None
+                ccaa_code = codigo_zona if tipo_zona.value == "ccaa" else None,
+                provincia_code = codigo_zona if tipo_zona.value == "provincial" else None
             )
         
+        print(f"Texto de aemet : {texto}", flush = True)
         if texto is None:
             logger.warning(f"No se ha obtenido datos de AEMET sobre los parámetros indicados - [ {tipo_zona} - {tipo_prediccion} - {codigo_zona} - {fecha}]")
             return None

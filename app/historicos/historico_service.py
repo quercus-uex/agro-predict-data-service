@@ -4,9 +4,8 @@ from ..models import IngestaStatus
 from .historico_dto import *
 from ..ingesta.ingesta_dto import ProcesoIngestaDTO
 from ..ingesta.ingesta_dao import IngestaDAO
+from ..ingesta.ingesta_service import IngestionService
 from ..ingesta.ingesta_thread import lanzar_ingesta_background
-from flask import current_app
-from app.ingesta.ingesta_service import IngestionService
 import threading
 import calendar
 
@@ -185,7 +184,7 @@ class HistoricService:
                     finished_at = None
                 )
             # Datos ya se encuentran en la BD
-            if estado['status'] == 'READY':
+            elif estado['status'] == 'READY':
                 provincia_id = HistoricDAO.obtener_id_provincia_por_str(provincia_id = provincia_id)
 
                 match tipo:
@@ -232,8 +231,8 @@ class HistoricService:
                             tipo = tipo,
                             datos = items
                         )
-                
-                raise NotImplementedError(f"Tipo {tipo} no implementado")
+                    case _:
+                        raise NotImplementedError(f"Tipo {tipo} no implementado")
         # Si existen datos ya registrados, incluimos su estado a ready    
         elif HistoricDAO.define_computing_general(estacion_id,provincia_id,fec_init,fec_fin) is not None or []:
             IngestaDAO.create(
@@ -274,6 +273,7 @@ class HistoricService:
             # Hilo independiente al main que inserta datos
             lanzar_ingesta_background(
                 app,
+                IngestionService.ingest_siar_data,
                 estacion_id,
                 provincia_id,
                 tipo,
