@@ -4,57 +4,13 @@ from ..models import IngestaStatus
 from .historico_dto import *
 from ..ingesta.ingesta_dto import ProcesoIngestaDTO
 from ..ingesta.ingesta_dao import IngestaDAO
+from ..ingesta.ingesta_thread import lanzar_ingesta_background
 from flask import current_app
 from app.ingesta.ingesta_service import IngestionService
 import threading
 import calendar
 
 class HistoricService:
-
-    @staticmethod
-    def _ingesta_thread(
-        app,
-        codigo_estacion_id ,
-        codigo_provincia_id,
-        tipo,
-        fec_init,
-        fec_fin
-    ):
-        with app.app_context():
-            IngestionService.ingest_data(
-                codigo_estacion_id = codigo_estacion_id,
-                codigo_provincia_id = codigo_provincia_id,
-                tipo = tipo,
-                fec_init = fec_init,
-                fec_fin = fec_fin
-            )
-
-    @staticmethod
-    def lanzar_ingesta_background(
-        app,
-        codigo_estacion_id ,
-        codigo_provincia_id,
-        tipo,
-        fec_init,
-        fec_fin
-    ):
-        """
-        Configuración de hilo en segundo plano que 
-        almacena datos solicitados en la base de datos
-        """
-        thread = threading.Thread(
-            target = HistoricService._ingesta_thread,
-            args = (
-                app,
-                codigo_estacion_id,
-                codigo_provincia_id,
-                tipo,
-                fec_init,
-                fec_fin
-            ),
-            daemon = True
-        )
-        thread.start()
 
     @staticmethod
     def _build_historico_hora(
@@ -216,10 +172,8 @@ class HistoricService:
             year = fec_init.year,
             month = fec_init.month,
             day = fec_init.day,
-            zona = "provincia" if estacion_id else "estacion"
+            zona = "provincia" if provincia_id else "estacion"
         )
-
-        print(f"Estado : {estado}")
 
         if estado:
             # Si no se encuentran los datos solicitados en la BD informamos al cliente
@@ -233,7 +187,6 @@ class HistoricService:
             # Datos ya se encuentran en la BD
             if estado['status'] == 'READY':
                 provincia_id = HistoricDAO.obtener_id_provincia_por_str(provincia_id = provincia_id)
-                print(f"Provincia_id {provincia_id}")
 
                 match tipo:
                     case TipoHistorico.HORA:
@@ -280,7 +233,29 @@ class HistoricService:
                             datos = items
                         )
                 
-                raise NotImplementedError(f"Tipo {tipo} no implementado")    
+                raise NotImplementedError(f"Tipo {tipo} no implementado")
+        # Si existen datos ya registrados, incluimos su estado a ready    
+        elif HistoricDAO.define_computing_general(estacion_id,provincia_id,fec_init,fec_fin) is not None or []:
+            IngestaDAO.create(
+                status = 'READY',
+                dataset = 'historico',
+                tipo = tipo.value,
+                year = fec_init.year,
+                month = fec_init.month,
+                day = fec_init.day,
+                zona = "provincia" if provincia_id else "estacion",
+                started_at = datetime.now(),
+                finished_at = datetime.now(),
+                error_message = None
+            )
+
+            # Retornamos READY para que el usuario sepa que tiene que refrescar
+            return ProcesoIngestaDTO(
+                status = 'READY',
+                datos_solicitados = tipo.value,
+                started_at = datetime.now(),
+                finished_at = datetime.now()
+            )
         # Si no se ha comenzado con el proceso de incluir datos nuevos solicitados en la BD se comienza
         else:
             IngestaDAO.create(
@@ -297,10 +272,10 @@ class HistoricService:
             )
 
             # Hilo independiente al main que inserta datos
-            HistoricService.lanzar_ingesta_background(
+            lanzar_ingesta_background(
                 app,
                 estacion_id,
-                provincia_id_str,
+                provincia_id,
                 tipo,
                 fec_init,
                 fec_fin 

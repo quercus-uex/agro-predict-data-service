@@ -1,4 +1,4 @@
-from sqlalchemy import and_, select, inspect, update
+from sqlalchemy import and_, select, inspect, update, delete
 from app.extensions import db
 from ..models import IngestaStatus
 from datetime import datetime
@@ -93,6 +93,7 @@ class IngestaDAO:
         month : int,
         day : int,
         zona : str,
+        finish_time : Optional[datetime],
         error : Optional[str]
     ):
         try:
@@ -113,12 +114,53 @@ class IngestaDAO:
                 )
                 .values(
                     status = status,
-                    error_message = error if error else None
+                    error_message = error if error else None,
+                    finished_at = finish_time if finish_time else None
+                )
+            )
+
+            result = db.session.execute(query)
+
+            if result.rowcount == 0:
+                print("No se actualizó ninguna fila (no encontrada)")
+
+            db.session.commit()
+            
+        except Exception as e:
+            print(f"Algo fue mal actualizando el estado de ingesta: {e}")
+            db.session.rollback()
+            return None
+        
+    @staticmethod
+    def delete_estado(
+        status : str,
+        dataset : str,
+        tipo : str,
+        year : int,
+        month : int,
+        day : int,
+        zona : str,
+        error : Optional[str]
+    ):
+        try:
+            query = (
+                delete(
+                    IngestaStatus
+                )
+                .where(
+                    and_(
+                        IngestaStatus.dataset == dataset,
+                        IngestaStatus.tipo == tipo,
+                        IngestaStatus.year == year,
+                        IngestaStatus.month == month,
+                        IngestaStatus.day == day,
+                        IngestaStatus.zona == zona
+                    )
                 )
             )
 
             db.session.execute(query)
         except Exception as e:
-            print(f"Algo fue mal actualizando el estado de ingesta: {e}")
+            print(f"Algo fue mal eliminando el estado de ingesta: {e}")
             db.session.rollback()
             return None

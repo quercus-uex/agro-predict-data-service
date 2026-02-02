@@ -179,18 +179,22 @@ class IngestionService:
         fec_init : date,
         fec_fin: date
     ):
-        # Actualizamos el estado almacenado a LOADING porque se van a cargar los datos
-        IngestaDAO.actualizar_estado(
-            status = 'LOADING',
-            dataset = 'historico',
-            tipo = tipo.value,
-            year = fec_init.year,
-            month = fec_init.month,
-            day = fec_init.day,
-            zona = "provincia" if codigo_provincia_id else "estacion"
-        )
-
         try:
+            # Actualizamos el estado almacenado a LOADING porque se van a cargar los datos
+            IngestaDAO.actualizar_estado(
+                status = 'LOADING',
+                dataset = 'historico',
+                tipo = tipo.value,
+                year = fec_init.year,
+                month = fec_init.month,
+                day = fec_init.day,
+                zona = "provincia" if codigo_provincia_id else "estacion",
+                finish_time = None,
+                error = None
+            )
+
+
+            # Obtengo los datos del siar
             data = SiARService.get_siar_data(
                 estacion_id = codigo_estacion_id,
                 provincia_id = codigo_provincia_id,
@@ -245,7 +249,9 @@ class IngestionService:
                 year = fec_init.year,
                 month = fec_init.month,
                 day = fec_init.day,
-                zona = "provincia" if codigo_provincia_id else "estacion"
+                finish_time = datetime.now(),
+                zona = "provincia" if codigo_provincia_id else "estacion",
+                error = None
             )
             # Cuando estén todos los datos formados correctamente, se confirma la inserción de los datos
             db.session.commit()
@@ -255,9 +261,10 @@ class IngestionService:
                 status = 'FAILED',
                 dataset = 'historico',
                 tipo = tipo.value,
-                year = fec_init.day,
+                year = fec_init.year,
                 month = fec_init.month,
                 day = fec_init.day,
+                finish_time = datetime.now(),
                 zona = "provincia" if codigo_provincia_id else "estacion",
                 error = str(e)
             )

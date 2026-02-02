@@ -113,6 +113,46 @@ class HistoricDAO:
 
 
     @staticmethod
+    def define_computing_general(
+        estacion_id : Optional[int],
+        provincia_id : Optional[int],
+        fec_init : datetime,
+        fec_fin : datetime
+    ):
+        """
+        Obtener datos de la BD que coincidan con los parámetros de la función
+        
+        :param estacion_id: Identificador de la estacion
+        :type estacion_id: Optional[int]
+        :param provincia_id: Identificador de la provincia
+        :type provincia_id: Optional[int]
+        :param fec_init: Fecha de inicio de los datos
+        :type fec_init: datetime
+        :param fec_fin: Fecha de finalizacion de los datos
+        :type fec_fin: datetime
+        """
+        try:
+            query = (
+                select(
+                    MedicionClimatica.id
+                )
+                .where(
+                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
+                )
+            )
+
+            result = db.session.execute(query).first()
+
+            if not result:
+                return None
+            
+            return result
+        
+        except Exception as e:
+            print(f"Error computando los datos generales historicos: {e}")
+            return []
+
+    @staticmethod
     def define_computing_data_hora(
         estacion_id: Optional[int],
         provincia_id: Optional[int],
