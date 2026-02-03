@@ -97,6 +97,7 @@ class IngestaDAO:
         error : Optional[str]
     ):
         try:
+            print(f"Parametros {status}-{dataset}-{tipo}-{year}-{month}-{day}-{zona}")
             print("actualizo el estado", flush = True)
             query = (
                 update(

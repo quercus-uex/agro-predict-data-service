@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from .forecast_dto import (
     ForecastDTO, 
     TipoPrediccion, 
@@ -69,7 +69,7 @@ class ForecastService:
             raise ValueError("Debe indicarse como máximo uno de los dos identificadores de zonas permitidos : `provincia_id`, `ccaa_id`")
         
         # Obtengo la fecha de hoy, que es la fecha en la que se consultan los datos
-        hoy = date.today()
+        hoy = date.today() if tipo_prediccion.value is "actual" else date.today() - timedelta(days = 1)
         
         # Obtenemos el estado de ingesta buscado
         estado : IngestaStatus = IngestaDAO.obtener_estado(
@@ -86,7 +86,6 @@ class ForecastService:
         if estado:
             # Si no se encuentran los datos solicitados en la BD informamos al cliente
             if estado['status'] in ('PENDING', 'LOADING'):
-                print("Estado pendiente o cargando", flush = True)
                 return ProcesoIngestaDTO(
                     status = estado['status'],
                     datos_solicitados = tipo_prediccion.value,
@@ -95,11 +94,10 @@ class ForecastService:
                 )
             # Los datos ya se encuentran en la BD
             elif estado['status'] == 'READY':
-                print("Los datos ya se encuentran en la db, necesitado ayuda threas")
                 if ccaa_id:
                     data = ForecastDAO._get_predicciones(
-                        tipo_prediccion = tipo_prediccion,
-                        tipo_zona = tipo_zona,
+                        tipo_prediccion = tipo_prediccion.value,
+                        tipo_zona = tipo_zona.value,
                         zona_id = ccaa_id
                     )
 
@@ -117,8 +115,8 @@ class ForecastService:
 
                 elif provincia_id:
                     data = ForecastDAO._get_predicciones(
-                        tipo_prediccion = tipo_prediccion,
-                        tipo_zona = tipo_zona,
+                        tipo_prediccion = tipo_prediccion.value,
+                        tipo_zona = tipo_zona.value,
                         zona_id = provincia_id
                     )
 
@@ -136,8 +134,8 @@ class ForecastService:
                 
                 else:
                     data = ForecastDAO._get_predicciones(
-                        tipo_prediccion = tipo_prediccion,
-                        tipo_zona = tipo_zona,
+                        tipo_prediccion = tipo_prediccion.value,
+                        tipo_zona = tipo_zona.value,
                         zona_id = None
                     )
 
@@ -157,7 +155,7 @@ class ForecastService:
             tipo_zona = tipo_zona.value, 
             zona_id = ccaa_id if ccaa_id else provincia_id
             ) is not None:
-            print("Datos ya en db, no es necesario thread", flush = True)
+
             IngestaDAO.create(
                 status = 'READY',
                 dataset = 'actual_futuro',
@@ -180,7 +178,6 @@ class ForecastService:
             )
         # Si no se ha comenzado con el proceso de incluir datos nuevos solicitados en la BD se comienza
         else:
-            print("Empieza el thread", flush = True)
             IngestaDAO.create(
                 status = 'PENDING',
                 dataset = 'actual_futuro',

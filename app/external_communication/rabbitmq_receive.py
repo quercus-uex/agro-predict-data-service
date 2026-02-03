@@ -13,6 +13,7 @@ class MessageHandler(AMQPMessagingHandler):
         super().__init__()
         self._count = 0
         self.consumer = None # Referencia al consumidor para que el handler pueda pararlo
+        self.last_message = None
 
     def set_consumer(self, consumer):
         self.consumer = consumer
@@ -55,4 +56,4 @@ class RabbitMQConsumer():
         # Inicio el consumidor
         consumer.run()
 
-        return str(handler.last_message)
+        return handler.last_message

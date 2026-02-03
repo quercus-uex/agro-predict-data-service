@@ -24,18 +24,13 @@ class AemetClient(BaseClient):
         provincia_code : Optional[str]
     ):
         try:
-            print(f"Tipo zona {tipo} - Province code {provincia_code}")
             if tipo == TipoZona.CCAA and ccaa_code is not None:
-                print("a")
                 url = f"{self.base_url_actuales}/{tipo.value}/{ccaa_code}"
             elif tipo == TipoZona.PROVINCIAL and provincia_code is not None:
-                print("b")
                 url = f"{self.base_url_actuales}/{tipo.value}/{provincia_code}"
             else:
-                print("c")
                 url = f"{self.base_url_actuales}/{tipo}"
 
-            print(f"url a aemet : {url}")
             response = self._make_request(
                 method = 'GET',
                 url = url
@@ -63,23 +58,18 @@ class AemetClient(BaseClient):
         self, 
         tipo_prediccion : TipoPrediccion,
         tipo_zone : TipoZona,
-        ccaa_code : Optional[str],
-        provincia_code : Optional[str],
+        ccaa_code : Optional[int],
+        provincia_code : Optional[int],
         fecha : date
     ):
         try:
-            print(f"{tipo_prediccion} - {tipo_zone}")
             if tipo_zone == TipoZona.NACIONAL:
-                print("nacional")
                 url = f"{self.base_url_futuros}/{tipo_prediccion.value}/{tipo_zone.value}/{fecha}"
             elif tipo_zone == TipoZona.CCAA:
-                print("ccaa")
                 url = f"{self.base_url_futuros}/{tipo_prediccion.value}/{tipo_zone.value}/{ccaa_code}/{fecha}"
             else:
-                print("provincial")
                 url = f"{self.base_url_futuros}/tomorrow/{tipo_zone.value}/{provincia_code}/{fecha}"
-                print(f"url : {url}")
-            print(f"Url aemet : {url}", flush = True)
+
             response = self._make_request(
                 method = 'GET',
                 url = url

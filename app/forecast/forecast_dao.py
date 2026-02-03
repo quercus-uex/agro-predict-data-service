@@ -28,6 +28,7 @@ class ForecastDAO:
     ):
         try:
             # Contenido de la clausula where en la consulta, generico para reutilizar código
+            print(f"Zona : {zona_id}")
             filtros = [
                 Predicciones.tipo_prediccion == tipo_prediccion,
                 Predicciones.tipo_zona == tipo_zona
