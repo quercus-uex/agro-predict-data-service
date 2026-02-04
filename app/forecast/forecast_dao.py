@@ -24,7 +24,7 @@ class ForecastDAO:
         *,
         tipo_prediccion : str,
         tipo_zona : str,
-        zona_id : int | None
+        zona_id : str | None
     ):
         try:
             # Contenido de la clausula where en la consulta, generico para reutilizar código
@@ -41,12 +41,12 @@ class ForecastDAO:
             join_model = None
 
             if tipo_zona == "ccaa":
-                filtros.append(Predicciones.ccaa_id == zona_id)
+                filtros.append(CCAA.codigo == zona_id)
                 join_model = CCAA
                 extra_columns.append(CCAA.codigo.label("ccaa"))
 
             elif tipo_zona == "provincial":
-                filtros.append(Predicciones.provincia_id == zona_id)
+                filtros.append(Provincia.codigo == zona_id)
                 join_model = Provincia
                 extra_columns.append(Provincia.codigo.label("provincia"))
             

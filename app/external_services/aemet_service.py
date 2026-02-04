@@ -28,11 +28,17 @@ class AemetService:
         cls,
         tipo_zona,
         tipo_prediccion : Optional[str],
-        codigo_zona : Optional[int],
+        codigo_zona : Optional[str],
         fecha : Optional[date]
     ):
         try:
             texto = None
+
+            # Mapeo de código de la zona a int relacionado con los parámetros de AEMET
+            if codigo_zona == "CC":
+                codigo_zona_id = 10
+            elif codigo_zona == "BD":
+                codigo_zona_id = 6
 
             # Llamada a AemetClient 
             ## Obtener datos predictivos
@@ -41,15 +47,15 @@ class AemetService:
                 texto = cliente.get_future_data_by_zone(
                     tipo_prediccion = tipo_prediccion,
                     tipo_zone = tipo_zona,
-                    ccaa_code = codigo_zona if tipo_zona.value == "ccaa" else None,
-                    provincia_code = codigo_zona if tipo_zona.value == "provincial" else None,
+                    ccaa_code = codigo_zona.lower() if tipo_zona.value == "ccaa" else None,
+                    provincia_code = codigo_zona_id if tipo_zona.value == "provincial" else None,
                     fecha = fecha
                 ) 
             else: ## Obtener datos de hoy
                 texto = cliente.get_current_data_by_zone(
                     tipo = tipo_zona,
-                    ccaa_code = codigo_zona if tipo_zona.value == "ccaa" else None,
-                    provincia_code = codigo_zona if tipo_zona.value == "provincial" else None
+                    ccaa_code = codigo_zona.lower() if tipo_zona.value == "ccaa" else None,
+                    provincia_code = codigo_zona_id if tipo_zona.value == "provincial" else None
                 )
             
             print(f"Texto de aemet : {texto}", flush = True)
@@ -63,19 +69,28 @@ class AemetService:
             
             logger.info("========== RABBITMQ COMMUNICATION ==========")
             # Configuramos la conexion con el broker
-            conexion_salida = RabbitMQConfig.init_config()
-            conexion_entrada = RabbitMQConfig.init_config()
+            conn, channel, queues = RabbitMQConfig.init_config()
             print("Conexion con el broker establecida", flush = True)
             # Creamos la publicacion en la cola
-            RabbitMQPublisher.create_publish(conexion_salida, texto)
-            print("Se ha enviado el texto de aemet por la cola del broker", flush = True)
+            RabbitMQPublisher.create_publish(
+                channel,
+                queues["raw"], 
+                texto
+            )
+            print(f"Se ha enviado el texto de aemet por la cola del broker {queues["raw"]}", flush = True)
             # Obtenemos la respuesta de la cola
             print("Esperando a obtener respuestas por la otra cola")
-            json = RabbitMQConsumer.receive_content(conexion_entrada)
+            json = RabbitMQConsumer.receive_content(
+                channel,
+                queues["processed"]
+            )
+
             if json:
                 # Compruebo si recibo los datos en string
                 # Si es así los cambio por diccionario
                 normalizar_json(payload = json)
+            
+            conn.close()
             
             # Obtenemos datos parseados obtenidos del texto de respuesta por Aemet
             ## Esto será un respaldo por si no obtengo datos del broker

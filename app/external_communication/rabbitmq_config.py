@@ -1,29 +1,30 @@
-from rabbitmq_amqp_python_client import (
-    Environment,
-    AddressHelper
-)
+# rabbitmq_config_pika.py
+import pika
 from config.config import Config
-from typing import List
 
 class RabbitMQConfig:
+    @staticmethod
     def init_config():
-        
-        colas_dispoinibles = []
+        """
+        Inicializa la conexión y devuelve:
+        - connection: pika.BlockingConnection
+        - channel: pika.Channel
+        - queues: dict con las colas
+        """
+        params = pika.URLParameters(Config.RABBITMQ_CONNECTION)
+        connection = pika.BlockingConnection(params)
+        channel = connection.channel()
 
-        # Creo conexion con RabbitMQ
-        environment = Environment(uri=f"{Config.RABBITMQ_CONNECTION}")
-        connection = environment.connection() # Crea y retorna una nueva conexion
-        connection.dial() # Establece la conexion con el servidor AMQP
+        # Declaro las colas para asegurar que existen
+        queue_raw = Config.QUEUE_IN_NAME
+        queue_processed = Config.QUEUE_OUT_NAME
 
-        # Creación de la referencia a la cola del broker de entrada
-        queue_in_name = Config.QUEUE_IN_NAME # Nombre de la cola de entrada
-        addr1 = AddressHelper.queue_address(queue_in_name)
+        channel.queue_declare(queue=queue_raw, durable=True)
+        channel.queue_declare(queue=queue_processed, durable=True)
 
-        # Creación de la referencia a la cola del broker de salida
-        queue_out_name = Config.QUEUE_OUT_NAME # Nombre de la cola de salida
-        addr2 = AddressHelper.queue_address(queue_out_name)
+        queues = {
+            "raw": queue_raw,
+            "processed": queue_processed
+        }
 
-        colas_dispoinibles.append(addr1)
-        colas_dispoinibles.append(addr2)
-
-        return connection, environment, colas_dispoinibles
+        return connection, channel, queues

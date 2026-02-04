@@ -20,8 +20,8 @@ class ForecastService:
     @staticmethod
     def _build_forecast(
         data,
-        ccaa_id : Optional[int],
-        provincia_id : Optional[int]
+        ccaa_id : Optional[str],
+        provincia_id : Optional[str]
     ) : 
         """
         Construye DTOs de pronósticos climáticos en base a los datos proporcionados
@@ -59,8 +59,8 @@ class ForecastService:
     @staticmethod
     def get_forecast(
         app,
-        ccaa_id : Optional[int],
-        provincia_id : Optional[int],
+        ccaa_id : Optional[str],
+        provincia_id : Optional[str],
         tipo_prediccion : TipoPrediccion,
         tipo_zona : TipoZona
     ) :

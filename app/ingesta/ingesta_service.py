@@ -22,7 +22,7 @@ class IngestionService:
     def ingest_aemet_data(
         tipo_zona,
         tipo_prediccion,
-        codigo_zona : Optional[int],
+        codigo_zona : Optional[str],
         fecha
     ):
         try:
@@ -49,8 +49,8 @@ class IngestionService:
 
             print(f"Aemet data : {data}")
 
-            ccaa : CCAA = CCAA.query.filter_by(id=codigo_zona).first()
-            provincia : Provincia = Provincia.query.filter_by(id=codigo_zona).first()
+            ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_zona).first()
+            provincia : Provincia = Provincia.query.filter_by(codigo=codigo_zona).first()
             # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
             print(f"CCAA - Provincia : {ccaa} - {provincia}")
             predicciones = Predicciones(

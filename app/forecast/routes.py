@@ -30,10 +30,10 @@ def pronostico_actual_ccaa(
         provincia : Optional[str] = request.args.get('provinciaId')
 
         # Conversor de str a int -- zona_id
-        if ccaa:
+        """if ccaa:
             ccaa = convertir_tipo(ccaa, int)
         elif provincia:
-            provincia = convertir_tipo(provincia, int)
+            provincia = convertir_tipo(provincia, int)"""
 
         # Convertidores de enum
         type_zona = convertir_tipo(zona, TipoZona)
