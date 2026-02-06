@@ -69,7 +69,7 @@ class ForecastService:
             raise ValueError("Debe indicarse como máximo uno de los dos identificadores de zonas permitidos : `provincia_id`, `ccaa_id`")
         
         # Obtengo la fecha de hoy, que es la fecha en la que se consultan los datos
-        hoy = date.today() if tipo_prediccion.value is "actual" else date.today() - timedelta(days = 1)
+        hoy = date.today() if tipo_prediccion.value == "actual" else date.today() - timedelta(days = 1)
         
         # Obtenemos el estado de ingesta buscado
         estado : IngestaStatus = IngestaDAO.obtener_estado(
@@ -95,6 +95,7 @@ class ForecastService:
             # Los datos ya se encuentran en la BD
             elif estado['status'] == 'READY':
                 if ccaa_id:
+                    print("ccaa")
                     data = ForecastDAO._get_predicciones(
                         tipo_prediccion = tipo_prediccion.value,
                         tipo_zona = tipo_zona.value,

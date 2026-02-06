@@ -25,7 +25,7 @@ class IngestaStatus(db.Model):
     # Constraint para evitar valores duplicados
     __table_args__ = (
         UniqueConstraint(
-            'dataset', 'tipo', 'year', 'month', 'day',
+            'dataset', 'tipo', 'year', 'month', 'day', 'zona',
             name = 'uq_ingesta_dataset_fecha'
         ),
     )
@@ -178,7 +178,7 @@ class Predicciones(db.Model):
     tendencia_temp_max = Column(String(50), nullable = True)
     tendencia_temp_min = Column(String(50), nullable = True)
     rachas_viento = Column(String(100), nullable = True)
-    precipitaciones = Column(String(100), nullable = True)
+    precipitaciones = Column(String(300), nullable = True)
     cotas_nieve = Column(String(100), nullable = True)
     existencia_helada = Column(Boolean, nullable = True)
     zona_helada  = Column(String(100), nullable = True)
