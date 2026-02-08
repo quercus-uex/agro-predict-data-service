@@ -188,6 +188,8 @@ class IngestionService:
             db.session.commit()
         except Exception as e:
             print(f"Ha ocurrido un error insertando datos de plagas con sus calendarios : {e}")
+            # Para echar para atrás el flush que se hace
+            db.session.rollback()
             return []
             
 
