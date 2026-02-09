@@ -49,7 +49,8 @@ class HistoricDAO:
             """ Obtiene las horas críticas sobre valores de temperatura y humedad"""
             query = (
                 select(
-                    MedicionClimatica.timestamp
+                    MedicionClimatica.timestamp,
+                    MedicionClimatica.estacion_id
                 )
                 .where(
                     or_(
