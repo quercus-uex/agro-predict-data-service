@@ -100,7 +100,7 @@ class ForecastService:
                 tipo_zona = tipo_zona,
                 zona_id = provincia_id
             )
-            print(f"Data prediccion : {data_prediccion}")
+
             data_localidad = ForecastDAO._get_localidades_climaticas(
                 prediccion_id = data_prediccion.get('id')
             )
@@ -161,6 +161,9 @@ class ForecastService:
         tipo_prediccion : TipoPrediccion,
         tipo_zona : TipoZona
     ) :
+        # Descomentar solo si se quieren actualizar las localidades que hay en la base de datos
+        #IngestionService.ingest_localidad_data()
+        
         # Caso base de comprobación de parámetros
         if (ccaa_id and provincia_id) : 
             raise ValueError("Debe indicarse como máximo uno de los dos identificadores de zonas permitidos : `provincia_id`, `ccaa_id`")

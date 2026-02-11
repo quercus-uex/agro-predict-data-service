@@ -8,15 +8,42 @@ from ..models import (
     Estacion, 
     Provincia, 
     CCAA, 
-    Predicciones,
     Plaga,
     CalendarioPlaga
 )
 
 from ..external_services.aemet_service import AemetService
 from ..external_services.itacyl_service import ItacylService
+import json
+import os
 
 class IngestionService:
+
+    @staticmethod
+    def ingest_localidad_data():
+        try:
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(BASE_DIR, "..", "data", "location_altitudes.json")
+            with open(file_path, 'r', encoding = 'utf-8') as f:
+                datos = json.load(f)
+
+            # Recorro todas las localidades que hay almacenadas en el json
+            for d in datos:
+                print(f"Dato : {d}")
+                IngestaDAO.crear_localidades(
+                    nombre = d['nombre'],
+                    nombre_normalizado = d['nombre_normalizado'],
+                    altitud = d['altitud'],
+                    longitud = d['longitud'],
+                    latitud = d['latitud'],
+                    provincia = d['provincia']
+                )
+
+            db.session.commit()
+
+        except Exception as e:
+            print (f"Algo ha ido mal insertando datos de localidades : {e}")
+            return None
 
     @staticmethod
     def ingest_aemet_data(
@@ -54,8 +81,11 @@ class IngestionService:
                 codigo_zona = codigo_zona,
                 data = data_predicciones
             )
+
             # Necisto los datos de esta prediccion ya en la DB
-            if prediccion_insertada:
+            if prediccion_insertada is None:
+                print("No se ha insertado porque ya existia")
+            else:
                 db.session.flush()
 
             # Obtengo la informacion de las localidades obtenidas
@@ -64,7 +94,7 @@ class IngestionService:
             for localidad, datos in localidades.items():
                 temp_max = datos.get('temp_max')
                 temp_min = datos.get('temp_min')
-                IngestaDAO.crear_localidades(
+                IngestaDAO.crear_localidades_climaticas(
                     prediccion_id = prediccion_insertada.id,
                     loc = localidad,
                     temp_max = temp_max,

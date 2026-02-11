@@ -1,6 +1,6 @@
 from sqlalchemy import and_, select, inspect, update, delete
 from app.extensions import db
-from ..models import IngestaStatus, Localidades, CCAA, Predicciones, Provincia
+from ..models import IngestaStatus, Localidades, CCAA, Predicciones, Provincia, LocalidadesClimaticas
 from datetime import datetime
 from typing import Optional
 
@@ -201,7 +201,6 @@ class IngestaDAO:
             
             #[✔]Tiene que ser los datos que reciba del broker
             db.session.add(predicciones)
-
             return predicciones
 
         except Exception as e:
@@ -209,7 +208,7 @@ class IngestaDAO:
             db.session.rollback()
 
     @staticmethod
-    def crear_localidades(
+    def crear_localidades_climaticas(
         prediccion_id : int,
         loc : str,
         temp_max : int,
@@ -228,23 +227,75 @@ class IngestaDAO:
         :type temp_min: int
         """
         try:
-            localidad = Localidades(
+
+            # Obtener la referencia a la localidad
+            query = (
+                select(
+                    Localidades.id
+                )
+                .where(
+                    Localidades.nombre_normalizado == loc
+                )
+            )
+
+            localidad = db.session.execute(query).scalar_one_or_none()
+
+            localidad_climatica = LocalidadesClimaticas(
                 prediccion_id = prediccion_id,
+                localidad_id = localidad,
                 nombre = loc,
                 temperatura_maxima = temp_max,
                 temperatura_minima = temp_min
             )
 
-            existe = db.session.query(Localidades.id).filter_by(
-                nombre = localidad.nombre,
+            existe = db.session.query(LocalidadesClimaticas.id).filter_by(
+                nombre = localidad_climatica.nombre,
                 prediccion_id = prediccion_id
             ).first()
 
             if existe:
                 return
             
-            db.session.add(localidad)
+            db.session.add(localidad_climatica)
 
         except Exception as e:
-            print(f"Algo fue mal insertando localidades a la BD: {e}")
+            print(f"Algo fue mal insertando localidades_climaticas a la BD: {e}")
+            db.session.rollback()
+
+    @staticmethod
+    def crear_localidades(
+        nombre : str,
+        nombre_normalizado : str,
+        altitud : int,
+        longitud : float,
+        latitud : float,
+        provincia : str
+    ):
+        try:
+            # Obtengo la provincia relacionada con la localidad a insertar
+            query = (
+                select (
+                    Provincia.id
+                )
+                .where(
+                    Provincia.codigo == provincia
+                )
+            )
+
+            provincia : Provincia = db.session.execute(query).fetchone()
+            print(f"provincia : {provincia.id}")
+
+            localidad = Localidades(
+                nombre = nombre,
+                nombre_normalizado = nombre_normalizado,
+                altitud = altitud,
+                latitud = latitud,
+                longitud = longitud,
+                provincia_id = provincia.id
+            )
+
+            db.session.add(localidad)
+        
+        except Exception as e:
+            print(f"Algo ha salido mal insertando una nueva localidad en la BD : {e}")
             db.session.rollback()

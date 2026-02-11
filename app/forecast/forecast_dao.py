@@ -1,4 +1,4 @@
-from ..models import Predicciones, Provincia, CCAA, Localidades
+from ..models import Predicciones, Provincia, CCAA, LocalidadesClimaticas
 from sqlalchemy import select, and_
 from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
@@ -84,12 +84,12 @@ class ForecastDAO:
         try:
             query = (
                 select(
-                    Localidades.nombre,
-                    Localidades.temperatura_maxima,
-                    Localidades.temperatura_minima
+                    LocalidadesClimaticas.nombre,
+                    LocalidadesClimaticas.temperatura_maxima,
+                    LocalidadesClimaticas.temperatura_minima
                 )
                 .where(
-                    Localidades.prediccion_id == prediccion_id
+                    LocalidadesClimaticas.prediccion_id == prediccion_id
                 )
             )
 

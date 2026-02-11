@@ -108,6 +108,7 @@ class Provincia(db.Model):
     #fincas = relationship("Finca", back_populates = "provincia")
     mediciones = relationship("MedicionClimatica", back_populates="provincia")
     predicciones = relationship("Predicciones", back_populates = "provincia")
+    localidades = relationship("Localidades", back_populates = "provincia")
     
 class CCAA(db.Model):
     __tablename__ = 'ccaa'
@@ -120,15 +121,31 @@ class CCAA(db.Model):
     predicciones = relationship("Predicciones", back_populates = "ccaa")
 
 class Localidades(db.Model):
+    __tablename__ = 'localidades'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nombre = Column(String(50), nullable = False)
+    nombre_normalizado = Column(String(50), nullable = False)
+    altitud = Column(Integer, nullable = False)
+    latitud = Column(Float, nullable = True)
+    longitud = Column(Float, nullable = True)
+    provincia_id = Column(Integer, ForeignKey('provincias.id'), nullable = False)
+
+    provincia = relationship("Provincia", back_populates = "localidades")
+    localidades_climaticas = relationship("LocalidadesClimaticas", back_populates = "localidad")
+
+class LocalidadesClimaticas(db.Model):
     __tablename__ = 'localidades_climaticas'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     prediccion_id = Column(Integer, ForeignKey('predicciones.id'), nullable = True)
+    localidad_id = Column(Integer, ForeignKey('localidades.id'), nullable = False)
     nombre = Column(String(50), nullable = False)
     temperatura_maxima = Column(Integer, nullable = True)
     temperatura_minima = Column(Integer, nullable = True)
 
-    prediccion = relationship("Predicciones", back_populates = "localidades")
+    prediccion = relationship("Predicciones", back_populates = "localidades_climaticas")
+    localidad = relationship("Localidades", back_populates = "localidades_climaticas")
 
     __table_args__ = (
         UniqueConstraint(
@@ -204,7 +221,7 @@ class Predicciones(db.Model):
 
     ccaa = relationship("CCAA", back_populates = "predicciones")
     provincia = relationship("Provincia", back_populates = "predicciones")
-    localidades = relationship("Localidades", back_populates = "prediccion")
+    localidades_climaticas = relationship("LocalidadesClimaticas", back_populates = "prediccion")
 
     __table_args__ = (
         Index("idx_pred_tipo_fecha", "tipo_zona", "fecha_prediccion"),

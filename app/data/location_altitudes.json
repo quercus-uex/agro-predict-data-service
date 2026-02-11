@@ -1,0 +1,98 @@
+[
+    {
+        "nombre": "Cáceres",
+        "nombre_normalizado" : "cáceres",
+        "altitud": 439,
+        "latitud": 39.4767,
+        "longitud": -6.3723,
+        "provincia" : "CC"
+    },
+    {
+        "nombre": "Plasencia",
+        "nombre_normalizado" : "plasencia",
+        "altitud": 415,
+        "latitud": 40.0311,
+        "longitud": -6.0881,
+        "provincia": "CC"
+    },
+    {
+        "nombre": "Trujillo",
+        "nombre_normalizado" : "trujillo",
+        "altitud": 490,
+        "latitud": 39.4611,
+        "longitud": -5.8814,
+        "provincia": "CC"
+    },
+    {
+        "nombre": "Coria",
+        "nombre_normalizado" : "coria",
+        "altitud": 260,
+        "latitud": 39.9833,
+        "longitud": -6.5333,
+        "provincia": "CC"
+    },
+    {
+        "nombre": "Navalmoral de la Mata",
+        "nombre_normalizado" : "navalmoral_de_la_mata",
+        "altitud": 291,
+        "latitud": 39.8917,
+        "longitud": -5.5406,
+        "provincia": "CC"
+    },
+    {
+        "nombre": "Guadalupe",
+        "nombre_normalizado" : "guadalupe",
+        "altitud": 640,
+        "latitud": 39.4508,
+        "longitud": -5.3264,
+        "provincia": "CC"
+    },
+    {
+        "nombre": "Jaraíz de la Vera",
+        "nombre_normalizado" : "jaraíz_de_la_vera",
+        "altitud": 561,
+        "latitud": 40.0603,
+        "longitud": -5.7550,
+        "provincia": "CC"
+    },
+    {
+        "nombre": "Hervás",
+        "nombre_normalizado" : "hervás",
+        "altitud": 688,
+        "latitud": 40.2739,
+        "longitud": -5.8658,
+        "provincia": "CC"
+    },
+    {
+        "nombre": "Valencia de Alcántara",
+        "nombre_normalizado" : "valencia_de_alcántara",
+        "altitud": 467,
+        "latitud": 39.4167,
+        "longitud": -7.2333,
+        "provincia": "CC"
+    },
+    {
+        "nombre": "Alcántara",
+        "nombre_normalizado" : "alcántara",
+        "altitud": 291,
+        "latitud": 39.7167,
+        "longitud": -6.8833,
+        "provincia": "CC"
+    },
+    {
+        "nombre" : "Piornal",
+        "nombre_normalizado" : "piornal",
+        "altitud" : 1175,
+        "latitud" : 40.1210,
+        "longitud" : -5.8312,
+        "provincia": "CC"
+    },
+    {
+        "nombre" : "La Garganta",
+        "nombre_normalizado" : "la_garganta",
+        "altitud" : 1124,
+        "latitud" : 40.3667,
+        "longitud" : -5.7172,
+        "provincia": "CC"
+    }
+]
