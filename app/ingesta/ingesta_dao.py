@@ -1,6 +1,6 @@
 from sqlalchemy import and_, select, inspect, update, delete
 from app.extensions import db
-from ..models import IngestaStatus
+from ..models import IngestaStatus, Localidades, CCAA, Predicciones, Provincia
 from datetime import datetime
 from typing import Optional
 
@@ -165,3 +165,86 @@ class IngestaDAO:
             print(f"Algo fue mal eliminando el estado de ingesta: {e}")
             db.session.rollback()
             return None
+        
+    @staticmethod
+    def crear_predicciones(
+        codigo_zona : Optional[str],
+        data
+    ):
+        try:
+            """
+            Crea un objeto de tipo Prediccion sobre los valores pasados y 
+            lo inserta en la base de datos si no existe
+            
+            :param codigo_zona: Código de la zona sobre la que se hace la consulta
+            :type codigo_zona: Optional[str]
+            :param data: Datos obtenidos de la IA
+            """
+            ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_zona).first()
+            provincia : Provincia = Provincia.query.filter_by(codigo=codigo_zona).first()
+            # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
+            predicciones = Predicciones(
+                ccaa_id = ccaa.id if ccaa else None,
+                provincia_id = provincia.id if provincia else None,
+                **data
+            )
+
+            existe = db.session.query(Predicciones.id).filter_by(
+                tipo_prediccion = predicciones.tipo_prediccion,
+                tipo_zona = predicciones.tipo_zona,
+                codigo_zona = predicciones.codigo_zona,
+                fecha_prediccion = predicciones.fecha_prediccion
+            ).first()
+
+            if existe:
+                return
+            
+            #[✔]Tiene que ser los datos que reciba del broker
+            db.session.add(predicciones)
+
+            return predicciones
+
+        except Exception as e:
+            print(f"Algo fue mal insertando predicciones a la BD : {e}")
+            db.session.rollback()
+
+    @staticmethod
+    def crear_localidades(
+        prediccion_id : int,
+        loc : str,
+        temp_max : int,
+        temp_min : int
+    ) : 
+        """
+        Crea un objeto de tipo Localidad y lo inserta en la BD si no existe
+        
+        :param prediccion_id: Clave foránea que hace referencia a la prediccion
+        :type prediccion_id: int
+        :param loc: Nombre de la localidad a insertar
+        :type loc: str
+        :param temp_max: Temperatura maxima registrada por la localidad a insertar
+        :type temp_max: int
+        :param temp_min: Temperatura minima registrada por la localidad a insertar
+        :type temp_min: int
+        """
+        try:
+            localidad = Localidades(
+                prediccion_id = prediccion_id,
+                nombre = loc,
+                temperatura_maxima = temp_max,
+                temperatura_minima = temp_min
+            )
+
+            existe = db.session.query(Localidades.id).filter_by(
+                nombre = localidad.nombre,
+                prediccion_id = prediccion_id
+            ).first()
+
+            if existe:
+                return
+            
+            db.session.add(localidad)
+
+        except Exception as e:
+            print(f"Algo fue mal insertando localidades a la BD: {e}")
+            db.session.rollback()

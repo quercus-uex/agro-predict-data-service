@@ -1,4 +1,4 @@
-from ..models import Predicciones, Provincia, CCAA
+from ..models import Predicciones, Provincia, CCAA, Localidades
 from sqlalchemy import select, and_
 from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
@@ -77,3 +77,34 @@ class ForecastDAO:
             print(f"Error obteniendo predicción {tipo_zona} ({tipo_prediccion}) : {e}")
             return None
 
+    @staticmethod
+    def _get_localidades_climaticas(
+        prediccion_id
+    ):
+        try:
+            query = (
+                select(
+                    Localidades.nombre,
+                    Localidades.temperatura_maxima,
+                    Localidades.temperatura_minima
+                )
+                .where(
+                    Localidades.prediccion_id == prediccion_id
+                )
+            )
+
+            result = db.session.execute(query)
+            
+            if result is None:
+                return
+
+            result_final = []
+            for r in result:
+                r_to_dict = row2dict_converter(r)
+                result_final.append(r_to_dict)
+
+            return result_final
+        
+        except Exception as e:
+            print(f"Algo ha ocurrido obteniendo las localidades de la prediccion {prediccion_id} - {e}")
+            return None            

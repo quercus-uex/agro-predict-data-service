@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @forecast_bp.route('/climate/pronostico/<string:zona>/<string:prediccion>', methods = ['GET'])
 @log('../logs/fichero_salida.json')
-def pronostico_actual_ccaa(
+def pronostico(
     zona : str,
     prediccion : str
 ) : 

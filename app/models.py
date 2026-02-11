@@ -119,6 +119,24 @@ class CCAA(db.Model):
     provincias = relationship("Provincia", back_populates = "ccaa")
     predicciones = relationship("Predicciones", back_populates = "ccaa")
 
+class Localidades(db.Model):
+    __tablename__ = 'localidades_climaticas'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    prediccion_id = Column(Integer, ForeignKey('predicciones.id'), nullable = True)
+    nombre = Column(String(50), nullable = False)
+    temperatura_maxima = Column(Integer, nullable = True)
+    temperatura_minima = Column(Integer, nullable = True)
+
+    prediccion = relationship("Predicciones", back_populates = "localidades")
+
+    __table_args__ = (
+        UniqueConstraint(
+            'prediccion_id', 'nombre',
+            name = 'uq_prediccion_localidad'
+        ),
+    )
+
 class MedicionClimatica(db.Model):
     __tablename__ = 'mediciones_climaticas'
 
@@ -186,6 +204,7 @@ class Predicciones(db.Model):
 
     ccaa = relationship("CCAA", back_populates = "predicciones")
     provincia = relationship("Provincia", back_populates = "predicciones")
+    localidades = relationship("Localidades", back_populates = "prediccion")
 
     __table_args__ = (
         Index("idx_pred_tipo_fecha", "tipo_zona", "fecha_prediccion"),

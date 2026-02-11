@@ -40,38 +40,37 @@ class IngestionService:
                 error = None
             )
 
-            data = AemetService.get_aemet_data(
+            data_predicciones, data_localidades = AemetService.get_aemet_data(
                 tipo_prediccion = tipo_prediccion,
                 tipo_zona = tipo_zona,
                 codigo_zona = codigo_zona,
                 fecha = fecha
             )
 
-            print(f"Aemet data : {data}")
-
-            ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_zona).first()
-            provincia : Provincia = Provincia.query.filter_by(codigo=codigo_zona).first()
-            # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
-            print(f"CCAA - Provincia : {ccaa} - {provincia}")
-            predicciones = Predicciones(
-                ccaa_id = ccaa.id if ccaa else None,
-                provincia_id = provincia.id if provincia else None,
-                **data
-            )
-
-            existe = db.session.query(Predicciones.id).filter_by(
-                tipo_prediccion = predicciones.tipo_prediccion,
-                tipo_zona = predicciones.tipo_zona,
-                codigo_zona = predicciones.codigo_zona,
-                fecha_prediccion = predicciones.fecha_prediccion
-            ).first()
-
-            if existe:
-                return
+            print(f"Aemet data : {data_predicciones} + {data_localidades}")
             
-            print(f"Predicciones {predicciones}")
-            #[✔]Tiene que ser los datos que reciba del broker
-            db.session.add(predicciones)
+            # Creo la prediccion sobre los datos obtenidos de la IA
+            prediccion_insertada = IngestaDAO.crear_predicciones(
+                codigo_zona = codigo_zona,
+                data = data_predicciones
+            )
+            # Necisto los datos de esta prediccion ya en la DB
+            if prediccion_insertada:
+                db.session.flush()
+
+            # Obtengo la informacion de las localidades obtenidas
+            localidades = data_localidades.get('temperaturas_localidades')
+            # Obtengo los datos internos de las localidades
+            for localidad, datos in localidades.items():
+                temp_max = datos.get('temp_max')
+                temp_min = datos.get('temp_min')
+                IngestaDAO.crear_localidades(
+                    prediccion_id = prediccion_insertada.id,
+                    loc = localidad,
+                    temp_max = temp_max,
+                    temp_min = temp_min
+                )
+
 
             # Todo ha salido bien por lo que cambiamos el estado de los datos solicitados READY
             IngestaDAO.actualizar_estado(
@@ -94,7 +93,7 @@ class IngestionService:
                 status = 'FAILED',
                 dataset = 'actual_futuro',
                 tipo = tipo_prediccion.value,
-                year = fecha.day,
+                year = fecha.year,
                 month = fecha.month,
                 day = fecha.day,
                 finish_time = datetime.now(),

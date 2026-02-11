@@ -91,13 +91,13 @@ class AemetService:
                 normalizar_json(payload = json)
             
             conn.close()
-            
+            print(f"JSON recibido : {json}")
             # Obtenemos datos parseados obtenidos del texto de respuesta por Aemet
             ## Esto será un respaldo por si no obtengo datos del broker
             parseo = AemetParser.parse(texto = texto, respuesta_queue = bool(json))
 
             
-            json_final = {
+            json_predicciones = {
                 "tipo_prediccion" : tipo_prediccion.value,
                 "tipo_zona" : tipo_zona.value,
                 "codigo_zona" : codigo_zona,
@@ -113,10 +113,14 @@ class AemetService:
                 "cotas_nieve" : json.get("cotas_de_nieve") if json else parseo.get("cota_nieve"),
                 "existencia_helada" : json.get("existencias_de_heladas") if json else parseo.get("existencia_helada"),
                 "zona_helada" : json.get("zonas_de_heladas") if json else parseo.get("zona_helada"),
-                "aparicion_nieblas" : json.get("aparicion_de_nieblas")
+                "aparicion_nieblas" : json.get("aparicion_de_nieblas"),
             }
 
-            return json_final
+            json_localidades = {
+                "temperaturas_localidades" : json.get("temperaturas_localidades")
+            }
+
+            return json_predicciones, json_localidades
         
         except Exception as e:
             print(f"Ha ocurrido un error en AemetService : {e}")

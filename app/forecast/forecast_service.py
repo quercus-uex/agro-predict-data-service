@@ -6,7 +6,8 @@ from .forecast_dto import (
     TipoZona, 
     CccaaActualFuturoDTO, 
     ProvinciaActualFuturoDTO, 
-    NacionActualFuturoDTO
+    NacionActualFuturoDTO,
+    TemperaturaLocalidadDTO
 )
 from ..ingesta.ingesta_dto import ProcesoIngestaDTO
 from ..models import IngestaStatus
@@ -19,7 +20,8 @@ class ForecastService:
 
     @staticmethod
     def _build_forecast(
-        data,
+        data_prediccion,
+        data_localidad,
         ccaa_id : Optional[str],
         provincia_id : Optional[str]
     ) : 
@@ -37,25 +39,120 @@ class ForecastService:
         # no es necesario implementar estructuras de datos complejas 
         # ni bucles for
         return ForecastDTO(
-            tipo_prediccion = data.get("tipo_prediccion"),
-            tipo_zona = data.get("tipo_zona"),
-            codigo_zona = data.get("codigo_zona"),
-            fecha_prediccion = data.get("fecha_prediccion"),
-            fecha_elaboracion = data.get("fecha_elaboracion"),
-            estado_cielo = data.get("estado_cielo"),
-            tendencia_temp_general = data.get("tendencia_temp_general"),
-            tendencia_temp_max = data.get("tendencia_temp_max"),
-            tendencia_temp_min = data.get("tendencia_temp_min"),
-            rachas_viento = data.get("rachas_viento"),
-            precipitaciones = data.get("precipitaciones"),
-            cotas_nieve = data.get("cotas_nieve"),
-            existencia_heladas = data.get("existencias_heladas"),
-            zona_heladas = data.get("zona_helada"),
-            aparicion_nieblas = data.get("aparicion_nieblas"),
-            provincia = data.get("provincia") if provincia_id else None,
-            ccaa = data.get("ccaa") if ccaa_id else None
+            tipo_prediccion = data_prediccion.get("tipo_prediccion"),
+            tipo_zona = data_prediccion.get("tipo_zona"),
+            codigo_zona = data_prediccion.get("codigo_zona"),
+            fecha_prediccion = data_prediccion.get("fecha_prediccion"),
+            fecha_elaboracion = data_prediccion.get("fecha_elaboracion"),
+            estado_cielo = data_prediccion.get("estado_cielo"),
+            tendencia_temp_general = data_prediccion.get("tendencia_temp_general"),
+            tendencia_temp_max = data_prediccion.get("tendencia_temp_max"),
+            tendencia_temp_min = data_prediccion.get("tendencia_temp_min"),
+            rachas_viento = data_prediccion.get("rachas_viento"),
+            precipitaciones = data_prediccion.get("precipitaciones"),
+            cotas_nieve = data_prediccion.get("cotas_nieve"),
+            existencia_heladas = data_prediccion.get("existencias_heladas"),
+            zona_heladas = data_prediccion.get("zona_helada"),
+            aparicion_nieblas = data_prediccion.get("aparicion_nieblas"),
+            provincia = data_prediccion.get("provincia") if provincia_id else None,
+            ccaa = data_prediccion.get("ccaa") if ccaa_id else None,
+            temperatura_localidades = data_localidad
         )
     
+    @staticmethod
+    def _build_data_for_dto(
+        ccaa_id : Optional[str],
+        provincia_id : Optional[str],
+        tipo_zona : str,
+        tipo_prediccion : str
+    ):
+        if ccaa_id:
+            data_prediccion = ForecastDAO._get_predicciones(
+                tipo_prediccion = tipo_prediccion,
+                tipo_zona = tipo_zona,
+                zona_id = ccaa_id
+            )
+
+            data_localidad = ForecastDAO._get_localidades_climaticas(
+                prediccion_id = data_prediccion.get('id')
+            )
+
+            localidades_dto = []
+            for d in data_localidad:
+                localidades_dto.append(
+                    TemperaturaLocalidadDTO(
+                        nombre = d['nombre'],
+                        temperatura_maxima = d['temperatura_maxima'],
+                        temperatura_minima = d['temperatura_minima']
+                    )
+                )
+
+            items = ForecastService._build_forecast(
+                data_prediccion = data_prediccion,
+                data_localidad = localidades_dto,
+                ccaa_id = ccaa_id,
+                provincia_id = None
+            )
+
+        elif provincia_id:
+            data_prediccion = ForecastDAO._get_predicciones(
+                tipo_prediccion = tipo_prediccion,
+                tipo_zona = tipo_zona,
+                zona_id = provincia_id
+            )
+            print(f"Data prediccion : {data_prediccion}")
+            data_localidad = ForecastDAO._get_localidades_climaticas(
+                prediccion_id = data_prediccion.get('id')
+            )
+
+            localidades_dto = []
+
+            for d in data_localidad:
+                localidades_dto.append(
+                    TemperaturaLocalidadDTO(
+                        nombre = d['nombre'],
+                        temperatura_maxima = d['temperatura_maxima'],
+                        temperatura_minima = d['temperatura_minima']
+                    )
+                )
+
+            items = ForecastService._build_forecast(
+                data_prediccion = data_prediccion,
+                data_localidad = localidades_dto,
+                ccaa_id = None,
+                provincia_id = provincia_id
+            )
+
+        else:
+            data_prediccion = ForecastDAO._get_predicciones(
+                tipo_prediccion = tipo_prediccion,
+                tipo_zona = tipo_zona,
+                zona_id = None
+            )
+
+            data_localidad = ForecastDAO._get_localidades_climaticas(
+                prediccion_id = data_prediccion.get('id')
+            )
+
+            localidades_dto = []
+            for d in data_localidad:
+                localidades_dto.append(
+                    TemperaturaLocalidadDTO(
+                        nombre = d['nombre'],
+                        temperatura_maxima = d['temperatura_maxima'],
+                        temperatura_minima = d['temperatura_minima']
+                    )
+                )
+            
+            items = ForecastService._build_forecast(
+                data_prediccion = data_prediccion,
+                data_localidad = localidades_dto,
+                ccaa_id = None,
+                provincia_id = None
+            )
+
+        return items
+
     @staticmethod
     def get_forecast(
         app,
@@ -81,11 +178,10 @@ class ForecastService:
             zona = tipo_zona.value
         )
 
-        print(f"Estado - {estado}", flush = True)
-
         if estado:
             # Si no se encuentran los datos solicitados en la BD informamos al cliente
             if estado['status'] in ('PENDING', 'LOADING'):
+
                 return ProcesoIngestaDTO(
                     status = estado['status'],
                     datos_solicitados = tipo_prediccion.value,
@@ -94,19 +190,15 @@ class ForecastService:
                 )
             # Los datos ya se encuentran en la BD
             elif estado['status'] == 'READY':
-                if ccaa_id:
-                    print("ccaa")
-                    data = ForecastDAO._get_predicciones(
-                        tipo_prediccion = tipo_prediccion.value,
-                        tipo_zona = tipo_zona.value,
-                        zona_id = ccaa_id
-                    )
 
-                    items = ForecastService._build_forecast(
-                        data = data,
-                        ccaa_id = ccaa_id,
-                        provincia_id = None
-                    )
+                items = ForecastService._build_data_for_dto(
+                    ccaa_id = ccaa_id,
+                    provincia_id = provincia_id,
+                    tipo_zona = tipo_zona.value,
+                    tipo_prediccion = tipo_prediccion.value
+                )
+
+                if ccaa_id:
 
                     return CccaaActualFuturoDTO(
                         type_prediction = tipo_prediccion,
@@ -115,18 +207,7 @@ class ForecastService:
                     )
 
                 elif provincia_id:
-                    data = ForecastDAO._get_predicciones(
-                        tipo_prediccion = tipo_prediccion.value,
-                        tipo_zona = tipo_zona.value,
-                        zona_id = provincia_id
-                    )
-
-                    items = ForecastService._build_forecast(
-                        data = data,
-                        ccaa_id = None,
-                        provincia_id = provincia_id
-                    )
-
+            
                     return ProvinciaActualFuturoDTO(
                         type_prediction = tipo_prediccion,
                         type_zone = tipo_zona,
@@ -134,23 +215,13 @@ class ForecastService:
                     )
                 
                 else:
-                    data = ForecastDAO._get_predicciones(
-                        tipo_prediccion = tipo_prediccion.value,
-                        tipo_zona = tipo_zona.value,
-                        zona_id = None
-                    )
-
-                    items = ForecastService._build_forecast(
-                        data = data,
-                        ccaa_id = None,
-                        provincia_id = None
-                    )
 
                     return NacionActualFuturoDTO(
                         type_prediction = tipo_prediccion,
                         type_zone = tipo_zona,
                         datos = items
                     )
+                
         elif ForecastDAO._get_predicciones(
             tipo_prediccion = tipo_prediccion.value, 
             tipo_zona = tipo_zona.value, 
@@ -191,7 +262,6 @@ class ForecastService:
                 finished_at = None,
                 error_message = None
             )
-
             # Hilo independiente al main que inserta datos
             lanzar_ingesta_background(
                 app,

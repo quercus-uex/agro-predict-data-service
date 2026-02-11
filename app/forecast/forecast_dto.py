@@ -16,6 +16,12 @@ class TipoPrediccion(str, Enum):
     AFTERTOMORROW = "aftertomorrow"
 
 @dataclass
+class TemperaturaLocalidadDTO:
+    nombre : str
+    temperatura_maxima : int
+    temperatura_minima : int
+
+@dataclass
 class ForecastDTO:
     tipo_prediccion : TipoPrediccion
     tipo_zona : TipoZona
@@ -34,6 +40,7 @@ class ForecastDTO:
     aparicion_nieblas : Optional[str]
     provincia : Optional[str]
     ccaa : Optional[str]
+    temperatura_localidades : Optional[List[TemperaturaLocalidadDTO]]
 
 ##### GENERICO CCAA #####
 @dataclass
