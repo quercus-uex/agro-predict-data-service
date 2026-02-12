@@ -22,6 +22,15 @@ class TemperaturaLocalidadDTO:
     temperatura_minima : int
 
 @dataclass
+class LocalidadDTO:
+    nombre : str
+    nombre_normalizado : str
+    altitud : int
+    latitud : float
+    longitud : float
+    provincia : str
+
+@dataclass
 class ForecastDTO:
     tipo_prediccion : TipoPrediccion
     tipo_zona : TipoZona

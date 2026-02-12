@@ -7,7 +7,8 @@ from .forecast_dto import (
     CccaaActualFuturoDTO, 
     ProvinciaActualFuturoDTO, 
     NacionActualFuturoDTO,
-    TemperaturaLocalidadDTO
+    TemperaturaLocalidadDTO,
+    LocalidadDTO
 )
 from ..ingesta.ingesta_dto import ProcesoIngestaDTO
 from ..models import IngestaStatus
@@ -59,6 +60,34 @@ class ForecastService:
             temperatura_localidades = data_localidad
         )
     
+    @staticmethod
+    def _build_localidades(
+        data_localidades
+    ) -> LocalidadDTO:
+        """
+        Crea LocalidadDTO sobre los datos pasados por parámetros
+        
+        :param data_localidades: Todas las localidades almacenadas en la DB
+        :return: LocalidadDTO
+        """
+        
+        localidades_dto = []
+        for l in data_localidades:
+            localidades_dto.append(
+                LocalidadDTO(
+                    nombre = l['nombre'],
+                    nombre_normalizado = l['nombre_normalizado'],
+                    altitud = l['altitud'],
+                    latitud = l.get('latitud', None),
+                    longitud = l.get('longitud', None),
+                    provincia = l['codigo']
+                )
+            )
+
+        return localidades_dto
+
+
+
     @staticmethod
     def _build_data_for_dto(
         ccaa_id : Optional[str],
@@ -152,6 +181,18 @@ class ForecastService:
             )
 
         return items
+
+    @staticmethod
+    def get_localidades():
+        """
+        Obtiene todas las localidades almacenadas en la DB y las retorna en formato
+        JSON, construyendo sus DTO
+        """
+        localidades_db = ForecastDAO._get_localidades()
+
+        return ForecastService._build_localidades(
+            localidades_db
+        )
 
     @staticmethod
     def get_forecast(

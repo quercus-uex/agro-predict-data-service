@@ -12,6 +12,32 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+@forecast_bp.route('/climate/pronostico/localidades', methods = ['GET'])
+@log('../logs/fichero_salida.json')
+def localidades():
+    try:
+        datos = ForecastService.get_localidades()
+
+        if not datos:
+            raise APIException(
+                message = "No se han obtenido datos de localidades",
+                status = 404,
+                error = 'Data Not Found'
+            )
+        
+        return dataclass_to_json(datos)
+    
+    except APIException as e:
+        logger.info(f"API Exception: {e}")
+        return jsonify(
+            {
+                'success' : 'false',
+                'code' : '502',
+                'message' : 'Provider Exception',
+                'error' : str(e)
+            }
+        ), 502
+
 @forecast_bp.route('/climate/pronostico/<string:zona>/<string:prediccion>', methods = ['GET'])
 @log('../logs/fichero_salida.json')
 def pronostico(
