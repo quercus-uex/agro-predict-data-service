@@ -1,0 +1,1004 @@
+openapi: 3.1.0
+info:
+  title: Servicio de Datos - OpenAPI 3.1
+  description: |-
+    Servicio de datos para el sistema software agro-predict.   
+    Encargado de solicitar, acumular, normalizar y almacenar en la base de datos, datos obtenidos por servicios públicos externos.  
+
+    Devuelve los datos en formato JSON con codificación UTF-8.
+
+    Links sobre los servicios de abastecimiento de datos meteorológicos:
+    - [Servicio AEMET](https://github.com/agro-predict-tfg-2026/Aemet.git)
+    - [Servicio SiAR](https://github.com/agro-predict-tfg-2026/SiAR.git)
+    - [Servicio ITACyL](https://github.com/agro-predict-tfg-2026/ITACyL.git)
+    - [Servicio IA Generativa](https://github.com/agro-predict-tfg-2026/mcp-ia-service.git)
+
+  contact:
+    email: amendoma@alumnos.unex.es
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Conoce en profundidad el objetivo del proyecto
+  url: https://github.com/agro-predict-tfg-2026/documentacion_agro_predict.git
+
+servers:
+  - url: http://localhost:5000
+
+tags:
+  - name: Históricos
+    description: Obtención de datos históricos sobre una provincia | CCAA | estación meteorológica.
+  - name: Forecast
+    description: Obtención de datos futuros sobre una provincia | CCAA | nación.
+  - name: Plagas
+    description: Obtención de datos de plagas sobre variedades de cultivos específicas.
+
+paths:
+  /climate/historical/provincias:
+    get:
+      tags:
+        - Históricos
+      summary: Obtiene datos climaticos históricos por provincias
+      description: Consulta el proveedor externo de SiAR para obtener los datos climáticos históricos asociados a una provincia en un rango temporal determinado.
+      operationId: historicalProvincial
+      parameters:
+        - name: provinceCode
+          in: query
+          description: Código de la provincia
+          required: true
+          schema:
+            type: string
+            enum: [CC, BA]
+            default: "CC"
+        - name: type
+          in: query
+          description: Tipo de registro horario que se quiere consultar
+          required: true
+          schema:
+            type: string
+            enum: [HORA, DIA, SEMANA, MES]
+            default: "DIA"
+        - name: startDate
+          in: query
+          description: Fecha inicial de recogida de datos
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-01-04"
+        - name: endDate
+          in: query
+          description: Fecha final de recogida de datos
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-01-04"
+      responses:
+        '200':
+          description: Datos históricos provinciales obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/HistoricoHoraResponse'
+                  - $ref: '#/components/schemas/HistoricoDiaResponse'
+                  - $ref: '#/components/schemas/HistoricoSemanaResponse'
+                  - $ref: '#/components/schemas/HistoricoMesResponse'
+                discriminator:
+                  propertyName: type
+        '400':
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Todos los parámetros deben estar definidos"
+                status: 400
+                error: "Invalid Parameters"
+        '404':
+          description: No se han encontrado datos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado datos para los parámetros especificados"
+                status: 404
+                error: "Data Not Found"
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Error del proveedor de datos"
+                status: 502
+                error: "Provider Error"
+
+  /climate/historical/estacion:
+    get:
+      tags:
+        - Históricos
+      summary: Obtiene datos climáticos históricos por estación
+      description: Consulta el proveedor externo de SiAR para obtener datos climáticos asociados a una estación en un rango temporal determinado.
+      operationId: historicalEstacion
+      parameters:
+        - name: estacionCode
+          in: query
+          description: Identificador único de la estacion
+          required: true
+          schema:
+            type: string
+            example: "CC01"
+        - name: type
+          in: query
+          description: Tipo de registro horario que se quiere consultar
+          required: true
+          schema:
+            type: string
+            enum: [HORA, DIA, SEMANA, MES]
+            default: "DIA"
+        - name: startDate
+          in: query
+          description: Fecha inicial de recogida de datos
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: endDate
+          in: query
+          description: Fecha final de recogida de datos
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+
+      responses:
+        '200':
+          description: Datos históricos para la estacion `estacionCode` obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/HistoricoHoraResponse'
+                  - $ref: '#/components/schemas/HistoricoDiaResponse'
+                  - $ref: '#/components/schemas/HistoricoSemanaResponse'
+                  - $ref: '#/components/schemas/HistoricoMesResponse'
+                discriminator:
+                  propertyName: type
+        '400':
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Todos los parámetros deben estar definidos"
+                status: 400
+                error: "Invalid Parameters"
+        '404':
+          description: No se han encontrado datos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado datos para los parámetros especificados"
+                status: 404
+                error: "Data Not Found"
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Error del proveedor de datos"
+                status: 502
+                error: "Provider Error"
+  /climate/pronostico/localidades:
+    get:
+      tags:
+        - Forecast
+      summary: Obtiene información de localidades almacenadas en DB
+      description: Consulta la base de datos para obtener información de todas las localidades almacenadas
+      operationId: localidades
+      responses:
+        '200':
+          description: Información de localidades obtenida correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocalidadResponse'
+        '404':
+          description: No se han encontrado datos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado datos para los parámetros especificados"
+                status: 404
+                error: "Data Not Found"
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Error del proveedor de datos"
+                status: 502
+                error: "Provider Error"
+  /climate/pronostico/{zona}/{prediccion}:
+    get:
+      tags:
+        - Forecast
+      summary: Obtiene datos predictivos en función de los parámetros indicados.
+      description: Consulta datos predictivos de AEMET en base a los parámetros del path indicados.
+      operationId: pronostico
+      parameters:
+        - name: zona
+          in: path
+          description: Tipo de zona sobre la que realizar la predicción
+          required: true
+          schema:
+            type: string
+            enum: ["ccaa", "provincial", "nacional"]
+            default: "provincial"
+        - name: prediccion
+          in: path
+          description: Tipo de prediccion que se quiere realizar
+          required: true
+          schema:
+            type: string
+            enum: ["actual", "tomorrow", "aftertomorrow"]
+            default: "tomorrow"
+        - name: ccaaId
+          in: query
+          description: Identificador de la comunidad autónoma sobre la que se quiere realizar la prediccion
+          schema:
+            type:
+              - 'null' 
+              - string
+            example: "EXT"
+        - name: provinciaId
+          in: query
+          description: Identificador de la provincia sobre la que se quiere realizar la prediccion
+          schema:
+            type:
+              - 'null'
+              - string
+            example: "CC"
+      responses:
+        '200':
+          description: Prediccion meteorológica sobre los parámetros indicados realizada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericsForecasts'
+        '400':
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Todos los parámetros deben estar definidos"
+                status: 400
+                error: "Invalid Parameters"
+        '404':
+          description: No se han encontrado datos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado datos para los parámetros especificados"
+                status: 404
+                error: "Data Not Found"
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Error del proveedor de datos"
+                status: 502
+                error: "Provider Error"
+  /climate/plagas:
+    get:
+      tags:
+        - Plagas
+      summary: Calendario de plagas/enfermedades para un cultivo o grupo de cultivos
+      description: Obtiene el calendario de plagas/enfermedades para un cultivo o grupo de cultivos.
+      operationId: getPlagasCalendar
+      parameters:
+        - name: cultivo
+          in: query
+          required: true
+          description: Id del cultivo
+          schema:
+            type: integer
+            examples: [1]  
+        - name: grupo
+          in: query
+          required: true
+          description: Grupo de cultivo a analizar
+          schema:
+            type: string
+            enum:
+              - "CEREALES"
+              - "LEGUMINOSAS"
+        - name: tipo
+          in: query
+          required: true
+          description: Elección entre plaga o enfermedades
+          schema:
+            type: string
+            enum: ["plaga", "enfermedad"]
+            default: "plaga"
+      responses:
+        '200':
+          description: "Obtención del calendario de plagas/enfermedades obtenido exitosamente"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatosPlaga'
+        '400':
+          description: Parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Todos los parámetros deben estar definidos"
+                status: 400
+                error: "Invalid Parameters"
+        '404':
+          description: No se han encontrado datos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado datos para los parámetros especificados"
+                status: 404
+                error: "Data Not Found"
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Error del proveedor de datos"
+                status: 502
+                error: "Provider Error"
+components:
+  schemas:
+    DatosPlaga:
+      type: object
+      properties:
+        public_id:
+          type: integer
+          description: Identificador del cultivo
+          example: 0
+        nombre:
+          type: string
+          description: Nombre del cultivo
+          example: "Olivo"
+        agente_causante:
+          type: string
+          description: Agente causante de la plaga/enfermedad
+          example: "Aelia spp., Eurygaster spp."
+        momento_critico:
+          type: string
+          description: Momento crítico de aparición de la plaga/enfermedad
+          example: "Primavera"
+        observaciones:
+          type: string
+          description: Observaciones sobre el problema
+          example: "Especial atención a los primeros vuelos de adultos, antes de las puestas"
+        calendario:
+          type: array
+          description: Calendario de afectación de la plaga/enfermedad en el cultivo seleccionado
+          items:
+            $ref: '#/components/schemas/CultivoCalendario'
+    CultivoCalendario:
+      type: object
+      required: [cultivo_id, plaga_id, grupo, semana, nivel_alerta]
+      properties:
+        cultivo_id:
+          type: integer
+          description: Identificador de cultivo asociado al Calendario
+        plaga_id:
+          type: integer
+          description: Identificador de la plaga asociada al calendario
+          example: 2
+        grupo:
+          type: string
+          description: Grupo de cultivo a analizar
+          example: "cereales"
+        semana:
+          type: integer
+          description: Semana del calendario analizada
+          example: 4
+        nivel_alerta:
+          type: integer
+          description: nivel de alerta sobre el grupo de cultivo analizado (0,50,100)
+          example: 50
+    TemperaturaLocalidadDTO:
+      type: object
+      required: [nombre, temperatura_maxima, temperatura_minima]
+      properties:
+        nombre:
+          type: string
+          description: Nombre de la localidad
+          example: "navalmoral_de_la_mata"
+        temperatura_maxima:
+          type: integer
+          description: Temperatura máxima predecida para localidad
+          example: 12
+        temperatura_minima:
+          type: integer
+          description: Temperatura minima predecida para la localidad
+          example: 10
+    ForecastDTO:
+      type: object
+      required: [tipo_prediccion, tipo_zona, codigo_zona, fecha_prediccion, fecha_elaboracion]
+      properties:
+        tipo_prediccion:
+          type: string
+          description: Tipo de prediccion que se ha realizado (actual, tomorrow, aftertomorrow)
+          enum: ["actual", "tomorrow", "aftertomorrow"]
+          example: "tomorrow"
+        tipo_zona:
+          type: string
+          description: Tipo de zona sobre la que se realiza la prediccion (ccaa, nacional, provincial)
+          enum: ["ccaa", "provincial", "nacional"]
+          example: "provincial"
+        codigo_zona:
+          type: string
+          description: Identificador de la zona sobre la que se realiza la prediccion
+          example: "CC"
+        fecha_prediccion:
+          type: string
+          format: date
+          description: Fecha sobre la que se obtiene los datos predecidos
+          example: "2026-02-17"
+        fecha_elaboracion:
+          type: string
+          format: date-time
+          description: Fecha en la que se realiza la petición
+          example: "2026-02-16"
+        estado_cielo:
+          type: 
+            - 'null'
+            - string
+          description: Estado climático en el que se encuentra el cielo
+          example: "nuboso"
+        tendencia_temp_general: 
+          type: 
+            - 'null'
+            - string
+          description: Tendencia futura que tendrá la temperatura en general
+          example: "bajada general"
+        tendencia_temp_max:
+          type:
+            - 'null'
+            - string
+          description: Tendencia futura de temperaturas máximas
+          example: "subidas en la mitad del día"
+        tendencia_temp_min:
+          type:
+            - 'null'
+            - string
+          description: Tendencia futura de temperaturas mínimas
+          example: "bajadas por la noche"
+        rachas_viento:
+          type:
+            - 'null'
+            - string
+          description: Rachas de viento que se pueden producir en un futuro
+          example: viento del suroeste moderado, con intervalos de fuerte viento
+        precipitaciones:
+          type:
+            - 'null'
+            - string
+          description: Prediciptaciones futuras
+          example: "1"
+        cotas_nieve:
+          type:
+            - 'null'
+            - string
+          description: Existencia futura de cota de nieve
+          example: "1200 a 1400 metros"
+        existencia_heladas:
+          type:
+            - 'null'
+            - string
+          description: Posibilidad de existencia de heladas
+          example: "1"
+        zona_heladas:
+          type:
+            - 'null'
+            - string
+          description: Zonas donde se prevee que existan heladas
+          example: "suereste de la región"
+        aparicion_nieblas:
+          type:
+            - 'null'
+            - string
+          description: Posibilidad de aparición de nieba futura
+          example: "1"
+        provincia:
+          type:
+            - 'null'
+            - string
+          description: Identificador de la provincia sobre la que se está realizando la prediccion
+          example: "CC"
+        ccaa:
+          type:
+            - 'null'
+            - string
+          description: Identificación de la comunidad autónoma sobre la que se está realizando la predicción
+          example: "EXT"
+        temperatura_localidades:
+          type: 
+            - 'null'
+            - array
+          description: Indices de temperatura minima y máxima por localidades predecidas
+          items:
+            $ref: '#/components/schemas/TemperaturaLocalidadDTO'
+    GenericsForecasts:
+      type: object
+      properties:
+        type_prediction:
+          type: string
+          enum: ["actual", "tomorrow", "aftertomorrow"]
+          example: "tomorrow"
+        type_zone:
+          type: string
+          enum: ["ccaa", "nacional", "provincial"]
+          example: "provincial"
+        datos:
+          type: array
+          items: 
+            $ref: '#/components/schemas/ForecastDTO'
+    LocalidadResponse:
+      type: object
+      required: [nombre, nombre_normalizado, altitud, latitud, longitud, provincia]
+      properties:
+        nombre:
+          type: string
+          description: Nombre de la localidad
+          example: "Cáceres"
+        nombre_normalizado:
+          type: string
+          description: Nombre normalizado de la localidad
+          example: "navalmoral_de_la_mata"
+        altitud:
+          type: integer
+          description: Altitud a la que se encuentra la localidad
+          example: 645
+        latitud:
+          type: number
+          description: La latitud en la que se encuentra la localidad
+          example: 40.0371
+        longitud:
+          type: number
+          description: La longitud en la que se encuentra la localidad
+          example: 6.0865
+        provincia:
+          type: string
+          description: Provincia asociada a la localidad
+          example: "CC"
+    ApiError:
+      type: object
+      properties:
+        message: 
+          type: string
+        status:
+          type: integer
+        error:
+          type: string
+    HistoricoHoraResponse:
+     type: object
+     required: [type, datos]
+     properties:
+      type:
+        type: string
+        description: Tipo de registro horario utilizado
+        enum: [HORA]
+      datos:
+        type: array
+        description: Vector de datos
+        items:
+          $ref: '#/components/schemas/HoraDTO'
+    HistoricoDiaResponse:
+      type: object
+      required: [type, datos]
+      properties:
+        type:
+          type: string
+          description: Tipo de registro horario utilizado
+          enum: [DIA]
+        datos:
+          type: array
+          description: Vector de datos
+          items:
+            $ref: '#/components/schemas/DiaDTO'
+    HistoricoSemanaResponse:
+      type: object
+      required: [type, datos]
+      properties:
+        type: 
+          type: string
+          description: Tipo de registro horario utilizado
+          enum: [SEMANA]
+        datos:
+          type: array
+          description: Vector de Datos
+          items:
+            $ref: '#/components/schemas/SemanaDTO'
+    HistoricoMesResponse:
+      type: object
+      required: [type, datos]
+      properties:
+        type: 
+          type: string
+          description: Tipo de registro horario utilizado
+          enum: [MES]
+        datos:
+          type: array
+          description: Vector de Datos
+          items:
+            $ref: '#/components/schemas/MesDTO'
+  
+    HoraDTO:
+      type: object
+      required: [horaMin, tempMedia, humedadMedia, velViento, precipitacion, estacion, provincia, fecha]
+      properties:
+        horaMin:
+          type: integer
+          description: Hora y minuto del dato (formato HHMM)
+          minimum: 0
+          maximum: 2359
+          example: 1430
+        tempMedia:
+          type: number
+          description: Temperatura media del aire (ºC)
+          example: 14.0
+        humedadMedia:
+          type: number
+          description: Humedad relativa media (%)
+          example: 80.4
+        velViento:
+          type: number
+          description: Velocidad media del viento (km/h o m/s segun config)
+          example: 20.0
+        precipitacion:
+          type: number
+          description: Precipitacion acumulada (mm)
+          example: 200.2
+        estacion:
+          type:
+            - 'null' 
+            - string
+          description: Identificación de la estación asociada
+          example: "CC01"
+        estaciones:
+          type: array
+          items:
+            type: 
+              - 'null'
+              - string
+            example: "CC01, CC02"
+        provincia:
+          type: 
+            - 'null'
+            - string
+          description: Identificación de la provincia asociada
+          example: "CC"
+        fecha:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00"
+    DiaDTO:
+      type: object
+      required: [tempMedia, tempMax, tempMin, humedadMedia, humedadMax, humedadMin, velViento, precipitacion, etpMon, pepMon, estacion, provincia, fecha]
+      properties:
+        tempMedia:
+          type: number
+          description: Temperatura media del aire (ºC)
+          example: 14.0
+        tempMax:
+          type: number
+          description: Temperatura máxima diaria (ºC)
+          example: 21.0
+        horMinTempMax: 
+          type: integer
+          description: Hora y minuto de la temperatura maxima (formato HHMM)
+          minimum: 0
+          maximum: 2359
+          example: 1430
+        tempMin:
+          type: number
+          description: Temperatura minima diaria (ºC)
+          example: 11.0
+        horMinTempMin:
+          type: integer
+          description: Hora y minuto de la temperatura minima (formato HHMM)
+          minimum: 0
+          maximum: 2359
+          example: 1120
+        humedadMedia:
+          type: number
+          description: Humedad media diaria
+          example: 11.9
+        humedadMax:
+          type: number
+          description: Humedad maxima diaria
+          example: 20.2
+        horMinHumMax:
+          type: integer
+          description: Hora y minuto de la humedad maxima (formato HHMM)
+          example: 2000
+        humedadMin:
+          type: number
+          description: Humedad minima diaria
+          example: 11.0
+        horMinHumMin:
+          type: integer
+          description: Hora y minuto de la humedad minima (formato HHMM)
+          example: 1100
+        velViento:
+          type: number
+          description: Velocidad media diaria del viento
+          example: 11.2
+        velVientoMax:
+          type: number
+          description: Velocidad máxima diaria del viento (km/h o m/s)
+          example: 20.4
+        precipitacion:
+          type: integer
+          description: Precipitacion diaria total (mm)
+          example: 14.2
+        etpMon:
+          type: number
+          description: Evapotranspiración por Penman-Montheith
+          example: 1.12
+        pepMon:
+          type: number
+          description: Precipitación efectiva por Penman-Montheith
+          example: 2.3
+        estacion:
+          type:
+            - 'null' 
+            - string
+          description: Identificación de la estación asociada
+          example: "CC01"
+        estaciones:
+          type: array
+          items:
+            type: 
+              - 'null'
+              - string
+            example: "CC01, CC02"
+        provincia:
+          type: 
+            - 'null'
+            - string
+          description: Identificación de la provincia asociada
+          example: "CC"
+        fecha:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00"
+
+    SemanaDTO:
+      type: object
+      required: [anio, semana, tempMedia, tempMax, tempMin, diaHoraTempMax, diaHoraTempMin, humedadMedia, humedadMax, humedadMin, diaHoraHumMax, diaHoraHumMin, velViento, precipitacion, etpMon, pepMon, estacion, provincia]
+      properties:
+        anio:
+          type: integer
+          description: Año natural del dato
+          example: 2025
+        semana:
+          type: integer
+          description: Número de semana (1-52/53)
+          minimum: 1
+          maximum: 53
+          example: 22
+        tempMedia:
+          type: number
+          description: Temperatura media semanal
+          example: 11.1
+        tempMax:
+          type: number
+          description: Temperatura maxima semanal (ºC)
+          example: 22.1
+        tempMin:
+          type: number
+          description: Temperatura minima semanal (ºC)
+          example: 10.0
+        diaHoraTempMax:
+          type: string
+          format: date-time
+          description: Dia y hora en la que se registró la temperatura maxima (formato "DDHHMM")
+          example: "121100"
+        diaHoraTempMin:
+          type: string
+          format: date-time
+          description: Dia y hora en la que se registró la temperatura minima (formato "DDHHMM")
+          example: "211100"
+        humedadMedia:
+          type: number
+          description: Humedad media semanal
+          example: 10.0
+        humedadMax:
+          type: number
+          description: Humedad maxima semanal 
+          example: 20.0
+        humedadMin:
+          type: number
+          description: Humedad minima semanal
+          example: 10.0
+        diaHoraHumMax:
+          type: string
+          format: date-time
+          description: Dia y hora en la que se registró la humedad máxima (formato "DDHHMM")
+          example: "122200"
+        diaHoraHumMin:
+          type: string
+          format: date-time
+          description: Dia y hora en la que se registró la humedad mínima (formato "DDHHMM")
+          example: "210000"
+        velViento:
+          type: number
+          description: Velocidad media del viento semanal
+          example: 11.0
+        velVientoMax:
+          type: number
+          description: Velocidad máxima del viento semanal
+          example: 20.0
+        precipitacion: 
+          type: number
+          description: Precipitacion acumulada semanal (mm)
+          example: 12.0
+        etpMon:
+          type: number
+          description: Evapotranspiración por Penman-Montheith
+          example: 1.12
+        pepMon:
+          type: number
+          description: Precipitación efectiva por Penman-Montheith
+          example: 2.3
+        estacion:
+          type:
+            - 'null' 
+            - string
+          description: Identificación de la estación asociada
+          example: "CC01"
+        estaciones:
+          type: array
+          items:
+            type: 
+              - 'null'
+              - string
+            example: "CC01, CC02"
+        provincia:
+          type: 
+            - 'null'
+            - string
+          description: Identificación de la provincia asociada
+          example: "CC"
+    MesDTO:
+      type: object
+      required: [anio, mes, numDias, tempMedia, tempMax, diaHoraMinTempMax, tempMin, diaHoraMinTempMin, humedadMedia, humedadMax, diaHoraHumMax, humedadMin, diaHoraHumMin, velViento, precipitacion, etpMon, pepMon, estacion, provincia]
+      properties:
+        anio:
+          type: integer
+          description: Año anual del dato
+          example: 2025
+        mes:
+          type: integer
+          description: Número del mes (1 a 12)
+          minimun: 1
+          maximum: 12
+          example: 8
+        numDias:
+          type: integer
+          description: Numero de dia en el mes
+          example: 21
+        tempMedia: 
+          type: number
+          description: Temperatura media mensual
+          example: 23.0
+        tempMax:
+          type: number
+          description: Temperatura máxima mensual (ºC)
+          example: 25.0
+        diaHoraMinTempMax:
+          type: string
+          format: date-time
+          description: Día y hora de la temperatura maxima
+          example: "2025-01-01T00:00:00"
+        tempMin:
+          type: number
+          description: Temperatura minima mensual (ºC)
+          example: 21.0
+        diaHoraMinTempMin:
+          type: string
+          format: date-time
+          description: Día y hora de la temperatura minima
+          example: "2025-01-01T00:00:00"
+        humedadMedia:
+          type: number
+          description: Humedad media mensual
+          example: 11.1
+        humedadMax:
+          type: number
+          description: Humedad máxima mensual
+          example: 14.0
+        diaHoraHumMax:
+          type: string
+          format: date-time
+          description: Día y hora de la humedad máxima
+          example: "2025-01-01T00:00:00"
+        humedadMin:
+          type: number
+          description: Humedad mínima mensual
+          example: 8.0
+        diaHoraHumMin:
+          type: string
+          format: date-time
+          description: Día y hora de la humedad mínima
+          example: "2025-01-01T00:00:00"
+        velViento:
+          type: number
+          description: Velocidad media mensual del aire
+          example: 11.2
+        precipitacion:
+          type: number
+          description: Precipitacion total mensual (mm)
+          example: 40.0
+        etpMon:
+          type: number
+          description: Evapotranspiración por Penman-Montheith
+          example: 1.12
+        pepMon:
+          type: number
+          description: Precipitación efectiva por Penman-Montheith
+          example: 2.3
+        estacion:
+          type:
+            - 'null' 
+            - string
+          description: Identificación de la estación asociada
+          example: "CC01"
+        estaciones:
+          type: array
+          items:
+            type: 
+              - 'null'
+              - string
+            example: "CC01, CC02"
+        provincia:
+          type: 
+            - 'null'
+            - string
+          description: Identificación de la provincia asociada
+          example: "CC"
+
+
