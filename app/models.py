@@ -4,6 +4,79 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Ind
 from sqlalchemy.orm import relationship
 from .extensions import db
 
+class EtapaFenologica(db.Model):
+    __tablename__ = 'etapa_fenologica'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    nombre = Column(String(20), nullable = False, unique = True)
+    codigo = Column(String(10), nullable = False, unique = True)
+    orden = Column(Integer, nullable = False, unique = True)
+
+    umbral = relationship("UmbralesTemperatura", back_populates = "etapa")
+
+class Cultivo(db.Model):
+    __tablename__ = 'cultivos'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    nombre = Column(String(100), nullable = False)
+    nombre_cientifico = Column(String(200), nullable = False)
+    descripcion = Column(String(300), nullable = False, unique = False)
+
+    variedades = relationship("Variedades", back_populates = "cultivo")
+
+    __table_args__ = (
+        UniqueConstraint(
+            'nombre', 'nombre_cientifico',
+            name = 'uq_cultivo_nombre_cientifico'
+        ),
+    )
+
+class Variedades(db.Model):
+    __tablename__ = 'variedades'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = False)
+    nombre = Column(String(200), nullable = False)
+    horas_frio_min = Column(Integer, nullable = False)
+    horas_frio_max = Column(Integer, nullable = False)
+    modelo_id = Column(Integer, ForeignKey("modelos_hora_frio.id"), nullable = False)
+
+    cultivo = relationship("Cultivo", back_populates = "variedades")
+    modelo = relationship("ModelosHoraFrio", back_populates = "variedades")
+    umbral = relationship("UmbralesTemperatura", back_populates = "variedades")
+
+    __table_args__ = (
+        UniqueConstraint(
+            'nombre', 'cultivo_id', 'modelo_id',
+            name = 'uq_variedad'
+        ),
+    )
+
+class UmbralesTemperatura(db.Model):
+    __tablename__ = 'umbrales_temperatura'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    variedad_id = Column(Integer, ForeignKey("variedades.id"), nullable = False)
+    etapa_id = Column(Integer, ForeignKey("etapa_fenologica.id"), nullable = False)
+    critico = Column(Float, nullable = False)
+    alto = Column(Float, nullable = False)
+    moderado = Column(Float, nullable = False)
+    bajo = Column(Float, nullable = False)
+
+    etapa = relationship("EtapaFenologica", back_populates = "umbral")
+    variedades = relationship("Variedades", back_populates = "umbral")
+
+class ModelosHoraFrio(db.Model):
+    __tablename__ = 'modelos_hora_frio'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    nombre = Column(String(50), nullable = False, unique = True)
+    codigo = Column(String(10), nullable = False, unique = True)
+    descripcion = Column(String(300), nullable = False)
+
+    variedades = relationship("Variedades", back_populates = "modelo")
+
+
 class IngestaStatus(db.Model):
     __tablename__ = 'ingesta_status'
 
@@ -30,16 +103,6 @@ class IngestaStatus(db.Model):
         ),
     )
 
-class Sector(db.Model):
-    __tablename__ = 'sectores'
-    
-    id = Column(Integer, primary_key = True, autoincrement = True)
-    nombre = Column(String(50), unique = True, nullable = False)
-    finca_id = Column(Integer, ForeignKey("fincas.id"), nullable = False)
-    #cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = True)
-
-    finca = relationship("Finca", back_populates = "sectores")
-    #cultivo = relationship("Cultivo", back_populates = "sectores")
 
 class Plaga(db.Model):
     __tablename__ = 'plagas'
@@ -67,17 +130,6 @@ class CalendarioPlaga(db.Model):
 
     plaga = relationship("Plaga", back_populates = "calendarios")
 
-class Finca(db.Model):
-    __tablename__ = 'fincas'
-
-    id = Column(Integer, primary_key = True, autoincrement = True)
-    #provincia_id = Column(Integer, ForeignKey("provincias.id"), nullable = False)
-    #estacion_id = Column(Integer, ForeignKey('estaciones.id'), nullable = False)
-    nombre = Column(String(50), unique = True, nullable = False)
-
-    #estaciones = relationship("Estacion", back_populates = "finca")
-    sectores = relationship("Sector", back_populates = "finca")
-    #provincia = relationship("Provincia", back_populates = "fincas")
 
 class Estacion(db.Model):
     __tablename__ = 'estaciones'

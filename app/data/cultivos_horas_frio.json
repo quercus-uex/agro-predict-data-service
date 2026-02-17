@@ -1,0 +1,185 @@
+{
+    "version": "1.0.0",
+    "modelos_horas_frio" : [
+        {
+            "nombre": "Clasico <= 7.2",
+            "codigo": "CM7",
+            "descripcion": "Acumular las horas en que la temperatura sea inferior a 7.2 grados."
+        }, 
+        {
+            "nombre": "Clasico 0-7",
+            "codigo": "C07",
+            "descripcion": "Acumular las horas en que la temperatura esté comprendida entre 0 y 7 grados."
+        }, 
+        {
+            "nombre": "Unidad de Frio (UF)",
+            "codigo": "UF",
+            "descripcion": "Acumular horas en las que la temperatura esté comprendida entre 2.5-9.1 grados, si temperatura 1.4-15.9 no suman, temperaturas 16-18 restan"
+        },
+        {
+            "nombre": "Modelo dinamico de Porciones de Frio (PF)",
+            "codigo": "PF",
+            "descripcion": "Reacciones quimicas en ley Arrhenius. 12PF especies baja demanda, 90PF especies como cerezo"
+        }
+    ],
+    "etapas_fenologicas": [
+        {
+            "nombre": "dormancia",
+            "codigo": "DOR",
+            "orden": 1
+        },
+        {
+            "nombre": "brotancia",
+            "codigo": "BRO",
+            "orden": 2
+        },
+        {
+            "nombre": "floracion",
+            "codigo": "FLO",
+            "orden": 3
+        },
+        {
+            "nombre": "cuajado",
+            "codigo": "CU",
+            "orden": 4
+        },
+        {
+            "nombre": "engorde",
+            "codigo": "ENG",
+            "orden": 5
+        },
+        {
+            "nombre": "maduracion",
+            "codigo": "MAD",
+            "orden": 6
+        },
+        {
+            "nombre": "cosecha",
+            "codigo": "COS",
+            "orden": 7
+        }
+    ],
+    "cultivos": [
+        {
+            "nombre": "Almendro",
+            "nombre_cientifico": "Prunus dulcis",
+            "descripcion": "Frutal de hueso",
+            "variedades": [
+                {
+                    "nombre": "Guara",
+                    "horas_frio_min": 400,
+                    "horas_frio_max": 600,
+                    "modelo_horas_frio": "UF",
+                    "umbrales": [
+                        {
+                            "etapa": "DOR",
+                            "critico": -20.0,
+                            "alto": -14.0,
+                            "moderado": -5.0,
+                            "bajo": 0.0
+                        },
+                        {
+                            "etapa": "BRO",
+                            "critico": -3.0,
+                            "alto": 0.0,
+                            "moderado": 5.0,
+                            "bajo": 7.0
+                        },
+                        {
+                            "etapa": "FLO",
+                            "critico": -2.0,
+                            "alto": 0.0,
+                            "moderado": 10.0,
+                            "bajo": 15.0
+                        },
+                        {
+                            "etapa": "CU",
+                            "critico": -1.0,
+                            "alto": 0.0,
+                            "moderado": 5.0,
+                            "bajo": 10.0
+                        },
+                        {
+                            "etapa": "ENG",
+                            "critico": -1.0,
+                            "alto": 0.0,
+                            "moderado": 5.0,
+                            "bajo": 7.0
+                        }, 
+                        {
+                            "etapa": "MAD",
+                            "critico": 0.0,
+                            "alto": 2.0,
+                            "moderado": 20.0,
+                            "bajo": 25.0
+                        },
+                        {
+                            "etapa": "COS",
+                            "critico": 0.0,
+                            "alto": 2.0,
+                            "moderado": 20.0,
+                            "bajo": 25.0
+                        }
+                    ]
+                },
+                {
+                    "nombre": "Lauranne",
+                    "horas_frio_min": 190,
+                    "horas_frio_max": 200,
+                    "modelo_horas_frio": "UF",
+                    "umbrales": [
+                        {
+                            "etapa": "DOR",
+                            "critico": -20.0,
+                            "alto": -14.0,
+                            "moderado": -5.0,
+                            "bajo": 0.0
+                        },
+                        {
+                            "etapa": "BRO",
+                            "critico": -3.0,
+                            "alto": 0.0,
+                            "moderado": 5.0,
+                            "bajo": 7.0
+                        },
+                        {
+                            "etapa": "FLO",
+                            "critico": -2.0,
+                            "alto": 0.0,
+                            "moderado": 10.0,
+                            "bajo": 15.0
+                        },
+                        {
+                            "etapa": "CU",
+                            "critico": -1.0,
+                            "alto": 0.0,
+                            "moderado": 5.0,
+                            "bajo": 10.0
+                        },
+                        {
+                            "etapa": "ENG",
+                            "critico": -1.0,
+                            "alto": 0.0,
+                            "moderado": 5.0,
+                            "bajo": 7.0
+                        }, 
+                        {
+                            "etapa": "MAD",
+                            "critico": 0.0,
+                            "alto": 2.0,
+                            "moderado": 20.0,
+                            "bajo": 25.0
+                        },
+                        {
+                            "etapa": "COS",
+                            "critico": 0.0,
+                            "alto": 2.0,
+                            "moderado": 20.0,
+                            "bajo": 25.0
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
