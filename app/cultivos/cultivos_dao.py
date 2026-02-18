@@ -1,6 +1,10 @@
 from ..models import EtapaFenologica, Cultivo, ModelosHoraFrio, Variedades, UmbralesTemperatura
 from sqlalchemy import select, and_, update
 from app.extensions import db
+from typing import Optional
+from ..globals.row2dict_converter import row2dict_converter
+from sqlalchemy.inspection import inspect
+
 
 class CultivosDAO:
 
@@ -205,24 +209,42 @@ class CultivosDAO:
         try:
             query = (
                 select(
-                    UmbralesTemperatura
+                    UmbralesTemperatura,
+                    EtapaFenologica
                 )
                 .join(Variedades)
+                .join(EtapaFenologica)
                 .where(
                     and_(
                         UmbralesTemperatura.variedad_id == Variedades.id,
-                        Variedades.nombre == nombre_variedad
+                        Variedades.nombre == nombre_variedad,
+                        UmbralesTemperatura.etapa_id == EtapaFenologica.id
                     )
                 )
             )
 
             # Obtengo todos los umbrales de sus etapas fenologicas
-            resultado = db.session.execute(query).scalars().all()
+            resultado = db.session.execute(query).all()
 
             if not resultado:
                 return None
-
-            return resultado
+            
+            return [
+                {
+                    'nombre_variedad': nombre_variedad,
+                    'etapa_fenologica': {
+                        'nombre': etapa.nombre,
+                        'codigo': etapa.codigo,
+                        'orden': etapa.orden
+                    },
+                    'critico': umbral.critico,
+                    'alto': umbral.alto,
+                    'moderado': umbral.moderado,
+                    'bajo': umbral.bajo
+                }
+                for umbral, etapa in resultado
+            ]
+        
         except Exception as e:
             print(f"Error consultado el umbral de temperatura sobre la variedad {nombre_variedad} : {e}")
             return None
@@ -254,11 +276,10 @@ class CultivosDAO:
                 return 
             
             db.session.commit()
-            return resultado_actualizado
         
         except Exception as e:
             db.session.rollback()
-            print(f"Error actualizando las horas_frio de la variedad : {nombre_variedad}")
+            print(f"Error actualizando las horas_frio de la variedad {nombre_variedad} : {e}")
             return []
     
     @staticmethod
@@ -268,13 +289,17 @@ class CultivosDAO:
         try:
             query = (
                 select(
-                    Variedades
+                    Variedades.nombre.label('variedad_nombre'),
+                    Variedades.horas_frio_max,
+                    Variedades.horas_frio_min,
+                    ModelosHoraFrio.nombre.label('modelo_nombre'),
+                    ModelosHoraFrio.descripcion
                 )
                 .join(ModelosHoraFrio)
                 .where(
                     and_(
                         Variedades.modelo_id == ModelosHoraFrio.id,
-                        ModelosHoraFrio.nombre == nombre_modelo
+                        ModelosHoraFrio.codigo == nombre_modelo
                     )
                 )
             )
@@ -284,41 +309,162 @@ class CultivosDAO:
             if not variedades:
                 return None
             
-            return variedades
+            return row2dict_converter(variedades)
         
         except Exception as e:
             print(f"Error consultando variedades que utilizan el modelo {nombre_modelo} : {e}")
             return None
+    
+    @staticmethod
+    def obtener_modelos_frio():
+        try:
+            query = (
+                select(ModelosHoraFrio)
+            )
+
+            resultado = db.session.execute(query).scalars().all()
+
+            if not resultado:
+                raise ValueError("Error, no se han obtenido modelos de frio de la base de datos")
+            
+            modelos = [
+                {
+                    c.key: getattr(m, c.key)
+                    for c in inspect(m).mapper.column_attrs
+                }
+                for m in resultado
+            ]
+
+            return modelos
+        
+        except Exception as e:
+            print(f"Error consultado los modelos de frio disponibles : {e}")
+            return None
         
     @staticmethod
-    def obtener_horas_frio_variedad_modelo(
-        nombre_variedad : str,
-        nombre_modelo  :str
+    def obtener_horas_frio_variedad(
+        nombre_variedad : str
     ):
         try:
             query = (
                 select(
                     Variedades.horas_frio_min,
-                    Variedades.horas_frio_min
+                    Variedades.horas_frio_max
                 )
-                .join(ModelosHoraFrio)
                 .where(
-                    and_(
-                        Variedades.modelo_id == ModelosHoraFrio.id,
-                        ModelosHoraFrio.nombre == nombre_modelo,
-                        Variedades.nombre == nombre_variedad
-                    )
+                    Variedades.nombre == nombre_variedad
                 )
             )
 
-            horas_frio_min, horas_frio_max = db.session.execute(query).all()
+            resultado = db.session.execute(query).one_or_none()
 
-            if not horas_frio_min and horas_frio_max:
+            if not resultado: 
                 return None
             
-            return horas_frio_min, horas_frio_max
+            return row2dict_converter(resultado)
         
         except Exception as e:
-            print(f"Error consultando horas frio de la variedad {nombre_variedad} que utiliza el modelo {nombre_modelo} : {e}")
+            print(f"Error consultando horas frio de la variedad {nombre_variedad} : {e}")
             return None
             
+    @staticmethod
+    def obtener_cultivos():
+        try:
+            query = (
+                select(
+                    Cultivo
+                )
+            )
+
+            resultado = db.session.execute(query).scalars().all()
+
+            if not resultado:
+                return None
+            
+            cultivos = [
+                {
+                    c.key: getattr(cu, c.key)
+                    for c in inspect(cu).mapper.column_attrs
+                }
+                for cu in resultado
+            ]
+
+            return cultivos
+        
+        except Exception as e:
+            print(f"Error obteniendo todos los cultivos disponibles : {e}")
+            return None
+        
+    @staticmethod
+    def obtener_variedades(
+        cultivo : Optional[str]
+    ): 
+        try:
+            if cultivo:
+                query = (
+                    select(
+                        Variedades.nombre.label('variedad_nombre'),
+                        Variedades.horas_frio_max,
+                        Variedades.horas_frio_min,
+                        ModelosHoraFrio.nombre.label('modelo_nombre'),
+                        ModelosHoraFrio.descripcion
+                    )
+                    .join(Cultivo)
+                    .join(ModelosHoraFrio)
+                    .where(
+                        and_(
+                            Variedades.cultivo_id == Cultivo.id,
+                            Cultivo.nombre == cultivo,
+                            Variedades.modelo_id == ModelosHoraFrio.id
+                        )
+                    )
+                )
+            else:
+                query = (
+                    select(
+                        Variedades.nombre.label('variedad_nombre'),
+                        Variedades.horas_frio_max,
+                        Variedades.horas_frio_min,
+                        ModelosHoraFrio.nombre.label('modelo_nombre'),
+                        ModelosHoraFrio.descripcion
+                    )
+                    .join(
+                        ModelosHoraFrio #SQLAlchemy ya se encarga de asociar las claves foraneas con las primarias
+                    )
+                )
+            
+            resultado = db.session.execute(query).all()
+            print(resultado)
+            if not resultado:
+                return None
+            return row2dict_converter(resultado)
+        
+        except Exception as e:
+            print(f"Error obteniendo variedades disponibles: {e}")
+            return None
+        
+    @staticmethod
+    def obtener_etapas_fenologicas():
+        try:
+            query = (
+                select(
+                    EtapaFenologica
+                )
+            )
+
+            resultado = db.session.execute(query).scalars().all()
+
+            if not resultado:
+                return None
+            
+            etapas = [
+                {
+                    c.key: getattr(e, c.key)
+                    for c in inspect(e).mapper.column_attrs
+                }
+                for e in resultado
+            ]
+
+        except Exception as e:
+            print(f"Error obteniendo las etapas fenologicas disponibles : {e}")
+            return None

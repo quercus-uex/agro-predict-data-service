@@ -3,6 +3,7 @@ from dataclasses import dataclass
 @dataclass
 class EtapaFenologicaDTO:
     nombre : str
+    codigo : str
     orden : int
 
 @dataclass
@@ -14,19 +15,19 @@ class CultivoDTO:
 @dataclass
 class ModeloFrioDTO:
     nombre : str
+    codigo : str
     descripcion : str
 
 @dataclass
 class VariedadDTO:
-    cultivo : CultivoDTO
     nombre : str
     horas_frio_min : int
     horas_frio_max : int
     modelo : ModeloFrioDTO
 
 @dataclass
-class UmbralesTemperatura:
-    variedad : VariedadDTO
+class UmbralesTemperaturaDTO:
+    nombre_variedad : str
     etapa_fenologica : EtapaFenologicaDTO
     critico : float
     alto : float
