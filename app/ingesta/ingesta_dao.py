@@ -33,8 +33,6 @@ class IngestaDAO:
 
             result = db.session.execute(query).scalar_one_or_none()
 
-            print(f"Resultado : {result}")
-
             if not result:
                 return None
 
@@ -97,8 +95,6 @@ class IngestaDAO:
         error : Optional[str]
     ):
         try:
-            print(f"Parametros {status}-{dataset}-{tipo}-{year}-{month}-{day}-{zona}")
-            print("actualizo el estado", flush = True)
             query = (
                 update(
                     IngestaStatus
@@ -283,7 +279,6 @@ class IngestaDAO:
             )
 
             provincia : Provincia = db.session.execute(query).fetchone()
-            print(f"provincia : {provincia.id}")
 
             localidad = Localidades(
                 nombre = nombre,

@@ -93,13 +93,15 @@ class ForecastService:
         ccaa_id : Optional[str],
         provincia_id : Optional[str],
         tipo_zona : str,
-        tipo_prediccion : str
+        tipo_prediccion : str,
+        fecha_prediccion : date
     ):
         if ccaa_id:
             data_prediccion = ForecastDAO._get_predicciones(
                 tipo_prediccion = tipo_prediccion,
                 tipo_zona = tipo_zona,
-                zona_id = ccaa_id
+                zona_id = ccaa_id,
+                fecha_prediccion = fecha_prediccion
             )
 
             data_localidad = ForecastDAO._get_localidades_climaticas(
@@ -127,7 +129,8 @@ class ForecastService:
             data_prediccion = ForecastDAO._get_predicciones(
                 tipo_prediccion = tipo_prediccion,
                 tipo_zona = tipo_zona,
-                zona_id = provincia_id
+                zona_id = provincia_id,
+                fecha_prediccion = fecha_prediccion
             )
 
             data_localidad = ForecastDAO._get_localidades_climaticas(
@@ -156,7 +159,8 @@ class ForecastService:
             data_prediccion = ForecastDAO._get_predicciones(
                 tipo_prediccion = tipo_prediccion,
                 tipo_zona = tipo_zona,
-                zona_id = None
+                zona_id = None,
+                fecha_prediccion = fecha_prediccion
             )
 
             data_localidad = ForecastDAO._get_localidades_climaticas(
@@ -239,7 +243,8 @@ class ForecastService:
                     ccaa_id = ccaa_id,
                     provincia_id = provincia_id,
                     tipo_zona = tipo_zona.value,
-                    tipo_prediccion = tipo_prediccion.value
+                    tipo_prediccion = tipo_prediccion.value,
+                    fecha_prediccion = hoy
                 )
 
                 if ccaa_id:
@@ -267,9 +272,10 @@ class ForecastService:
                     )
                 
         elif ForecastDAO._get_predicciones(
-            tipo_prediccion = tipo_prediccion.value, 
-            tipo_zona = tipo_zona.value, 
-            zona_id = ccaa_id if ccaa_id else provincia_id
+                tipo_prediccion = tipo_prediccion.value, 
+                tipo_zona = tipo_zona.value, 
+                zona_id = ccaa_id if ccaa_id else provincia_id,
+                fecha_prediccion = hoy
             ) is not None:
 
             IngestaDAO.create(

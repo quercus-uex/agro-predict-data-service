@@ -65,8 +65,6 @@ def pronostico(
         type_zona = convertir_tipo(zona, TipoZona)
         type_prediccion = convertir_tipo(prediccion, TipoPrediccion)
 
-        print(f"Provincia - CCAA : {provincia} - {ccaa}")
-
         datos = ForecastService.get_forecast(
             current_app._get_current_object(),
             ccaa_id = ccaa,

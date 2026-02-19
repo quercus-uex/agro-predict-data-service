@@ -1,5 +1,6 @@
 from ..models import Predicciones, Provincia, CCAA, LocalidadesClimaticas, Localidades
 from sqlalchemy import select, and_
+from datetime import date
 from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
 
@@ -24,14 +25,15 @@ class ForecastDAO:
         *,
         tipo_prediccion : str,
         tipo_zona : str,
-        zona_id : str | None
+        zona_id : str | None,
+        fecha_prediccion : date
     ):
         try:
             # Contenido de la clausula where en la consulta, generico para reutilizar código
-            print(f"Zona : {zona_id}")
             filtros = [
                 Predicciones.tipo_prediccion == tipo_prediccion,
-                Predicciones.tipo_zona == tipo_zona
+                Predicciones.tipo_zona == tipo_zona,
+                Predicciones.fecha_prediccion == fecha_prediccion
             ]
 
             # Por si hay que obtener además el id de la provincia o ccaa en la select
@@ -138,7 +140,6 @@ class ForecastDAO:
             for r in result:
                 r_to_dict = row2dict_converter(r)
                 result_final.append(r_to_dict)
-            print(f"Resultado final : {result_final}")
             return result_final
 
         except Exception as e:
