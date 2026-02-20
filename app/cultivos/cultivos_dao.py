@@ -272,15 +272,47 @@ class CultivosDAO:
             resultado_actualizado = db.session.execute(query)
 
             if resultado_actualizado.rowcount == 0:
-                print(f"No se ha actualizado las horas_frio en la variedad : {nombre_variedad}")
+                print(f"No se ha actualizado el rango de horas_frio en la variedad : {nombre_variedad}")
                 return 
             
             db.session.commit()
         
         except Exception as e:
             db.session.rollback()
+            print(f"Error actualizando el rango de horas_frio de la variedad {nombre_variedad} : {e}")
+            return []
+        
+    @staticmethod
+    def actualizar_horas_frio_actuales(
+        nombre_variedad : str,
+        horas_frio : int
+    ):
+        try:
+            query = (
+                update(
+                    Variedades
+                )
+                .where(
+                    Variedades.nombre == nombre_variedad
+                )
+                .values(
+                    horas_frio_actuales = horas_frio
+                )
+            )
+
+            actualizacion = db.session.execute(query)
+
+            if actualizacion.rowcount == 0:
+                print(f"No se han podido actualizar las horas_frio en la variedad : {nombre_variedad}")
+                return
+            
+            db.session.commit()
+
+        except Exception as e:
+            db.session.rollback()
             print(f"Error actualizando las horas_frio de la variedad {nombre_variedad} : {e}")
             return []
+
     
     @staticmethod
     def obtener_variedades_por_modelo(
@@ -316,6 +348,35 @@ class CultivosDAO:
             return None
     
     @staticmethod
+    def obtener_modelo_por_variedad(
+        nombre_variedad : str
+    ):
+        try:
+            query = (
+                select(
+                    ModelosHoraFrio.codigo
+                )
+                .join(Variedades)
+                .where(
+                    and_(
+                        ModelosHoraFrio.id == Variedades.modelo_id,
+                        Variedades.nombre == nombre_variedad
+                    )
+                )
+            )
+
+            modelo = db.session.execute(query).one_or_none()
+
+            if not modelo:
+                return None
+            
+            return row2dict_converter(modelo)
+        
+        except Exception as e:
+            print(f"Error consultando el modelo de la variedad {nombre_variedad} : {e}")
+            return None
+
+    @staticmethod
     def obtener_modelos_frio():
         try:
             query = (
@@ -349,7 +410,8 @@ class CultivosDAO:
             query = (
                 select(
                     Variedades.horas_frio_min,
-                    Variedades.horas_frio_max
+                    Variedades.horas_frio_max,
+                    Variedades.horas_frio_actuales
                 )
                 .where(
                     Variedades.nombre == nombre_variedad

@@ -112,6 +112,38 @@ class HistoricDAO:
             print(f"Error computando las estaciones usadas: {e}")
             return []
 
+    @staticmethod
+    def define_computing_fechas(
+        fec_init : datetime,
+        fec_fin : datetime
+    ):
+        """
+        Obtiene temperaturas de mediciones_climaticas dentro del rango de fechas pasado por parametros
+        :param fec_init: Fecha inicial de consulta sobre datos
+        :type fec_init: datetime
+        :param fec_fin: Fecha final de consulta sobre datos
+        :type fec_fin: datetime
+        """
+        try:
+            query = (
+                select(
+                    MedicionClimatica.temperatura
+                )
+                .where(
+                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
+                )
+            )
+
+            result = db.session.execute(query).all()
+
+            if not result:
+                return None
+            
+            return row2dict_converter(result)
+        
+        except Exception as e:
+            print(f"Error consultando temperaturas sobre las fechas {fec_init} - {fec_fin} : {e}")
+            return None
 
     @staticmethod
     def define_computing_general(

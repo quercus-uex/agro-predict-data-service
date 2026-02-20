@@ -69,6 +69,7 @@
                     "nombre": "Guara",
                     "horas_frio_min": 400,
                     "horas_frio_max": 600,
+                    "horas_frio_actuales": 0,
                     "modelo_horas_frio": "UF",
                     "umbrales": [
                         {
@@ -126,6 +127,7 @@
                     "nombre": "Lauranne",
                     "horas_frio_min": 190,
                     "horas_frio_max": 200,
+                    "horas_frio_actuales": 0,
                     "modelo_horas_frio": "UF",
                     "umbrales": [
                         {

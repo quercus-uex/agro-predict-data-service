@@ -7,6 +7,8 @@ from .cultivos_dto import (
 )
 from .cultivos_dao import CultivosDAO
 from typing import Optional
+from datetime import date, datetime
+from ..historicos.historico_dao import HistoricDAO
 
 class CultivoService:
 
@@ -146,14 +148,14 @@ class CultivoService:
     #======== OBTENCIÓN DE DATOS ========#
     @staticmethod
     def obtener_variedades_disponibles(
-        cultivo : Optional[str]
+        cultivo : Optional[str] = None
     ) -> Optional[list[VariedadDTO]]:        
         """
         Obtiene las variedades disponibles, si se especifica, las variedades de los cultivos
         """
 
         datos = CultivosDAO.obtener_variedades(
-            cultivo = cultivo if cultivo else None
+            cultivo if cultivo else None
         )
 
         if not datos:
@@ -223,6 +225,11 @@ class CultivoService:
         if not nombre_variedad:
             raise ValueError("Error, se debe especificar el nombre de la variedad")
         
+        # Proceso de cálculo de sus horas de frío actuales
+        CultivoService.calcular_horas_frio_actuales(
+            nombre_variedad = nombre_variedad
+        )
+
         datos = CultivosDAO.obtener_horas_frio_variedad(
             nombre_variedad = nombre_variedad
         )
@@ -233,7 +240,8 @@ class CultivoService:
         return {
             "nombre_variedad" : nombre_variedad,
             "horas_frio_max" : datos.get('horas_frio_max'),
-            "horas_frio_min" : datos.get('horas_frio_min')
+            "horas_frio_min" : datos.get('horas_frio_min'),
+            "horas_frio_actuales" : datos.get('horas_frio_actuales')
         }
     
     @staticmethod
@@ -422,3 +430,136 @@ class CultivoService:
             horas_max_frio = hora_frio_max,
             horas_min_frio = hora_frio_min
         )
+
+    ##======== LOGICA HORAS-FRIO ACTUALES POR MODELO ========#
+
+    @staticmethod
+    def obtener_periodo_frio(
+        fecha_referencia : date
+    ):
+        """
+        Devuelve fechas desde el 15 de noviembre del año X al 20 de Febrero del año X que es el perido de recogida de horas de frío
+        """
+        return datetime(fecha_referencia.year - 1, 11, 15, 0, 0, 0), datetime(fecha_referencia.year, 2, 20, 0, 0, 0)
+    
+    @staticmethod
+    def calcular_unidades_frio(
+        temperaturas
+    ):
+        contador_unidades = 0
+
+        for temperatura in temperaturas:
+            t = temperatura.get('temperatura')
+            if t < 1.4:
+                contador_unidades += 0
+            elif 1.5 <= t <= 2.4:
+                contador_unidades += 0.5
+            elif 2.4 <= t <= 9.1:
+                contador_unidades += 1
+            elif 12.5 <= t <= 15.9:
+                contador_unidades += 0
+            elif 16.0 <= t <= 18.0:
+                contador_unidades -= 0.5
+            elif t > 18.0:
+                contador_unidades -= 1
+
+        return contador_unidades
+    
+    @staticmethod
+    def calcular_horas_frio_modelos_clasicos(
+        temperaturas,
+        rango : bool
+    ):
+        contador_horas_frio = 0
+    
+        for temperatura in temperaturas:
+            t = temperatura.get('temperatura')
+            if rango: # Modelo clásico de umbral con máximo y mínimo (Clásico 0-7)
+                if 0.0 <= t <= 7.0:
+                    contador_horas_frio += 1
+            else:
+                if t <= 7.2: # Modelo (Clásico <= 7.2)
+                    contador_horas_frio += 1
+
+        return contador_horas_frio
+    
+    @staticmethod
+    def calcular_porciones_frio(
+        temperaturas
+    ):
+        contador_porciones_frio = 0
+
+        for temperatura in temperaturas:
+            t = temperatura.get('temperatura')
+            if 6 <= t <= 8:
+                contador_porciones_frio += 1
+            elif t < 1.5:
+                contador_porciones_frio += 0
+            elif t > 16:
+                contador_porciones_frio += 0
+
+        return contador_porciones_frio
+    
+    @staticmethod
+    def calcular_horas_frio_actuales(
+        nombre_variedad : str,
+    ):
+        """
+        Obtiene las horas frio actuales de una variedad consultada en base a su modelo y datos historicos
+
+        :param nombre_variedad: Variedad a consultar sus horas_frio actuales
+        :type nombre_variedad: str
+        """
+        # Lógica de modelo UF
+        codigo_modelo = CultivosDAO.obtener_modelo_por_variedad(
+            nombre_variedad = nombre_variedad
+        ).get('codigo')
+
+        hoy = date.today()
+        # Consulta de temperaturas sobre las fechas definidas
+        inicio_fecha_recuento, fin_fecha_recuento = CultivoService.obtener_periodo_frio(
+            fecha_referencia = hoy
+        )
+
+        temperaturas = HistoricDAO.define_computing_fechas(
+            fec_init = inicio_fecha_recuento,
+            fec_fin = fin_fecha_recuento
+        )
+
+        horas_frio_acumuladas = 0
+        if codigo_modelo == "UF":
+
+            horas_frio_acumuladas = CultivoService.calcular_unidades_frio(
+                temperaturas = temperaturas
+            )
+        
+        elif codigo_modelo == "CM7":
+
+            horas_frio_acumuladas = CultivoService.calcular_horas_frio_modelos_clasicos(
+                temperaturas = temperaturas,
+                rango = False
+            )
+
+        elif codigo_modelo == "C07":
+
+            horas_frio_acumuladas = CultivoService.calcular_horas_frio_modelos_clasicos(
+                temperaturas = temperaturas,
+                rango = True
+            )
+
+        elif codigo_modelo == "PF":
+            
+            horas_frio_acumuladas = CultivoService.calcular_porciones_frio(
+                temperaturas = temperaturas
+            )
+
+        else:
+            print("Modelo no soportado")
+
+        
+        # Actualizar las horas_frio_actuales de la variedad
+        if horas_frio_acumuladas != 0:
+            CultivosDAO.actualizar_horas_frio_actuales(
+                nombre_variedad = nombre_variedad,
+                horas_frio = horas_frio_acumuladas
+            )

@@ -39,6 +39,7 @@ class Variedades(db.Model):
     nombre = Column(String(200), nullable = False)
     horas_frio_min = Column(Integer, nullable = False)
     horas_frio_max = Column(Integer, nullable = False)
+    horas_frio_actuales = Column(Float)
     modelo_id = Column(Integer, ForeignKey("modelos_hora_frio.id"), nullable = False)
 
     cultivo = relationship("Cultivo", back_populates = "variedades")
@@ -217,7 +218,7 @@ class MedicionClimatica(db.Model):
     anio = Column(Integer, nullable = True)
     timestamp = Column(DateTime, nullable = False, index = True )
 
-    humedad = Column(Float, nullable = False)
+    humedad = Column(Float)
     temperatura = Column(Float, nullable = False)
     vel_viento = Column(Float)
     precipitacion = Column(Float, nullable = False)
