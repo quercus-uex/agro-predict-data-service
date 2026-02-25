@@ -21,7 +21,7 @@
 #        raise ValueError(f"'Tipo '{tipo_destino}' no soportado'")
 #"""
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, date
 
 def convertir_tipo(valor, tipo_destino):
     """
@@ -32,10 +32,11 @@ def convertir_tipo(valor, tipo_destino):
     if tipo_destino in (int, str, bool, float):
         return tipo_destino(valor)
     
-    if tipo_destino is datetime:
+    if tipo_destino in (datetime, date):
         datetime_obj = datetime.strptime(valor, "%Y-%m-%d").date()
+        print(f"Date object : {datetime_obj}")
         return datetime_obj
-
+    
     if issubclass(tipo_destino, Enum):
         return tipo_destino[valor.upper()]
 

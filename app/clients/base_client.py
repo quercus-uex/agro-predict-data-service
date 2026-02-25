@@ -1,4 +1,6 @@
 import requests
+from urllib3.exceptions import InsecureRequestWarning
+
 from typing import Optional
 import logging
 
@@ -17,6 +19,8 @@ class BaseClient:
             **kwargs
         ) -> Optional[requests.Response] :
             """Realiza requests"""
+
+            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
             url = url.strip() # Elimina espacios y caracteres de controla al inicio/final de la url
             print("\n========== REQUEST DEBUG ==========", flush=True)
@@ -38,6 +42,7 @@ class BaseClient:
                     method = method,
                     url = url,
                     timeout = self.timeout,
+                    verify = False, # Para hacer flexible el https
                     **kwargs
                 )
 

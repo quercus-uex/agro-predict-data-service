@@ -1,6 +1,6 @@
 from sqlalchemy import and_, select, inspect, update, delete
 from app.extensions import db
-from ..models import IngestaStatus, Localidades, CCAA, Predicciones, Provincia, LocalidadesClimaticas
+from ..models import IngestaStatus, Localidades, CCAA, Predicciones, Provincia, LocalidadesClimaticas, Sensores
 from datetime import datetime
 from typing import Optional
 
@@ -161,7 +161,53 @@ class IngestaDAO:
             print(f"Algo fue mal eliminando el estado de ingesta: {e}")
             db.session.rollback()
             return None
+    
+    @staticmethod
+    def crear_datos_sensores(
+        eui : str,
+        humedad_foliar : float,
+        temperatura_sensor : int,
+        temperatura_hojas : float,
+        timestamp : datetime
+    ):
+        """
+        Crea un objeto de tipo Sensor sobre los valores 
+        pasados por parámetro y lo inserta en la base de datos.
+
+        :param eui: Identificador público del sensor
+        :type eui: str
+        :param humedad_foliar: Agua presente en la superficie de la hoja
+        :type humedad_foliar: float
+        :param temperatura_sensor: Temperatura que lee el sensor DS18B20
+        :type temperatura_sensor: int,
+        :param temperatura_hojas: Temperatura registrada por la hoja
+        :type temperatura_hojas: float 
+        """
+
+        try:
+            sensor = Sensores(
+                eui = eui,
+                humedad_foliar = humedad_foliar,
+                temperatura_DS18B20 = temperatura_sensor,
+                temperatura_hojas = temperatura_hojas,
+                timestamp = timestamp
+            )
+
+            db.session.add(sensor)
+
+            existe = db.session.query(Sensores.id).filter_by(
+                humedad_foliar = humedad_foliar,
+                temperatura_DS18B20 = temperatura_sensor,
+                temperatura_hojas = temperatura_hojas
+            ).first()
+
+            if existe:
+                return
         
+        except Exception as e:
+            print(f"Ha ocurrido un error intentando crear un nuevo dato de sensor : {e}")
+            db.session.rollback()
+
     @staticmethod
     def crear_predicciones(
         codigo_zona : Optional[str],

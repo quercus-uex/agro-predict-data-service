@@ -9,15 +9,53 @@ from ..models import (
     Provincia, 
     CCAA, 
     Plaga,
-    CalendarioPlaga
+    CalendarioPlaga,
+    Sensores
 )
 
 from ..external_services.aemet_service import AemetService
 from ..external_services.itacyl_service import ItacylService
+from ..external_services.dtagro_service import DTAgroService
 import json
 import os
 
 class IngestionService:
+
+    @staticmethod
+    def ingesta_sensores_data(
+        eui : str,
+        fecha_inicio : date,
+        fecha_fin : date
+    ):
+        try:
+            print(f"Parametros : {eui} - {fecha_inicio} - {fecha_fin}")
+            # Obtengo los datos que recibe DTAgroService
+            datos = DTAgroService.get_dtagro_datos(
+                eui = eui,
+                fecha_inicio = fecha_inicio,
+                fecha_fin = fecha_fin
+            )
+
+            print(f"Datos de sensores en la ingesta : {datos}")
+
+            # Recorro los datos obtenidos y los inserto en la base de datos
+            for d in datos:
+                if d is not None:
+                    IngestaDAO.crear_datos_sensores(
+                        eui = eui,
+                        humedad_foliar = d['humedad_foliar'],
+                        temperatura_sensor = d['temp_DS18B20'],
+                        temperatura_hojas = d['temperatura_hoja'],
+                        timestamp = d['timestamp']
+                    )
+
+            # Si no ha habido ningún error, se da paso a creat todos los datos obtenidos
+            db.session.commit()
+        
+        except Exception as e:
+            print(f"Error intentando cargar nuevos datos de sensores en la base de datos : {e}")
+            return None
+
 
     @staticmethod
     def ingest_localidad_data():

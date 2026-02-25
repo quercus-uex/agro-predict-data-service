@@ -1,7 +1,6 @@
 from typing import Optional
 from flask import current_app
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 

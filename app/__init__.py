@@ -27,11 +27,13 @@ def create_app(config_class = Config):
     from .historicos import historic_bp
     from .forecast import forecast_bp
     from .cultivos import cultivo_bp
+    from .sensores import sensores_bp
 
     app.register_blueprint(calendario_bp)
     app.register_blueprint(historic_bp)
     app.register_blueprint(forecast_bp)
     app.register_blueprint(cultivo_bp)
+    app.register_blueprint(sensores_bp)
 
     return app
 

@@ -234,6 +234,17 @@ class MedicionClimatica(db.Model):
         Index("idx_anio_semana", "anio", "semana")
     )
 
+class Sensores(db.Model):
+    __tablename__ = "sensores"
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+
+    eui = Column(String(50), nullable = False)
+    humedad_foliar = Column(Float, nullable = False)
+    temperatura_DS18B20 = Column(Integer, nullable = False)
+    temperatura_hojas = Column(Float, nullable = False)
+    timestamp = Column(String(50), nullable = False)
+
 class Predicciones(db.Model):
     __tablename__ = "predicciones"
 
@@ -261,7 +272,7 @@ class Predicciones(db.Model):
     texto_original = Column(Text, nullable = False)
 
     # Datos específicos recogidos
-    estado_cielo = Column(String(100), nullable = True)
+    estado_cielo = Column(String(300), nullable = True)
     tendencia_temp_general = Column(String(100), nullable = True)
     tendencia_temp_max = Column(String(50), nullable = True)
     tendencia_temp_min = Column(String(50), nullable = True)
