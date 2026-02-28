@@ -2,8 +2,8 @@ from . import cultivo_bp
 from ..globals.log_decorator import log
 from ..globals.dto2dict import dataclass_to_json
 from helpers.ApiExceptions import APIException
-from helpers.SuccessInsert import SuccessInsert
 from .cultivos_service import CultivoService
+from .cultivo_plaga_service import CultivoPlagaService
 from flask import jsonify, request
 import logging
 
@@ -174,6 +174,54 @@ def variedades_por_modelo(
                 'error' : str(e)
             }
         ), 500
+
+@cultivo_bp.route('/crop/plague', methods = ['GET'])
+@log('../logs/fichero_salida.json')
+def obtener_cultivos_asociados_plagas():
+    
+    try:
+
+        nombre_cultivos = request.args.get('cultivos')
+
+        if not nombre_cultivos:
+            return jsonify(
+                {
+                    'success' : 'false',
+                    'code' : '400',
+                    'message' : 'Invalid Parameters',
+                    'error' : str(e)
+                }
+            )
+        
+        nombre_cultivos_lista = [c.strip() for c in nombre_cultivos.split(',')]
+
+        datos_cultivo_plaga = CultivoPlagaService.obtener_cultivo_plaga_asociado(
+            nombres_cultivo = nombre_cultivos_lista
+        )
+
+        if not datos_cultivo_plaga:
+            return jsonify(
+                {
+                    'success' : 'false',
+                    'code' : '400',
+                    'message' : 'Data Not Found'
+                }
+            )
+        
+        return dataclass_to_json(datos_cultivo_plaga)
+
+
+    except APIException as e:
+        logger.info(f"API Exception : {e}")
+        return jsonify(
+            {
+                'success' : 'false',
+                'code' : '500',
+                'message' : 'Internal Error',
+                'error' : str(e)
+            }
+        )
+    
 
 @cultivo_bp.route('/crop/<string:campo>', methods = ['GET', 'POST'])
 @log('../logs/fichero_salida.json')

@@ -29,7 +29,8 @@ class CultivoService:
         return CultivoDTO(
             nombre = datos.get('nombre'),
             nombre_cientifico = datos.get('nombre_cientifico'),
-            descripcion = datos.get('descripcion')
+            descripcion = datos.get('descripcion'),
+            grupo = datos.get('grupo')
         )
 
     @staticmethod

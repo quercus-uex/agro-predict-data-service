@@ -367,6 +367,69 @@ class CultivosDAO:
 
     
     @staticmethod
+    def obtener_info_cultivo_plaga(
+        nombres_cultivo : list[str]
+    ):
+        try:
+            resultados = []
+
+            for nombre_cultivo in nombres_cultivo:
+
+                query = (
+                    select(
+                        Cultivo,
+                        Plaga,
+                        CalendarioPlaga
+                    )
+                    .select_from(Cultivo)
+                    .join(CultivoPlaga, CultivoPlaga.cultivo_id == Cultivo.id)
+                    .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
+                    .join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
+                    .where(
+                        Cultivo.nombre == nombre_cultivo
+                    )
+                )
+
+                resultado = db.session.execute(query).mappings().all()
+
+                if not resultado:
+                    return None
+                
+                cultivo_info = None
+                plagas = {}
+
+                for r in resultado:
+                    if cultivo_info is None:
+                        cultivo_info = r['Cultivo']
+                    
+                    plaga = r['Plaga']
+
+                    # Si la plaga no se encuentra en el diccionario, se inicializa
+                    if plaga.id not in plagas:
+                        plagas[plaga.id] = {
+                            'plaga' : plaga,
+                            'calendario' : []
+                        }
+                    
+                    plagas[plaga.id]['calendario'].append(r['CalendarioPlaga'])
+
+
+                resultados.append(
+                    {
+                        'cultivo' : cultivo_info,
+                        'plagas' : list(plagas.values()) # Convertir el diccionario a lista
+                    }
+                )
+            
+            return resultados
+        
+        except Exception as e:
+            print(f"Error obteniendo la información de cultivo_plaga : {e}")
+            return None
+
+
+
+    @staticmethod
     def obtener_variedades_por_modelo(
         nombre_modelo : str
     ):

@@ -1,8 +1,77 @@
 
 from .cultivos_dao import CultivosDAO
 from ..plagas.plagas_dao import PlagasDAO
+from .cultivos_dto import CultivoPlagaDTO, CultivoDTO, PlagaDTO, CalendarioDTO
+from typing import Optional
 from ..models import Cultivo
 class CultivoPlagaService():
+
+
+    @staticmethod
+    def _build_cultivo_plaga_dto(
+        datos : list[dict]
+    ) -> Optional[list[CultivoPlagaDTO]]:
+        """
+        Carga objetos CultivoPlagaDTO sobre los datos pasados por parámetro
+
+        :param datos: Lista de diccionarios de datos pasado por parámetros
+        :type datos: list[dict]
+        :return: Lista de DTOs cargados
+        :rtype: Optional[list[CultivoPlagaDTO]]
+        """
+        try:
+            if not datos:
+                return None
+            
+            cultivos_plagas = []
+
+            for dato in datos:
+
+                datos_cultivo = dato['cultivo']
+                datos_plagas = dato['plagas']
+
+
+                cultivo_plaga_dto = CultivoPlagaDTO(
+                    cultivo = CultivoDTO(
+                        nombre = datos_cultivo.nombre,
+                        nombre_cientifico = datos_cultivo.nombre_cientifico,
+                        descripcion = datos_cultivo.descripcion,
+                        grupo = datos_cultivo.grupo
+                    ),
+                    plaga = [
+                        PlagaDTO(
+                            public_id = p['plaga'].public_id,
+                            nombre = p['plaga'].nombre,
+                            agente_causante = p['plaga'].agente_causante,
+                            momento_critico = p['plaga'].momento_critico,
+                            observaciones = p['plaga'].observaciones,
+                            mas_info = p['plaga'].mas_info,
+                            tipo = p['plaga'].tipo,
+                            calendario = [
+                                CalendarioDTO(
+                                    cultivo_id = cal.cultivo_id,
+                                    plaga_id = cal.plaga_id,
+                                    grupo = cal.grupo,
+                                    semana = cal.semana,
+                                    nivel_alerta = cal.nivel_alerta
+                                )
+                                for cal in p['calendario']
+                            ]
+                        )
+                        for p in datos_plagas
+                    ]
+                )
+
+                if not cultivo_plaga_dto:
+                    return None
+                
+                cultivos_plagas.append(cultivo_plaga_dto)
+
+            return cultivos_plagas
+        
+        except Exception as e:
+            print(f"Error al crear DTOs de cultivo_plaga : {e}")
+            return None
 
     @staticmethod
     def crear_cultivo_asociado_plaga(
@@ -27,5 +96,27 @@ class CultivoPlagaService():
             nombre_cultivo = cultivo.nombre
         )
 
+    @staticmethod
+    def obtener_cultivo_plaga_asociado(
+        nombres_cultivo : list[str]
+    ):
+        """
+        Obtiene información del cultivo con información de posibles plagas y enfermedades asociada
+
+        :param nombre_cultivo: Nombre del cultivo a obtener la información
+        :type nombre_cultivo: str
+        """
+        datos : list[dict] = CultivosDAO.obtener_info_cultivo_plaga(
+            nombres_cultivo = nombres_cultivo
+        )
+
+        dto_cargado  = CultivoPlagaService._build_cultivo_plaga_dto(
+            datos = datos
+        )
+        
+        if not dto_cargado:
+            return
+        
+        return dto_cargado
 
 
