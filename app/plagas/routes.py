@@ -11,28 +11,29 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @calendario_bp.route('/climate/plagas', methods = ['GET'])
 @log('../logs/fichero_salida.json')
 def calendario_plagas():
 
     try:
-        cultivo = request.args.get('cultivo', 1)
-        grupo = request.args.get('grupo', 'CEREALES')
-        tipo = request.args.get('tipo', 'plaga')
+        grupo = request.args.get('grupo')
+        tipo = request.args.get('tipo')
+        plaga_id = request.args.get('id') # Piede no existir 
 
-        if not (cultivo or grupo):
-            raise APIException(
-                message = "Debe de indicarse al menos uno de los dos parámetros: cultivo | grupo",
-                status = 400,
-                errro = 'Invalid parameters'
-            )
+        print(f"Grupo - Tipo : {grupo} - {tipo}")
+        if not (tipo or grupo):
+            return jsonify({
+                'success': 'false',
+                'code': '400',
+                'message': 'Invalid parameters',
+                'error': 'Debe indicarse al menos uno de los parámetros: tipo | grupo'
+            }), 400
         
-        # Conversor de string a GrupoPlaga
-        type_grupo_plaga = convertir_tipo(grupo, GrupoPlaga)
-
-        datos = PlagasService.get_plagas(tipo = tipo)
-
-        logger.info(f"Datos recibidos por el servicio: {datos}")
+        datos = PlagasService.get_plagas(
+            tipo = tipo,
+            plaga_id = plaga_id if plaga_id else None
+        )
 
         if not datos:
             raise APIException(

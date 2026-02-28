@@ -3,7 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from config.config import Config
-from .extensions import init_extensions, db
+from .extensions import init_extensions
 import os
 
 load_dotenv()
@@ -34,6 +34,5 @@ def create_app(config_class = Config):
     app.register_blueprint(forecast_bp)
     app.register_blueprint(cultivo_bp)
     app.register_blueprint(sensores_bp)
-
     return app
 

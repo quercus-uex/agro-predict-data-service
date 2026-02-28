@@ -4,6 +4,7 @@ from typing import Optional
 
 class PlagasService:
 
+    @staticmethod
     def _build_calendar(
         data
     ) -> List[CalendarioDTO] : 
@@ -28,6 +29,7 @@ class PlagasService:
         
         return calendarios
     
+    @staticmethod
     def _build_plagas(
         data_plagas,
         data_calendario
@@ -64,15 +66,24 @@ class PlagasService:
 
         return plagas
     
+    @staticmethod
     def get_plagas(
-        tipo : str
+        tipo : str,
+        plaga_id : Optional[int]
     ):
 
         # Obtengo los datos de las plagas de la BD
-        data_plagas = PlagasDAO._get_plagas(tipo = tipo)
+        data_plagas = PlagasDAO._get_plagas(
+            tipo = tipo,
+            plaga_id = plaga_id if plaga_id else None
+        )
+
+        print(f"Datos de la plaga : {data_plagas}")
 
         # Obtengo los datos de los calendarios de la BD
-        data_calendarios = PlagasDAO._get_calendario_plagas()
+        data_calendarios = PlagasDAO._get_calendario_plagas(
+            plaga_id = plaga_id if plaga_id else None
+        )
 
         # Contruyo los DTOs de los calendarios
         calendarios = PlagasService._build_calendar(data_calendarios)

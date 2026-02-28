@@ -21,8 +21,10 @@ class Cultivo(db.Model):
     nombre = Column(String(100), nullable = False)
     nombre_cientifico = Column(String(200), nullable = False)
     descripcion = Column(String(300), nullable = False, unique = False)
+    grupo = Column(String(50), nullable = False)
 
     variedades = relationship("Variedades", back_populates = "cultivo")
+    cultivos_plagas = relationship("CultivoPlaga", back_populates = "cultivo")
 
     __table_args__ = (
         UniqueConstraint(
@@ -30,6 +32,17 @@ class Cultivo(db.Model):
             name = 'uq_cultivo_nombre_cientifico'
         ),
     )
+
+class CultivoPlaga(db.Model):
+    __tablename__ = 'cultivo_plaga'
+
+    id = Column(Integer, primary_key = True,nullable = False, autoincrement = True)
+    cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = False)
+    plaga_id = Column(Integer, ForeignKey("plagas.id"), nullable = False)
+
+    cultivo = relationship("Cultivo", back_populates = "cultivos_plagas")
+    plaga = relationship("Plaga", back_populates = "cultivos_plagas")
+
 
 class Variedades(db.Model):
     __tablename__ = 'variedades'
@@ -118,6 +131,7 @@ class Plaga(db.Model):
     tipo = Column(String(50), nullable = False)
 
     calendarios = relationship("CalendarioPlaga", back_populates = "plaga")
+    cultivos_plagas = relationship("CultivoPlaga", back_populates = "plaga")
 
 class CalendarioPlaga(db.Model):
     __tablename__ = 'calendario_plaga'

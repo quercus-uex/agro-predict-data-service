@@ -1,4 +1,13 @@
-from ..models import EtapaFenologica, Cultivo, ModelosHoraFrio, Variedades, UmbralesTemperatura
+from ..models import( 
+    EtapaFenologica, 
+    Cultivo,
+    ModelosHoraFrio, 
+    Variedades, 
+    UmbralesTemperatura,
+    Plaga,
+    CultivoPlaga,
+    CalendarioPlaga
+)
 from sqlalchemy import select, and_, update
 from app.extensions import db
 from typing import Optional
@@ -40,7 +49,8 @@ class CultivosDAO:
     def crear_cultivo(
         nombre : str,
         nombre_cientifico : str,
-        descripcion : str
+        descripcion : str,
+        grupo : str
     ):
         """
         Registra un nuevo cultivo en la base de datos
@@ -50,7 +60,8 @@ class CultivosDAO:
             cultivo = Cultivo(
                 nombre = nombre,
                 nombre_cientifico = nombre_cientifico,
-                descripcion = descripcion
+                descripcion = descripcion,
+                grupo = grupo
             )
 
             # Si existiera ya un cultivo con este nombre y nombre_cientifico, salta la constraint y no se inserta
@@ -63,6 +74,47 @@ class CultivosDAO:
             db.session.rollback()
             print(f"Error insertando un nuevo cultivo : {e}")
             return []
+    
+    @staticmethod
+    def crear_relacion_cultivo_plaga(nombre_cultivo: str):
+        try:
+            query = (
+                select(
+                    Plaga.id.label('plaga_id'),
+                    Cultivo.id.label('cultivo_id')
+                )
+                .select_from(Cultivo)
+                .join(CalendarioPlaga, Cultivo.grupo == CalendarioPlaga.grupo)
+                .join(Plaga, Plaga.id == CalendarioPlaga.plaga_id)
+                .where(Cultivo.nombre == nombre_cultivo)
+            )
+
+            resultado = db.session.execute(query).mappings().all()
+
+            for r in resultado:
+                existe = db.session.execute(
+                    select(CultivoPlaga).where(
+                        and_(
+                            CultivoPlaga.cultivo_id == r['cultivo_id'],
+                            CultivoPlaga.plaga_id == r['plaga_id']
+                        )
+                    )
+                ).scalar()
+
+                if not existe:
+                    db.session.add(CultivoPlaga(
+                        cultivo_id=r['cultivo_id'],
+                        plaga_id=r['plaga_id']
+                    ))
+
+            db.session.commit()
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error al relacionar el cultivo con sus plagas: {e}")
+            return None
+
+
 
     @staticmethod
     def crear_modelos_horas_frio(

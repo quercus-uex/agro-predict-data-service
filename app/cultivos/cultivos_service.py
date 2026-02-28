@@ -9,6 +9,7 @@ from .cultivos_dao import CultivosDAO
 from typing import Optional
 from datetime import date, datetime
 from ..historicos.historico_dao import HistoricDAO
+from .cultivo_plaga_service import CultivoPlagaService
 
 class CultivoService:
 
@@ -319,12 +320,17 @@ class CultivoService:
         new_cultivo = CultivosDAO.crear_cultivo(
             nombre = args.get('nombre'),
             nombre_cientifico = args.get('nombre_cientifico'),
-            descripcion = args.get('descripcion')
+            descripcion = args.get('descripcion'),
+            grupo = args.get('grupo')
         )
 
         if not new_cultivo:
             raise ValueError(f"Error, no se ha podido crear el cultivo con los datos {args}")
         
+        # Creo la relación del cultivos con sus plagas potenciales
+        CultivoPlagaService.crear_cultivo_asociado_plaga(
+            cultivo = new_cultivo
+        )
 
     @staticmethod
     def registrar_variedad_nueva(
@@ -353,7 +359,7 @@ class CultivoService:
     @staticmethod
     def registrar_umbral(
         nombre_variedad : str,
-        args : dict
+        args : list[dict]
     ):
         """
         Registra un nuevo umbral de temperatura para una variedad seleccionada
@@ -361,26 +367,27 @@ class CultivoService:
         :param nombre_variedad: Nombre de la variedad que se decide crear el nuevo umbral
         :type nombre_variedad: str
         :param args: Atributos del nuevo umbral
-        :type args: dict
+        :type args: list[dict]
         """
         if not nombre_variedad:
             raise ValueError("Error, se debe indicar la variedad asociada al umbral a crear")
         if not args:
             raise ValueError("Error, se deben especificar datos para crear el umbral")
 
-        new_umbral = CultivosDAO.crear_umbrales_temperatura(
-            nombre_variedad = nombre_variedad,
-            nombre_etapa_fenologica = args.get('etapa'),
-            umbrales_criticidad = {
-                "critico" : args.get('critico'),
-                "alto" : args.get('alto'),
-                "moderado" : args.get('moderado'),
-                "bajo" : args.get('bajo')
-            }
-        )
+        for arg in args:
+            new_umbral = CultivosDAO.crear_umbrales_temperatura(
+                nombre_variedad = nombre_variedad,
+                nombre_etapa_fenologica = arg.get('etapa'),
+                umbrales_criticidad = {
+                    "critico" : arg.get('critico'),
+                    "alto" : arg.get('alto'),
+                    "moderado" : arg.get('moderado'),
+                    "bajo" : arg.get('bajo')
+                }
+            )
 
-        if not new_umbral:
-            raise ValueError(f"Error, no se ha podido crear un umbral {args} para la variedad {nombre_variedad}")
+            if not new_umbral:
+                raise ValueError(f"Error, no se ha podido crear un umbral {args} para la variedad {nombre_variedad}")
 
     @staticmethod
     def registrar_modelo(

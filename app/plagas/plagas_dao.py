@@ -3,14 +3,25 @@ from sqlalchemy import select, and_
 from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
 from sqlalchemy.inspection import inspect
+from typing import Optional
 
 class PlagasDAO:
 
     @staticmethod
     def _get_plagas(
-        tipo : str
+        tipo : str,
+        plaga_id : Optional[int]
     ):
         try:
+
+            condiciones = [
+                Plaga.id == CalendarioPlaga.plaga_id,
+                Plaga.tipo == tipo
+            ]
+
+            if plaga_id:
+                condiciones.append(Plaga.id == plaga_id)
+
             # Query que obtiene todas las plagas de la bd
             query_plagas = (
                 select(
@@ -18,10 +29,7 @@ class PlagasDAO:
                 )
                 .join(CalendarioPlaga)
                 .where(
-                    and_(
-                        Plaga.id == CalendarioPlaga.plaga_id,
-                        Plaga.tipo == tipo
-                    )
+                    and_(*condiciones)
                 )
                 .order_by(
                     Plaga.public_id.desc()
@@ -48,11 +56,38 @@ class PlagasDAO:
         except Exception as e:
             print(f"Error leyendo datos de la bd sobre plagas: {e}")
             return None
+        
+    @staticmethod
+    def _get_grupos_calendario():
+        try:
+            query = (
+                select(
+                    CalendarioPlaga.grupo
+                ).distinct()
+            )
+
+            resultado = db.session.execute(query).scalars().all()
+
+            return set(resultado)
+        
+        except Exception as e:
+            print(f"Error obteniendo los grupos de los calendarios de plaga : {e}")
+            return None
+
 
     @staticmethod
-    def _get_calendario_plagas():
+    def _get_calendario_plagas(
+        plaga_id : Optional[int]
+    ):
         try:
+            
+            condicion = [
+                CalendarioPlaga.plaga_id == Plaga.id
+            ]
 
+            if plaga_id:
+                condicion.append(CalendarioPlaga.plaga_id == plaga_id)
+            
             # Query que obtiene el calendario de la plaga asociada
             query_calendario_plagas = (
                 select(
@@ -60,7 +95,7 @@ class PlagasDAO:
                 )
                 .join(Plaga)
                 .where(
-                    CalendarioPlaga.plaga_id == Plaga.id
+                    *condicion
                 )
                 .order_by(
                     CalendarioPlaga.plaga_id.desc()

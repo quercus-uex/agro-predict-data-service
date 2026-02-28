@@ -11,6 +11,7 @@ class CultivoDTO:
     nombre : str
     nombre_cientifico : str
     descripcion : str
+    grupo : str
 
 @dataclass
 class ModeloFrioDTO:

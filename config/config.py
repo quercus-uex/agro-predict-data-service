@@ -17,6 +17,14 @@ class Config:
     QUEUE_OUT_NAME = os.getenv('QUEUE_OUT_NAME')
     RABBITMQ_CONNECTION = os.getenv('RABBITMQ_CONNECTION')
 
+    #Swagger
+    SWAGGER_URL = '/api/v1/ui'
+    API_URL = '/api/v1/swagger.json'
+
+    # Aplicacion
+    SERVICE_NAME = "Servicio de datos"
+    SERVICE_VERSION = "1.0.0"
+
 class CircuitBreakerPersonalizado(CircuitBreaker):
     FAILURE_THRESHOLD = 7
     RECOVERY_TIMEOUT = 60
