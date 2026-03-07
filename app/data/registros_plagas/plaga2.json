@@ -1,0 +1,9 @@
+{
+  "public_id": "PLAGA-TOMATE-002",
+  "nombre": "Nematodos formadores de agallas",
+  "agente_causante": "Meloidogyne spp. (Chitwood, 1949) - Familia Heteroderidae. Especies principales: M. incognita, M. javanica, M. arenaria, M. hapla",
+  "momento_critico": "Alerta activa cuando se acumulan >= 600 grados-dia (Tbase=10C) en los ultimos 28 dias. Formula GDD diaria: MAX(0, (Tmax+Tmin)/2 - 10). Umbral adicional de infeccion radicular: temperatura de suelo puntualmente superior a 15C. Periodo mas critico: primeras semanas tras el trasplante.",
+  "observaciones": "Principal plaga telurica del tomate. Provoca agallas en raices que interrumpen absorcion de agua y nutrientes. Sintomas aereos: clorosis, enanismo, marchitamiento en horas de calor. El gen de resistencia Mi-1 se inactiva por encima de 28C. En cultivo protegido puede completar 6-7 generaciones por anyo.",
+  "mas_info": "https://www.infoagro.com/proteccion_cultivos/nematodos.htm",
+  "tipo": "nematodo"
+}

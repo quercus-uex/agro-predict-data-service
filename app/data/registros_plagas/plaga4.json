@@ -1,0 +1,9 @@
+{
+  "public_id": "PLAGA-TOMATE-004",
+  "nombre": "Mildiu del tomate (tizon tardio)",
+  "agente_causante": "Phytophthora infestans (Mont.) de Bary, 1876 - Familia Peronosporaceae (oomiceto)",
+  "momento_critico": "Alerta activa cuando la temperatura se situa entre 10C y 35C con presencia de agua libre sobre la planta (lluvia, rocio o riego por aspersion). Proxy sin sensor foliar: HR >= 90% durante al menos una hora nocturna o matutina. Mayor riesgo con dias nublados y baja radiacion solar.",
+  "observaciones": "Patogeno de desarrollo muy rapido en condiciones favorables, capaz de invadir toda la planta en pocos dias. Optimo termico entre 18-22C. Esporas diseminadas por viento, lluvia y riego por aspersion. Pendiente: integrar sensor de humectacion foliar para refinar la alerta de agua libre sobre planta.",
+  "mas_info": "https://www.infoagro.com/proteccion_cultivos/phytophthora_infestans.htm",
+  "tipo": "hongo"
+}

@@ -20,8 +20,10 @@ class PlagaDTO:
     nombre : str
     agente_causante : str
     momento_critico : str
-    observaciones  : str
+    observaciones : str
     mas_info : str
     tipo : str
 
+@dataclass
+class PlagaConCalendarioDTO(PlagaDTO):
     calendario : List[CalendarioDTO]

@@ -52,7 +52,7 @@ class PlagasService:
             ]
 
             plagas.append(
-                PlagaDTO(
+                PlagaConCalendarioDTO(
                     public_id = p.get('public_id'),
                     nombre = p.get('nombre'),
                     agente_causante = p.get('agente_causante'),
@@ -95,3 +95,31 @@ class PlagasService:
         )
 
         return plagas
+    
+    @staticmethod
+    def registrar_plaga(
+        public_id : str,
+        nombre : str,
+        agente_causante : str,
+        momento_critico : str,
+        observaciones : Optional[str],
+        mas_info : Optional[str],
+        tipo : str
+    ):
+        """
+        Registra una nueva plaga en el sistema en base a los datos pasados por parámetros.
+        """
+        if not all([public_id, nombre, agente_causante, momento_critico, tipo]):
+            raise ValueError("Error, se deben indicar valores válidos para crear una nueva plaga en el sistema")
+        
+        plaga = PlagasDAO.crear_plagas(
+            public_id = public_id,
+            nombre = nombre,
+            agente_causante = agente_causante,
+            momento_critico = momento_critico,
+            observaciones = observaciones if observaciones else None,
+            mas_info = mas_info if mas_info else None,
+            tipo = tipo
+        )
+
+        return plaga

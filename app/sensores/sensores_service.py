@@ -18,19 +18,23 @@ class SensoresService():
         if not data:
             return
         
-        lista_sensores_dto = []
+        sensores_dto = {}
 
         for d in data:
-            lista_sensores_dto.append(
+
+            if d['eui'] not in sensores_dto:
+                sensores_dto[d['eui']] = []
+
+            sensores_dto[d['eui']].append(
                 SensoresDTO(
-                    eui = d['eui'],
-                    humedad_foliar = d['humedad_foliar'],
-                    temperatura_DS18B20 = d['temperatura_DS18B20'],
-                    temperatura_hojas = d['temperatura_hojas']
+                    humedad_foliar=d['humedad_foliar'],
+                    temperatura_DS18B20=d['temperatura_DS18B20'],
+                    temperatura_hojas=d['temperatura_hojas'],
+                    timestamp=d['timestamp']
                 )
             )
         
-        return lista_sensores_dto
+        return sensores_dto
 
     @staticmethod
     def get_sensor_data(
@@ -54,6 +58,7 @@ class SensoresService():
         datos = SensoresDAO.consultar_datos_sensores(
             eui = eui,
             fecha_inicio = fecha_inicio,
+            
             fecha_fin = fecha_fin
         )
 

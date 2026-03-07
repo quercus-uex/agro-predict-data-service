@@ -122,7 +122,7 @@ class Plaga(db.Model):
     __tablename__ = 'plagas'
 
     id = Column(Integer, primary_key = True, autoincrement = True)
-    public_id = Column(String(5), nullable = False)
+    public_id = Column(String(30), nullable = False)
     nombre = Column(String(100), unique = True, nullable = False)
     agente_causante = Column(String(100), nullable = False)
     momento_critico = Column(String(300), nullable = True)

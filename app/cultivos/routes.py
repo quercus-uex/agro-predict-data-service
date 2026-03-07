@@ -189,7 +189,7 @@ def obtener_cultivos_asociados_plagas():
                     'success' : 'false',
                     'code' : '400',
                     'message' : 'Invalid Parameters',
-                    'error' : str(e)
+                    'error' : 'Se debe indicar el valor de un query param : cultivos'
                 }
             )
         

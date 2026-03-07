@@ -1,9 +1,12 @@
-
 from .cultivos_dao import CultivosDAO
 from ..plagas.plagas_dao import PlagasDAO
 from .cultivos_dto import CultivoPlagaDTO, CultivoDTO, PlagaDTO, CalendarioDTO
 from typing import Optional
 from ..models import Cultivo
+import logging 
+
+logger = logging.getLogger(__name__)
+
 class CultivoPlagaService():
 
 
@@ -90,7 +93,7 @@ class CultivoPlagaService():
         grupos_calendarios = PlagasDAO._get_grupos_calendario()
 
         if grupo_cultivo_creado not in grupos_calendarios:
-            raise ValueError(f'Error, no hay registros de calendarios sobre el grupo del cultivo : {grupo_cultivo_creado}')
+            logger.warn(f'No hay registros de calendarios sobre el grupo del cultivo : {grupo_cultivo_creado}')
         
         CultivosDAO.crear_relacion_cultivo_plaga(
             nombre_cultivo = cultivo.nombre

@@ -1,0 +1,9 @@
+{
+  "public_id": "PLAGA-TOMATE-003",
+  "nombre": "Podredumbre de cuello y raiz",
+  "agente_causante": "Phytophthora spp. (de Bary, 1876) - Familia Peronosporaceae (oomiceto)",
+  "momento_critico": "Alerta activa con un unico dia en el que la temperatura ambiente se encuentre en el rango optimo de 15-26C, especialmente si coincide con lluvias, riegos abundantes o parcelas con historial de encharcamiento. Una sola jornada en estas condiciones justifica tratamiento preventivo.",
+  "observaciones": "Coloniza rapidamente cuello y sistema radicular bajo condiciones de alta humedad del suelo. Sintomas: lesiones oscuras en el cuello, marchitamiento subito, podredumbre radicular. Especial precaucion en parcelas con drenaje deficiente o historial previo. Pendiente: integrar sensores de humedad de suelo o humectacion foliar.",
+  "mas_info": "https://www.infoagro.com/proteccion_cultivos/phytophthora.htm",
+  "tipo": "hongo"
+}

@@ -1,0 +1,9 @@
+{
+  "public_id": "PLAGA-TOMATE-001",
+  "nombre": "Acaro del bronceado del tomate",
+  "agente_causante": "Aculops lycopersici (Massee, 1937) - Familia Eriophyidae",
+  "momento_critico": "Primavera-verano. Alerta activa tras 6-7 dias consecutivos con temperatura maxima en torno a 27C y humedad relativa igual o inferior al 30%. Ciclo completo en ~7 dias bajo condiciones optimas.",
+  "observaciones": "Afecta principalmente la parte baja de la planta migrando hacia hojas jovenes. Sintomas: bronceado y encorchamiento de tallos y hojas. Alta capacidad de multiplicacion bajo condiciones calidas y secas. Umbral climatico: Tmax ~27C y HR <= 30% durante al menos 6 dias consecutivos.",
+  "mas_info": "https://www.infoagro.com/proteccion_cultivos/aculops_lycopersici.htm",
+  "tipo": "acaro"
+}
