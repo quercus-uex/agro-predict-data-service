@@ -6,7 +6,8 @@ from ..models import(
     UmbralesTemperatura,
     Plaga,
     CultivoPlaga,
-    CalendarioPlaga
+    CalendarioPlaga,
+    Sensores
 )
 from sqlalchemy import select, and_, update
 from app.extensions import db
@@ -61,7 +62,8 @@ class CultivosDAO:
                 nombre = nombre,
                 nombre_cientifico = nombre_cientifico,
                 descripcion = descripcion,
-                grupo = grupo
+                grupo = grupo,
+                eui = None
             )
 
             # Si existiera ya un cultivo con este nombre y nombre_cientifico, salta la constraint y no se inserta
@@ -549,21 +551,23 @@ class CultivosDAO:
         try:
             query = (
                 select(
-                    Cultivo
+                    Cultivo,
+                    Sensores
                 )
+                .join(Sensores, Sensores.id == Cultivo.sensor_id)
             )
 
-            resultado = db.session.execute(query).scalars().all()
+            resultado = db.session.execute(query).all()
 
             if not resultado:
                 return None
             
             cultivos = [
                 {
-                    c.key: getattr(cu, c.key)
-                    for c in inspect(cu).mapper.column_attrs
+                    **{s.key: getattr(row.Cultivo, s.key) for s in inspect(row.Cultivo).mapper.column_attrs},
+                    **{s.key: getattr(row.Sensores, s.key) for s in inspect(row.Sensores).mapper.column_attrs}
                 }
-                for cu in resultado
+                for row in resultado
             ]
 
             return cultivos

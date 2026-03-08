@@ -1,5 +1,5 @@
 from sqlalchemy import select, and_, inspect
-from ..models import Sensores
+from ..models import Sensores, MedicionesSensor
 from datetime import date, datetime, time
 from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
@@ -15,27 +15,29 @@ class SensoresDAO():
         try:
             query = (
                 select(
-                    Sensores
+                    Sensores,
+                    MedicionesSensor
                 )
+                .join(MedicionesSensor, Sensores.id == MedicionesSensor.sensor_id)
                 .where(
                     and_(
                         Sensores.eui == eui,
-                        Sensores.timestamp.between(datetime.combine(fecha_inicio, time.min), datetime.combine(fecha_fin, time.min)) # Conversión de date a datetime
+                        MedicionesSensor.timestamp.between(datetime.combine(fecha_inicio, time.min), datetime.combine(fecha_fin, time.max)) # Conversión de date a datetime
                     )
                 )
             )
 
-            resultado = db.session.execute(query).scalars().all()
+            resultado = db.session.execute(query).all()
 
             if not resultado:
                 return None
             
             return [
                 {
-                    s.key : getattr(p, s.key)
-                    for s in inspect(p).mapper.column_attrs
+                    **{s.key: getattr(row.Sensores, s.key) for s in inspect(row.Sensores).mapper.column_attrs},
+                    **{s.key: getattr(row.MedicionesSensor, s.key) for s in inspect(row.MedicionesSensor).mapper.column_attrs}
                 }
-                for p in resultado
+                for row in resultado
             ]
 
         except Exception as e:

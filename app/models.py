@@ -22,9 +22,11 @@ class Cultivo(db.Model):
     nombre_cientifico = Column(String(200), nullable = False)
     descripcion = Column(String(300), nullable = False, unique = False)
     grupo = Column(String(50), nullable = False)
+    sensor_id = Column(Integer, ForeignKey("sensores.id"), nullable = True)
 
     variedades = relationship("Variedades", back_populates = "cultivo")
     cultivos_plagas = relationship("CultivoPlaga", back_populates = "cultivo")
+    sensor = relationship("Sensores", back_populates = "cultivo")
 
     __table_args__ = (
         UniqueConstraint(
@@ -253,11 +255,22 @@ class Sensores(db.Model):
 
     id = Column(Integer, primary_key = True, autoincrement = True)
 
-    eui = Column(String(50), nullable = False)
+    eui = Column(String(50), nullable = False, unique = True)
+
+    mediciones = relationship("MedicionesSensor", back_populates = 'sensor')
+    cultivo = relationship("Cultivo", back_populates = 'sensor')
+
+class MedicionesSensor(db.Model):
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+
     humedad_foliar = Column(Float, nullable = False)
     temperatura_DS18B20 = Column(Integer, nullable = False)
     temperatura_hojas = Column(Float, nullable = False)
     timestamp = Column(String(50), nullable = False)
+    sensor_id = Column(Integer, ForeignKey("sensores.id"), nullable = False)
+
+    sensor = relationship("Sensores", back_populates = 'mediciones')
 
 class Predicciones(db.Model):
     __tablename__ = "predicciones"

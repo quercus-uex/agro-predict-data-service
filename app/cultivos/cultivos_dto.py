@@ -13,6 +13,7 @@ class CultivoDTO:
     nombre_cientifico : str
     descripcion : str
     grupo : str
+    sensor : str
 
 @dataclass
 class ModeloFrioDTO:

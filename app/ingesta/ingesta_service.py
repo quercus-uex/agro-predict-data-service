@@ -36,8 +36,6 @@ class IngestionService:
                 fecha_fin = fecha_fin
             )
 
-            print(f"Datos de sensores en la ingesta : {datos}")
-
             # Recorro los datos obtenidos y los inserto en la base de datos
             for d in datos:
                 if d is not None:

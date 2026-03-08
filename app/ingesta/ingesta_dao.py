@@ -1,6 +1,15 @@
 from sqlalchemy import and_, select, inspect, update, delete
 from app.extensions import db
-from ..models import IngestaStatus, Localidades, CCAA, Predicciones, Provincia, LocalidadesClimaticas, Sensores
+from ..models import (
+    IngestaStatus, 
+    Localidades, 
+    CCAA, 
+    Predicciones, 
+    Provincia, 
+    LocalidadesClimaticas, 
+    Sensores,
+    MedicionesSensor
+)
 from datetime import datetime
 from typing import Optional
 
@@ -185,24 +194,45 @@ class IngestaDAO:
         """
 
         try:
-            sensor = Sensores(
-                eui = eui,
+
+            existe_sensor = db.session.query(Sensores.id).filter_by(
+                eui = eui
+            ).first()
+
+
+            if not existe_sensor:
+                sensor = Sensores(
+                    eui = eui
+                )
+                # Lo incluyo antes del commit en la db para poder crear sus mediciones asociadas
+                db.session.add(sensor)
+                db.session.flush()
+            else:
+                sensor = existe_sensor
+
+            # Comprobar que esa medicion a insertar no existe ya en la DB
+            existe_medicion = db.session.query(MedicionesSensor.id).filter_by(
                 humedad_foliar = humedad_foliar,
                 temperatura_DS18B20 = temperatura_sensor,
                 temperatura_hojas = temperatura_hojas,
-                timestamp = timestamp
-            )
-
-            db.session.add(sensor)
-
-            existe = db.session.query(Sensores.id).filter_by(
-                humedad_foliar = humedad_foliar,
-                temperatura_DS18B20 = temperatura_sensor,
-                temperatura_hojas = temperatura_hojas
+                timestamp = timestamp,
+                sensor_id = sensor.id
             ).first()
 
-            if existe:
+            if existe_medicion:
                 return
+            
+            mediciones = MedicionesSensor(
+                humedad_foliar = humedad_foliar,
+                temperatura_DS18B20 = temperatura_sensor,
+                temperatura_hojas = temperatura_hojas,
+                timestamp = timestamp,
+                sensor_id = sensor.id
+            )
+            
+            # Inserto la medicion
+            db.session.add(mediciones)
+            
         
         except Exception as e:
             print(f"Ha ocurrido un error intentando crear un nuevo dato de sensor : {e}")

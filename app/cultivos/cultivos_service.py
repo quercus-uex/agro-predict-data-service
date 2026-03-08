@@ -30,7 +30,8 @@ class CultivoService:
             nombre = datos.get('nombre'),
             nombre_cientifico = datos.get('nombre_cientifico'),
             descripcion = datos.get('descripcion'),
-            grupo = datos.get('grupo')
+            grupo = datos.get('grupo'),
+            sensor = datos.get('eui')
         )
 
     @staticmethod
@@ -130,6 +131,9 @@ class CultivoService:
             descripcion = datos.get('descripcion')
         )
 
+
+    #======== OBTENCIÓN DE DATOS ========#
+
     @staticmethod
     def obtener_cultivos_disponibles() -> Optional[list[CultivoDTO]]:
         """
@@ -147,7 +151,6 @@ class CultivoService:
             if (dto := CultivoService._build_cultivos(cultivo)) is not None
         ]
 
-    #======== OBTENCIÓN DE DATOS ========#
     @staticmethod
     def obtener_variedades_disponibles(
         cultivo : Optional[str] = None

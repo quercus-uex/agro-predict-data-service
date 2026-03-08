@@ -32,11 +32,11 @@ def sensores():
         fecha_fin = convertir_tipo(fecha_fin, date)
 
         
-        """IngestionService.ingesta_sensores_data(
+        IngestionService.ingesta_sensores_data(
             eui = eui,
             fecha_inicio = fecha_inicio,
             fecha_fin = fecha_fin
-        )"""
+        )
         
         
         datos = SensoresService.get_sensor_data(
