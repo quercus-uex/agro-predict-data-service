@@ -1,6 +1,11 @@
 from .cultivos_dao import CultivosDAO
 from ..plagas.plagas_dao import PlagasDAO
-from .cultivos_dto import CultivoPlagaDTO, CultivoDTO, PlagaDTO, CalendarioDTO
+from .cultivos_dto import (
+    CultivoPlagaDTO, 
+    CultivoDTO, 
+    CalendarioDTO, 
+    PlagaConCalendarioDTO
+)
 from typing import Optional
 from ..models import Cultivo
 import logging 
@@ -39,10 +44,11 @@ class CultivoPlagaService():
                         nombre = datos_cultivo.nombre,
                         nombre_cientifico = datos_cultivo.nombre_cientifico,
                         descripcion = datos_cultivo.descripcion,
-                        grupo = datos_cultivo.grupo
+                        grupo = datos_cultivo.grupo,
+                        sensor = datos_cultivo.sensor_id
                     ),
                     plaga = [
-                        PlagaDTO(
+                        PlagaConCalendarioDTO(
                             public_id = p['plaga'].public_id,
                             nombre = p['plaga'].nombre,
                             agente_causante = p['plaga'].agente_causante,

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from ..plagas.plagas_dto import PlagaDTO, CalendarioDTO
+from ..plagas.plagas_dto import PlagaConCalendarioDTO, CalendarioDTO
 
 @dataclass
 class EtapaFenologicaDTO:
@@ -40,4 +40,4 @@ class UmbralesTemperaturaDTO:
 @dataclass
 class CultivoPlagaDTO:
     cultivo : CultivoDTO
-    plaga : list[PlagaDTO]
+    plaga : list[PlagaConCalendarioDTO]
