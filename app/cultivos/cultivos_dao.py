@@ -584,6 +584,7 @@ class CultivosDAO:
             if cultivo:
                 query = (
                     select(
+                        Cultivo.nombre.label('nombre_cultivo'),
                         Variedades.nombre.label('variedad_nombre'),
                         Variedades.horas_frio_max,
                         Variedades.horas_frio_min,
@@ -603,6 +604,7 @@ class CultivosDAO:
             else:
                 query = (
                     select(
+                        Cultivo.nombre.label('nombre_cultivo'),
                         Variedades.nombre.label('variedad_nombre'),
                         Variedades.horas_frio_max,
                         Variedades.horas_frio_min,
@@ -610,12 +612,13 @@ class CultivosDAO:
                         ModelosHoraFrio.descripcion
                     )
                     .join(
-                        ModelosHoraFrio #SQLAlchemy ya se encarga de asociar las claves foraneas con las primarias
+                        ModelosHoraFrio#SQLAlchemy ya se encarga de asociar las claves foraneas con las primarias
                     )
+                    .join(Cultivo)
                 )
             
             resultado = db.session.execute(query).all()
-            print(resultado)
+
             if not resultado:
                 return None
             return row2dict_converter(resultado)

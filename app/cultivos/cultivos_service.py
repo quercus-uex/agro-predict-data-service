@@ -48,6 +48,7 @@ class CultivoService:
             return None
         
         return VariedadDTO(
+            nombre_cultivo = datos.get('nombre_cultivo'),
             nombre = datos.get('variedad_nombre'),
             horas_frio_min = datos.get('horas_frio_min'),
             horas_frio_max = datos.get('horas_frio_max'),
@@ -381,7 +382,7 @@ class CultivoService:
         for arg in args:
             new_umbral = CultivosDAO.crear_umbrales_temperatura(
                 nombre_variedad = nombre_variedad,
-                nombre_etapa_fenologica = arg.get('etapa'),
+                nombre_etapa_fenologica = arg.get('etapa_fenologica').get('codigo'),
                 umbrales_criticidad = {
                     "critico" : arg.get('critico'),
                     "alto" : arg.get('alto'),

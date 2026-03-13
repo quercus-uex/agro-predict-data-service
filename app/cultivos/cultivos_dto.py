@@ -23,6 +23,7 @@ class ModeloFrioDTO:
 
 @dataclass
 class VariedadDTO:
+    nombre_cultivo : str
     nombre : str
     horas_frio_min : int
     horas_frio_max : int

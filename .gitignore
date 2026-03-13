@@ -6,7 +6,7 @@ dist/
 htmlcov/
 .tox/
 docs/_build/
-.env
+.env*
 app/logs/*
 !app/logs/.gitkeep
 prueba-regex.txt

@@ -33,6 +33,8 @@ tags:
     description: Obtención de datos futuros sobre una provincia | CCAA | nación.
   - name: Plagas
     description: Obtención de datos de plagas sobre variedades de cultivos específicas.
+  - name: Cultivos
+    description: Obtención | Creación | Modificacion de datos de cultivos. 
 
 paths:
   /climate/historical/provincias:
@@ -319,7 +321,7 @@ paths:
         - Plagas
       summary: Calendario de plagas/enfermedades para un cultivo o grupo de cultivos
       description: Obtiene el calendario de plagas/enfermedades para un cultivo o grupo de cultivos.
-      operationId: getPlagasCalendar
+      operationId: get_calendario_plagas
       parameters:
         - name: cultivo
           in: query
@@ -384,8 +386,840 @@ paths:
                 message: "Error del proveedor de datos"
                 status: 502
                 error: "Provider Error"
+    post:
+      tags:
+        - Plagas
+      summary: Posibilita registrar una nueva plaga en el sistema
+      description: A través de los datos que se obtiene desde el cuerpo de la petición, el sistema valida 
+       e inserta en la base de datos la nueva plaga a registrar. Devuelve un error en caso contrario.
+      operationId: post_plaga
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearPlaga'
+      responses:
+        '201':
+          description: Plaga registrada exitosamente en el sistema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrearSuccess'
+        '400':
+          description: Fallo en el payload de entrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+            example:
+              message: "Invalid body data"
+              status: 400
+              error: 'Debe introducirse un payload de datos sobre esta petición'
+        '404':
+          description: Error al registrar la plaga en el sistema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Data Not Found"
+                status: 404
+                error: "No se han encontrado la plaga a registrar"
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Provider Error"
+                status: 502
+                error: "Error del proveedor de datos"
+
+  /crop/variedades/{nombre}/umbrales:
+    get:
+      summary: Obtener umbrales de una variedad
+      description: Devuelve los umbrales de riesgo de helada definidos para una variedad concreta.
+      tags:
+        - Cultivos
+      parameters:
+        - name: nombre
+          in: path
+          required: true
+          description: Nombre de la variedad
+          schema:
+            type: string
+            example: "Guara"
+      responses:
+        "200":
+          description: Umbrales de la variedad obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UmbralesRiesgo'
+        "404":
+          description: No se han encontrado umbrales para la variedad indicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Los umbrales para la variedad X no están definidos"
+                status: 404
+                error: "Data Not Found"
+        "502":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Provider Error"
+                status: 502
+                error: "Error del proveedor de datos"
+
+    post:
+      summary: Registrar umbrales para una variedad
+      description: Crea los umbrales de riesgo de helada para una variedad concreta.
+      tags:
+        - Cultivos
+      parameters:
+        - name: nombre
+          in: path
+          required: true
+          description: Nombre de la variedad
+          schema:
+            type: string
+            example: "Guara"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UmbralesRiesgo'
+      responses:
+        "201":
+          description: Umbral creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessCreated'
+        "400":
+          description: Datos en JSON no proporcionados o inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: "Datos en json requeridos"
+                status: 400
+                error: "Bad Request"
+        "502":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+              example:
+                message: "Provider Error"
+                status: 502
+                error: "Error del proveedor de datos"
+
+  /crop/variedades/{nombre}/horas_frio:
+    get:
+      summary: Obtener horas de frío de una variedad
+      description: Devuelve los umbrales de horas de frío (mínimo y máximo) definidos para una variedad.
+      tags:
+        - Cultivos
+      parameters:
+        - name: nombre
+          in: path
+          required: true
+          description: Nombre de la variedad
+          schema:
+            type: string
+            example: "Guara"
+      responses:
+        "200":
+          description: Horas de frío de la variedad obtenidas correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VariedadHorasFrio'
+        "404":
+          description: No se han encontrado datos de horas de frío para la variedad indicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado datos hora_frio para la variedad X"
+                status: 404
+                error: "Data Not Found"
+        "502":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Provider Error"
+                status: 502
+                error: "Error del proveedor de datos"
+
+    patch:
+      summary: Actualizar horas de frío de una variedad
+      description: Actualiza los valores de horas de frío mínimas y/o máximas de una variedad.
+      tags:
+        - Cultivos
+      parameters:
+        - name: nombre
+          in: path
+          required: true
+          description: Nombre de la variedad
+          schema:
+            type: string
+            example: "Guara"
+        - name: frio_max
+          in: query
+          required: false
+          description: Nuevo valor máximo de horas de frío
+          schema:
+            type: integer
+            example: 650
+        - name: frio_min
+          in: query
+          required: false
+          description: Nuevo valor mínimo de horas de frío
+          schema:
+            type: integer
+            example: 420
+      responses:
+        "200":
+          description: Horas de frío actualizadas correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessOk'
+        "400":
+          description: No se han proporcionado los nuevos valores a actualizar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: No se puede actualizar las horas frio de la variedad X porque no se han definido sus nuevos valores (frio_max, frio_min)
+                status: 400
+                error: "Invalid Parameters"
+        "502":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Provider Error"
+                status: 502
+                error: "Error del proveedor de datos"
+
+  /crop/modelos/{codigo}/variedades:
+    get:
+      summary: Obtener variedades por modelo de horas de frío
+      description: Devuelve las variedades de cultivo que implementan el modelo de horas de frío indicado.
+      tags:
+        - Cultivos
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          description: Código del modelo de horas de frío
+          schema:
+            type: string
+            enum: ['CM7', 'C07', 'UF', 'PF']
+      responses:
+        "200":
+          description: Variedades del modelo obtenidas correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VariedadesModelos'
+        "400":
+          description: Se ha producido un error en la validación de parámetros
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Parametros de entrada incorrectos"
+                status: 400
+                error: "Invalid Parameters"
+        "404":
+          description: No se han encontrado variedades para el modelo indicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado variedades que implementen el modelo X"
+                status: 404
+                error: "Data Not Found"
+        "502":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              exampele:
+                message: "Provider Error"
+                status: 502
+                error: "Error del proveedor de datos"
+
+  /crop/plague:
+    get:
+      summary: Obtener cultivos con sus plagas asociadas
+      description: >
+        Devuelve los cultivos indicados junto con sus plagas y enfermedades asociadas.
+        Se pueden indicar múltiples cultivos separados por comas.
+      tags:
+        - Cultivos
+      parameters:
+        - name: cultivos
+          in: query
+          required: true
+          description: Nombre o nombres de cultivo separados por comas
+          schema:
+            type: string
+            example: "Maiz"
+      responses:
+        "200":
+          description: Cultivos con plagas asociadas obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrediccionPlagasCalculadas'
+        "400":
+          description: Parámetro cultivos no indicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Se debe indicar el nombre de el/los cultivos a analizar"
+                status: 400
+                error: "Invalid Parameters"
+        "404":
+          description: Datos de plagas asociadas a cultivos no encuntrados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado datos de plagas asociados al cultivo indicado"
+                status: 404
+                error: "Data Not Found"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:  
+                message: "Provider Error"
+                status: 500
+                error: "Error del proveedor de datos"
+
+  /crop/{campo}:
+    get:
+      summary: Listar recursos de cultivo
+      description: >
+        Endpoint genérico para obtener listados de recursos relacionados con cultivos.
+        Los valores válidos de `campo` son: `variedades`, `modelos`, `etapas_fenologicas`, `cultivos`.
+        El recurso `variedades` admite el parámetro opcional `cultivo` para filtrar por cultivo.
+      tags:
+        - Cultivos
+      parameters:
+        - name: campo
+          in: path
+          required: true
+          description: Tipo de recurso a consultar
+          schema:
+            type: string
+            enum: [variedades, modelos, etapas_fenologicas, cultivos]
+            example: "variedades"
+        - name: cultivo
+          in: query
+          required: false
+          description: Filtro por nombre de cultivo (solo aplica cuando campo = variedades)
+          schema:
+            type: string
+            example: "Almendro"
+      responses:
+        "200":
+          description: Listado del recurso solicitado obtenido correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Estructura variable según el campo solicitado
+                items:
+                  $ref: '#/components/schemas/VariedadesModelos'
+        "400":
+          description: Campo no soportado o parámetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Parametros invalidos, se debe especificar el campo"
+                status: 400
+                error: "Invalid Parameters"
+        "404":
+          description: No se han encontrado datos para el recurso solicitado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se encontraron datos de X"
+                status: 404
+                error: "Data Not Found"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example: 
+                message: "Provider Error"
+                status: 500
+                error: "Error del proveedor de datos"
+
+    post:
+      summary: Crear un nuevo recurso de cultivo
+      description: >
+        Endpoint genérico para crear nuevos recursos relacionados con cultivos.
+        Los valores válidos de `campo` son: `variedades`, `modelos`, `cultivos`.
+        El recurso `etapas_fenologicas` no admite creación.
+      tags:
+        - Cultivos
+      parameters:
+        - name: campo
+          in: path
+          required: true
+          description: Tipo de recurso a crear
+          schema:
+            type: string
+            enum: [variedades, modelos, cultivos]
+            example: "variedades"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Datos del recurso a crear (estructura variable según el campo)
+              $ref: '#/components/schemas/CrearVariedad'
+      responses:
+        "201":
+          description: Recurso creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessCreated'
+        "400":
+          description: Datos en JSON no proporcionados o campo no soportado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Datos de JSON requeridos"
+                status: 400
+                error: "Bad Request"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example: 
+                message: "Provider Error"
+                status: 500
+                error: "Error del proveedor de datos"
+
+  /sensores:
+    get:
+      tags:
+        - Sensores
+      summary: Obtiene mediciones almacenadas sobre el sensor indicado
+      description: Dado el identificador de sensor que se introduce como parámetro de la consulta 
+        devuelve al cliente las diferentes mediciones almacenadas en el sistema sobre ese sensor en un 
+        periodo de tiempo también definido en los parámetros de la consulta.
+      operationId: sensores
+      parameters:
+        - name: eui
+          in: query
+          required: true
+          description: Identificador único del sensor que se quiere obtener sus mediciones
+          schema:
+            type: string
+            default: "a840419b3188cc0c"
+        - name: fecha_inicio 
+          in: query
+          required: true
+          description: Fecha de inicio para la recopilación de mediciones sobre el sensor indicado
+          schema:
+            type: string
+            format: date
+            default: "2025-02-20"
+        - name: fecha_fin
+          in: query
+          required: true
+          description: Fecha de finalización para la recopilación de mediciones sobre el sensor indicado
+          schema:
+            type: string
+            format: date
+            default: "2025-02-25"
+      responses:
+        '200':
+          description: Datos del sensor `{eui}` recopilados correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatosSensorEui'
+        '400':
+          description: Error en los parametros de la consulta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+            example:
+              message: "Invalid parameters"
+              status: 400
+              error: 'Debe indicarse todos los parámetros de la query (eui, fecha_inicio, fecha_fin)'
+        '404':
+          description: Error al obtener mediciones sobre los parámetros indicados en la consulta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Data Not Found"
+                status: 404
+                error: "No se han encontrado datos de sensores para los parámetros indicados"
+        '502':
+          description: Error del proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Provider Error"
+                status: 502
+                error: "Error del proveedor de datos"
+            
 components:
   schemas:
+
+    CrearVariedad:
+      type: object
+      properties:
+        nombre:
+          type: string
+          description: Nombre de la variedad
+          example: "Vairon"
+        cultivo:
+          type: string
+          description: Nombre del cultivo asociado
+          example: "Almendro"
+        horas_frio_min:
+          type: integer
+          example: 200
+        horas_frio_max:
+          type: integer
+          example: 400
+        modelo:
+          type: string
+          description: Codigo publico del modelo
+          example: "CM7"
+
+    NivelRiesgoPlaga:
+      type: string
+      description: Nivel de riesgo de la plaga o enfermedad
+      enum: [BAJA, MEDIA, ALTA, MUY_ALTA]
+      example: "ALTA"
+
+    TipoAgente:
+      type: string
+      description: Indica si el agente es una plaga o una enfermedad
+      enum: [plaga, enfermedad]
+      example: "plaga"
+
+    Plaga:
+      type: object
+      description: Información de una plaga o enfermedad asociada a un cultivo
+      properties:
+        nombre:
+          type: string
+          description: Nombre común de la plaga o enfermedad
+          example: "HELMINTOSPORIOSIS"
+        agente_causante:
+          type: string
+          description: Especie o especies responsables de la plaga o enfermedad
+          example: "Dreschslera teres"
+        momento_critico:
+          type: string
+          description: Etapa o periodo del cultivo con mayor riesgo de afección
+          example: "Desde encañado hasta llenado de grano"
+        observaciones:
+          type: string
+          description: Condiciones ambientales o agronómicas que favorecen su aparición
+          example: "Infección en otoño-invierno, explotando en primavera"
+        mas_info:
+          type: string
+          nullable: true
+          format: uri
+          description: URL con información ampliada sobre la plaga o enfermedad
+          example: "https://plagas.itacyl.es/helmintosporisis"
+        tipo:
+          $ref: '#/components/schemas/TipoAgente'
+        nivel_riesgo:
+          $ref: '#/components/schemas/NivelRiesgoPlaga'
+
+    CultivoPlagas:
+      type: object
+      description: Cultivo con su listado de plagas y enfermedades asociadas
+      properties:
+        cultivo:
+          type: object
+          description: Información básica del cultivo
+          properties:
+            nombre:
+              type: string
+              description: Nombre del cultivo
+              example: "Maiz"
+            grupo:
+              type: string
+              description: Grupo o categoría agronómica del cultivo
+              example: "cereales"
+        plagas:
+          type: array
+          description: Lista de plagas y enfermedades asociadas al cultivo
+          items:
+            $ref: '#/components/schemas/Plaga'
+
+    PrediccionPlagasCalculadas:
+      type: array
+      description: Respuesta con la predicción de plagas calculadas, una entrada por cultivo consultado
+      items:
+        $ref: '#/components/schemas/CultivoPlagas'
+
+    Modelo:
+      type: object
+      properties:
+        nombre: 
+          type: string
+          example: "Unidad de Frio (UF)"
+        codigo:
+          type: string
+          example: "UF"
+        descripcion:
+          type: string
+          example: "Acumular horas en las que la temperatura esta comprendida entre 2.5-9.1 grados, si temperatura 1.4-15.9 no suman, temperaturas 16-18 restan"
+
+    VariedadesModelos:
+      type: object
+      properties:
+        nombre_cultivo:
+          type: string
+          example: "Almendro"
+        nombre:
+          type: string
+          example: "Guara"
+        horas_frio_min:
+          type: integer
+          example: 400
+        horas_frio_max:
+          type: integer
+          example: 600
+        modelo:
+          $ref: '#/components/schemas/Modelo'  
+
+    VariedadHorasFrio:
+      type: object
+      properties:
+        nombre_variedad:
+          type: string
+          example: "Lauranne"
+        horas_frio_max:
+          type: integer
+          description: Umbral de horas frio máximas requeridas
+          example: 200
+        horas_frio_min:
+          type: integer
+          description: Umbral de horas frio mínimas requeridas
+          example: 190
+        horas_frio_actuales:
+          type: number
+          description: Acumulativo actual de las horas de frio sobre la variedad
+          example: 682.5
+
+    EtapaFenologica:
+      type: object
+      properties:
+        nombre:
+          type: string
+          description: Nombre de la etapa etapa fenologica
+          example: "dormancia"
+        codigo:
+          type: string
+          description: Codigo publico que identifica a la etapa
+          example: "DOR"
+        orden:
+          type: integer
+          description: Indica el orden de la etapa dentro de todas las etapas fenologicas de la variedad
+          example: 1
+
+    UmbralesRiesgo:
+      type: object
+      properties:
+        nombre_variedad:
+          type: string
+          example: "Lauranne"
+        etapa_fenologica:
+          type: object
+          $ref: '#/components/schemas/EtapaFenologica'
+        critico:
+          type: number
+          example: -20.0
+        alto:
+          type: number
+          example: -14.0
+        moderado:
+          type: number
+          example: -5.0
+        bajo:
+          type: number
+          example: 0.0
+
+    SuccessCreated:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Se ha creado correctamente la variedad"
+        status:
+          type: integer
+          example: 201
+
+    SuccessOk:
+      type: object
+      properties:
+        success:
+          type: string
+          example: "true"
+        message:
+          type: string
+          example: "Variedad Guara actualizada correctamente sus horas de frio"
+
+    DatosSensorEui:
+      type: object
+      properties:
+        eui:
+          type: array
+          description: Lista de mediciones asociadas al sensor eui
+          items:
+            $ref: '#/components/schemas/MedicionesSensor'
+    MedicionesSensor:
+      type: object
+      properties:
+        humedad_foliar:
+          type: number
+          required: true
+          description: Cantidad de agua libre presente en la superficie de la hoja
+          example: 1.2
+        temperatura_DS18B20:
+          type: integer
+          required: true
+          description: Humedad recopilada por el sensor DS18B20
+          ezample: 23
+        temperatura_hojas:
+          type: float
+          required: true
+          description: Temperatura acumulada en las hojas de una planta
+          example: 12.1
+        timestamp:
+          type: string
+          format: date-time
+          required: true
+          description: Fecha exacta en la que se ha realizado la medicion
+          example: '2025-02-20T00:21:18.856Z'
+    CrearSuccess:
+      type: object
+      properties:
+        success:
+          type: string
+          required: true
+          description: Indica que la acción se ha llevado a cabo de manera exitosa
+          example: 'true'
+        status:
+          type: string
+          required: true
+          description: Indica el estado HTTP que arroja la acción existosa
+          example: '201'
+        message:
+          type: string
+          required: true
+          description: Muestra al cliente un pequeño mensaje indicando el exito de la acción
+          example: "Plaga insertada correctamente"
+    CrearPlaga:
+      type: object
+      properties:
+        public_id:
+          type: string
+          required: true
+          description: Identificador público de la plaga
+          example: "PLAGA-TOMATE-001"
+        nombre:
+          type: string
+          required: true
+          description: Nombre de la plaga
+          example: "Acaro del bronceado del tomate"
+        agente_causante:
+          type: string
+          required: true
+          description: Nombre científico de la plaga causante
+          example: "Aculops lycopersici (Massee, 1937) - Familia Eriophyidae"
+        momento_critico:
+          type: string
+          required: true
+          description: Momento específico del año junto a condiciones climáticas donde se pueden registrar riesgos de plaga.
+          example: "Primavera-verano. Alerta activa tras 6-7 dias consecutivos con temperatura maxima en torno a 27C"
+        observaciones:
+          type: string
+          required: false
+          description: Indicaciones adicionales que ayudan al agricultor a identificar zonas en las que puede afectar la plaga.
+          example: "Afecta principalmente la parte baja de la planta migrando hacia hojas jovenes. Sintomas: bronceado y encorchamiento de tallos y hojas"
+        mas_info:
+          type: string
+          required: false
+          description: Url para obtener más información sobre la plaga
+          example: "https://www.infoagro.com/proteccion_cultivos/aculops_lycopersici.htm"
+        tipo:
+          type: string
+          required: true
+          description: Identifica si el agente afectante es una plaga o una enfermedad
+          example: "plaga"
     DatosPlaga:
       type: object
       properties:
