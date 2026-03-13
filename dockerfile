@@ -28,6 +28,10 @@ COPY --from=build /usr/local/bin /usr/local/bin
 
 COPY . .
 
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 9002
 
-CMD ["python", "-u", "entrypoint.py"]
+# Inicializacion de base de datos con SQLAlchemy
+CMD ["/entrypoint.sh"]
