@@ -212,9 +212,6 @@ class IngestaDAO:
 
             # Comprobar que esa medicion a insertar no existe ya en la DB
             existe_medicion = db.session.query(MedicionesSensor.id).filter_by(
-                humedad_foliar = humedad_foliar,
-                temperatura_DS18B20 = temperatura_sensor,
-                temperatura_hojas = temperatura_hojas,
                 timestamp = timestamp,
                 sensor_id = sensor.id
             ).first()
@@ -299,14 +296,14 @@ class IngestaDAO:
         :type temp_min: int
         """
         try:
-
+            print(f"localidad : {loc}")
             # Obtener la referencia a la localidad
             query = (
                 select(
                     Localidades.id
                 )
                 .where(
-                    Localidades.nombre_normalizado == loc
+                    Localidades.nombre_normalizado == loc.lower().replace(" ", "_") # Por si acaso
                 )
             )
 

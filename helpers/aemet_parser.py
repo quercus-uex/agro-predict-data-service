@@ -22,7 +22,7 @@ class AemetParser:
             elif "nuboso" in texto.lower():
                 result["estado_cielo"] = "nuboso"
             else:
-                result["estado_cielo"] = None
+                result["estado_cielo"] = ""
             
             # Tendencia general de temperatura
             match_temp_general = re.search(
@@ -78,6 +78,22 @@ class AemetParser:
             fecha = date(anio, mes, dia)
 
             result["fecha_prediccion"] = fecha
+        
+        # Temperaturas maximas y minimas 
+        if "temperaturas mínimas y máximas previstas" in texto.lower():
+            # Inicializo el contenido de esta key como que va a ser un diccionario
+            result["temperaturas_localidades"] = {}
 
-        print(f"Resultados parser: {result}")
+            # Regex para coger el contenido de localidades junto a sus temperaturas que me interesan
+            localidades_temperatura = r"^([A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+(?:\s[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+)*)\s+(-?\d+)\s+(-?\d+)"
+
+            if localidades_temperatura:
+                result["temperaturas_localidades"] = {
+                    match.group(1) : {
+                        'temp_min' : int(match.group(2)),
+                        'temp_max' : int(match.group(3))
+                    }
+                    for match in re.finditer(localidades_temperatura, texto, re.MULTILINE)
+                }
+            
         return result

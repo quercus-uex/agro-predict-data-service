@@ -68,7 +68,10 @@ def job(app):
     )"""
 
     # Cargar datos de ITACyL
-    IngestionService.ingest_itacyl_data(
+    """IngestionService.ingest_itacyl_data(
         cultivo = 1,
         grupo = "cereales"
-    )
+    )"""
+    
+    # Cargar datos de Localidades
+    IngestionService.ingest_localidad_data()

@@ -272,6 +272,13 @@ class MedicionesSensor(db.Model):
 
     sensor = relationship("Sensores", back_populates = 'mediciones')
 
+    __table_args__ = (
+        UniqueConstraint(
+            'sensor_id', 'timestamp',
+            name = 'uq_sensor_data'
+        ),
+    )
+
 class Predicciones(db.Model):
     __tablename__ = "predicciones"
 

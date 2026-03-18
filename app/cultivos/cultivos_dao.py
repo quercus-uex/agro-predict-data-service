@@ -51,19 +51,34 @@ class CultivosDAO:
         nombre : str,
         nombre_cientifico : str,
         descripcion : str,
-        grupo : str
+        grupo : str,
+        sensor : str
     ):
         """
         Registra un nuevo cultivo en la base de datos
         """
         try:
 
+            encontrar_id_sensor = (
+                select(
+                    Sensores.id
+                )
+                .where(
+                    sensor == Sensores.eui
+                )
+            )
+
+            resultado_sensor = db.session.execute(encontrar_id_sensor).first()
+
+            if resultado_sensor is None:
+                return None
+
             cultivo = Cultivo(
                 nombre = nombre,
                 nombre_cientifico = nombre_cientifico,
                 descripcion = descripcion,
                 grupo = grupo,
-                eui = None
+                sensor_id = resultado_sensor.id
             )
 
             # Si existiera ya un cultivo con este nombre y nombre_cientifico, salta la constraint y no se inserta
