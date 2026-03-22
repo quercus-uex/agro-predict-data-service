@@ -258,7 +258,7 @@ class IngestaDAO:
                 **data
             )
 
-            existe = db.session.query(Predicciones.id).filter_by(
+            existe = Predicciones.query.filter_by(
                 tipo_prediccion = predicciones.tipo_prediccion,
                 tipo_zona = predicciones.tipo_zona,
                 codigo_zona = predicciones.codigo_zona,
@@ -266,10 +266,11 @@ class IngestaDAO:
             ).first()
 
             if existe:
-                return
+                return existe
             
             #[✔]Tiene que ser los datos que reciba del broker
             db.session.add(predicciones)
+            db.session.flush()
             return predicciones
 
         except Exception as e:
@@ -307,11 +308,11 @@ class IngestaDAO:
                 )
             )
 
-            localidad = db.session.execute(query).scalar_one_or_none()
+            localidad = db.session.execute(query).first()
 
             localidad_climatica = LocalidadesClimaticas(
                 prediccion_id = prediccion_id,
-                localidad_id = localidad,
+                localidad_id = localidad[0],
                 nombre = loc,
                 temperatura_maxima = temp_max,
                 temperatura_minima = temp_min
@@ -323,7 +324,8 @@ class IngestaDAO:
             ).first()
 
             if existe:
-                return
+                print(f"Localidad : {localidad} ya existe")
+                return existe
             
             db.session.add(localidad_climatica)
 

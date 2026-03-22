@@ -64,6 +64,8 @@
             "nombre": "Almendro",
             "nombre_cientifico": "Prunus dulcis",
             "descripcion": "Frutal de hueso",
+            "grupo": "arbol_frutal",
+            "sensor": "a840419b3188cc0c",
             "variedades": [
                 {
                     "nombre": "Guara",

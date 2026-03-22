@@ -31,14 +31,14 @@ def eliminar_datos_tablas(app):
 def job(app):
     """Carga de datos en la base de datos con los datos SiAR"""
     # Carga de estaciones
-    """IngestionService.ingest_info(
-        estaciones = False
-    )"""
+    IngestionService.ingest_info(
+        estaciones = True
+    )
 
     # Carga de provincias
-    """IngestionService.ingest_info(
+    IngestionService.ingest_info(
         estaciones = True
-    )"""
+    )
 
     # Carga de datos diarios sobre Cáceres
     """IngestionService.ingest_data(
@@ -68,10 +68,10 @@ def job(app):
     )"""
 
     # Cargar datos de ITACyL
-    """IngestionService.ingest_itacyl_data(
+    IngestionService.ingest_itacyl_data(
         cultivo = 1,
         grupo = "cereales"
-    )"""
+    )
     
     # Cargar datos de Localidades
     IngestionService.ingest_localidad_data()

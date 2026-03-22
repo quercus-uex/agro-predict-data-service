@@ -88,6 +88,7 @@ class IngestionService:
         codigo_zona : Optional[str],
         fecha
     ):
+        print("Entro en la ingesta de datos AEMET")
         try:
 
             # Actualizamos el estado almacenado a LOADING porque se van a cargar los datos
@@ -102,7 +103,7 @@ class IngestionService:
                 finish_time = None,
                 error = None
             )
-
+            print("Antes de llamar al servicio de datos")
             data_predicciones, data_localidades = AemetService.get_aemet_data(
                 tipo_prediccion = tipo_prediccion,
                 tipo_zona = tipo_zona,
@@ -118,11 +119,7 @@ class IngestionService:
                 data = data_predicciones
             )
 
-            # Necisto los datos de esta prediccion ya en la DB
-            if prediccion_insertada is None:
-                print("No se ha insertado porque ya existia")
-            else:
-                db.session.flush()
+            print(f"Prediccion id : {prediccion_insertada.id}")
 
             # Obtengo la informacion de las localidades obtenidas
             localidades = data_localidades.get('temperaturas_localidades')
@@ -137,6 +134,7 @@ class IngestionService:
                     temp_min = temp_min
                 )
 
+            db.session.commit()
 
             # Todo ha salido bien por lo que cambiamos el estado de los datos solicitados READY
             IngestaDAO.actualizar_estado(
@@ -369,6 +367,10 @@ class IngestionService:
             if estaciones:
                 codigo_raw : str = d.get('codigo')
                 codigo_formateado = codigo_raw[0:2] # Segmentación para quedarme con las dos primeras letras de la cadena que indican la provincia
+
+                # Solo nos interesa las de caceres, si no, comentar este condicional
+                if codigo_formateado != "CC":
+                    continue
                 
                 provincia : Provincia = Provincia.query.filter_by(codigo=codigo_formateado).one()
 

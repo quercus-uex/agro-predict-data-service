@@ -247,37 +247,47 @@ class HistoricDAO:
     ):
         """Obtiene los datos computados necesarios para cargar un DTO diario"""
         try:
+            print(f"{fec_init} - {fec_fin}")
             diccionario_datos = {}
 
             fecha_truncada = func.date(MedicionClimatica.timestamp).label("fecha")
+
+            columnas = [
+                func.avg(MedicionClimatica.temperatura).label('temp_media'),
+                func.max(MedicionClimatica.temperatura).label('temp_max'),
+                func.min(MedicionClimatica.temperatura).label('temp_min'),
+                func.avg(MedicionClimatica.humedad).label("humedad_media"),
+                func.max(MedicionClimatica.humedad).label('humedad_max'),
+                func.min(MedicionClimatica.humedad).label('humedad_min'),
+                func.avg(MedicionClimatica.vel_viento).label("vel_viento"),
+                func.max(MedicionClimatica.vel_viento).label("vel_viento_max"),
+                func.sum(MedicionClimatica.precipitacion).label("precipitacion"),
+                func.avg(MedicionClimatica.etp_mon).label("etp_mon"),
+                func.avg(MedicionClimatica.pep_mon).label("pep_mon"),
+                Provincia.codigo.label('provincia'),
+                fecha_truncada
+            ]
+
+            if estacion_id:
+                columnas.append(                
+                    Estacion.codigo.label('estacion') # Si trabajo en el ambito provincial, no voy a mostrar que los datos se han obtenido de una sola estacion
+                )
             
             queryGlobal = (
                 select(
-                    func.avg(MedicionClimatica.temperatura).label('temp_media'),
-                    func.max(MedicionClimatica.temperatura).label('temp_max'),
-                    func.min(MedicionClimatica.temperatura).label('temp_min'),
-                    func.avg(MedicionClimatica.humedad).label("humedad_media"),
-                    func.max(MedicionClimatica.humedad).label('humedad_max'),
-                    func.min(MedicionClimatica.humedad).label('humedad_min'),
-                    func.avg(MedicionClimatica.vel_viento).label("vel_viento"),
-                    func.max(MedicionClimatica.vel_viento).label("vel_viento_max"),
-                    func.sum(MedicionClimatica.precipitacion).label("precipitacion"),
-                    func.avg(MedicionClimatica.etp_mon).label("etp_mon"),
-                    func.avg(MedicionClimatica.pep_mon).label("pep_mon"),
-                    Estacion.codigo.label('estacion') if estacion_id is not None else None, # Si trabajo en el ambito provincial, no voy a mostrar que los datos se han obtenido de una sola estacion
-                    Provincia.codigo.label('provincia'),
-                    fecha_truncada
+                    *columnas
                 )
                 .where(
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
                 )
-                .join(Estacion, MedicionClimatica.estacion)
-                .join(Provincia, MedicionClimatica.provincia)
+                .outerjoin(Estacion, MedicionClimatica.estacion)
+                .outerjoin(Provincia, MedicionClimatica.provincia)
             )
 
             if estacion_id:
                 queryGlobal = queryGlobal.where(MedicionClimatica.estacion_id == estacion_id)
             elif provincia_id:
+                print(f"Provincia id : {provincia_id}")
                 queryGlobal = queryGlobal.where(Estacion.provincia_id == provincia_id)
                 estaciones_usadas = HistoricDAO.obtener_estaciones_usadas(
                     provincia_id = provincia_id,
@@ -285,6 +295,7 @@ class HistoricDAO:
                     fec_fin = fec_fin
                 )
                 diccionario_datos["estaciones_usadas"] = estaciones_usadas
+                print(diccionario_datos["estaciones_usadas"])
             
             queryGlobal = (
                 queryGlobal
@@ -293,7 +304,7 @@ class HistoricDAO:
             )
 
             valores_globales = db.session.execute(queryGlobal).all()
- 
+            print(f"Valores globales : {valores_globales}")
             valores_diarios = row2dict_converter(valores_globales)
 
             diccionario_datos["valores_diarios"] = valores_diarios

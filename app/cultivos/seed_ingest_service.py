@@ -52,7 +52,9 @@ class SeedIngestService:
                     c = CultivosDAO.crear_cultivo(
                         nombre = cultivo['nombre'],
                         nombre_cientifico = cultivo['nombre_cientifico'],
-                        descripcion = cultivo['descripcion']
+                        descripcion = cultivo['descripcion'],
+                        grupo = cultivo['grupo'],
+                        sensor = cultivo['sensor']
                     )
                     
                     variedades = cultivo['variedades']
