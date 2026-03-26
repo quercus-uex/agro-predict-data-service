@@ -1,6 +1,19 @@
 # Donde se almacenarán los modelos para pasarlos a la BD
 from typing import List
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Index, Date, Text, Boolean, UniqueConstraint
+from sqlalchemy import (
+    Column, 
+    Integer, 
+    String, 
+    ForeignKey, 
+    DateTime, 
+    Float, 
+    Index, 
+    Date, 
+    Text, 
+    Boolean, 
+    UniqueConstraint,
+    JSON
+)
 from sqlalchemy.orm import relationship
 from .extensions import db
 
@@ -250,6 +263,30 @@ class MedicionClimatica(db.Model):
         Index("idx_anio_semana", "anio", "semana")
     )
 
+class Parcelas(db.Model):
+    __tablename__ = "parcelas"
+
+    id = Column(Integer, autoincrement = True)
+    public_id = Column(String(50), primary_key = True, nullable = False, unique = True)
+    nombre = Column(String(100), nullable = False)
+    geometria = Column(JSON, nullable = False)
+
+    sensor = relationship("Sensores", back_populates = "parcela")
+
+class Dispositivo(db.Model):
+    __tablename__ = "dispositivos"
+
+    id = Column(Integer, autoincrement = True)
+    public_id = Column(String(50), nullable = False)
+    dev_eui = Column(String(50), primary_key = True, nullable = False, unique = True)
+    descripcion = Column(String(300), nullable = True)
+    nombre = Column(String(100), nullable = True)
+    creado = Column(DateTime, nullable = False)
+    actualizado = Column(DateTime, nullable = True)
+
+    sensor = relationship("Sensor", back_populates = 'dispositivo')
+
+
 class Sensores(db.Model):
     __tablename__ = "sensores"
 
@@ -257,8 +294,14 @@ class Sensores(db.Model):
 
     eui = Column(String(50), nullable = False, unique = True)
 
+    dispositivo_id = Column(String(50), ForeignKey(Dispositivo.dev_eui), nullable = True)
+    parcela_id = Column(String(50), ForeignKey(Parcelas.public_id), nullable = False)
+    geometria = Column(JSON, nullable = True)
+
     mediciones = relationship("MedicionesSensor", back_populates = 'sensor')
     cultivo = relationship("Cultivo", back_populates = 'sensor')
+    dispositivo = relationship("Dispositivo", back_populates = 'sensor')
+    parcela = relationship("Parcelas", back_populates = 'sensor')
 
 class MedicionesSensor(db.Model):
 
