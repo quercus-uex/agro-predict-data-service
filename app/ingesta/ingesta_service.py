@@ -16,10 +16,65 @@ from ..models import (
 from ..external_services.aemet_service import AemetService
 from ..external_services.itacyl_service import ItacylService
 from ..external_services.dtagro_service import DTAgroService
+from metadata.metadata_dao import MetadataDAO
+from config.config import Config
+import pandas as pd
 import json
 import os
 
 class IngestionService:
+
+    @staticmethod
+    def ingesta_metadata(
+        modelo,
+        campos_unicos : list[str],
+        nombre_fichero : str,
+        mapeo_columnas : dict,
+        transformaciones : Optional[dict] = None # Funcion especial a aplicar por campo especial
+    ):
+        try: 
+            ruta_fichero = Config.obtener_ruta_contenido_metadatos(modelo.__name__.lower())
+            fichero = ruta_fichero / nombre_fichero
+            
+            # Leo los ficheros csv almacenandolos en un dataframe
+            df = pd.read_csv(fichero)
+
+            # Renombrar columnas segun el mapeo
+            df = df.rename(mapeo_columnas)
+
+            # Me quedo solo con las columnas pertenecientes al modelo seleccionado
+            columnas_modelo = list(mapeo_columnas.values())
+            df = df[columnas_modelo]
+
+            # Aplico transformaciones de datos opcionales por campo
+            if transformaciones:
+                for campo, funcion in transformaciones.items():
+                    if campo in df.columns:
+                        df[campo] = df[campo].apply(function)
+
+            # Pasamos el contenido del dataframe a dict para manejarlo mejor
+            contenido = df.to_dict(orient = "records")
+
+            insertado = 0
+            for registro in contenido:
+                resultado = MetadataDAO.crear_registro(
+                    modelo = modelo,
+                    datos = registro,
+                    campos_unicos = campos_unicos
+                )
+
+                if resultado:
+                    insertado +=1
+
+            print(f"Ingesta de {modelo.__name__}: {insertado} insertados")
+
+        except Exception as e:
+            print(f"Error al ingestar datos sobre el modelo {modelo.__name__} : {e}")
+
+
+
+
+
 
     @staticmethod
     def ingesta_sensores_data(

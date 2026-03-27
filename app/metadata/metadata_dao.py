@@ -1,4 +1,4 @@
-from sqlalchemy import select, and_, inspect
+from sqlalchemy import select, and_, inspect, delete, update
 from models import Parcelas, Sensores, Dispositivo
 from extensions import db
 from typing import Optional
@@ -36,6 +36,7 @@ class MetadataDAO:
             return entidad
         
         except Exception as e:
+            db.session.rollback()
             print(f"Error al intentar insertar una entidad {modelo.__name__} al sistema : {e}")
             return None
         
@@ -70,107 +71,65 @@ class MetadataDAO:
         except Exception as e:
             print(f"Error al consultar datos registrados sobre la entidad {modelo.__name__} en el sistem : {e}")
             return None
+        
+    @staticmethod
+    def eliminar_registro(
+        modelo,
+        filtros : Optional[list] = None
+    ):
+        try:
+
+            if not filtros:
+                raise ValueError("Se requieren filtros para eliminar registros")
+
+            query = db.session.query(modelo)
+            registros = query.filter(*filtros).all()
+
+            if not registros:
+                return 0  # Nada que eliminar
+
+            for registro in registros:
+                db.session.delete(registro)
+
+            db.session.commit()
+            return len(registros)
+        
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error al eliminar instancias de tipo {modelo.__name__} : {e}")
+            return None
+        
+    @staticmethod
+    def actualizar_registro(
+        modelo,
+        valores: dict,
+        filtros: Optional[list] = None
+    ):
+        try:
+            if not valores:
+                raise ValueError("Se requieren valores para actualizar")
+            
+            if not filtros:
+                raise ValueError("Se requieren filtros para actualizar registros")
+
+            registros = db.session.query(modelo).filter(*filtros).all()
+
+            if not registros:
+                return 0
+
+            for registro in registros:
+                for campo, valor in valores.items():
+                    if hasattr(registro, campo):
+                        setattr(registro, campo, valor)
+                    else:
+                        raise ValueError(f"El campo '{campo}' no existe en {modelo.__name__}")
+
+            db.session.commit()
+            return len(registros)
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error al actualizar instancias de {modelo.__name__}: {e}")
+            return None
+
     # === FIN GENERICOS === #
-
-    """
-    @staticmethod
-    def crear_parcelas(
-        id_publico : str,
-        nombre : str,
-        geometria : dict
-    ):
-        try:
-            datos = {
-                'public_id' : id_publico,
-                'nombre' : nombre,
-                'geometria' : geometria
-            }
-
-            campos_unicos = ['public_id']
-
-            parcela = MetadataDAO.crear_registro(
-                modelo = Parcelas,
-                datos = datos,
-                campos_unicos = campos_unicos
-            )
-
-            if not parcela:
-                print(f"Error al registrar la parcela {nombre}")
-                return None
-            
-            return parcela
-            
-        except Exception as e:
-            print(f"Error al registrar una nueva parcela en el sistema : {e}")
-            return None
-
-    @staticmethod
-    def crear_dispositivo(
-        id_publico : str,
-        dev_eui : str,
-        descripcion : Optional[str],
-        nombre : Optional[str],
-        creado : datetime,
-        actualizado : Optional[datetime]
-    ):
-        try:
-            datos = {
-                'public_id' : id_publico,
-                'dev_eui' : dev_eui,
-                'descripcion' : descripcion if descripcion else None,
-                'nombre' : nombre if nombre else None,
-                'creado' : creado,
-                'actualizado' : actualizado if actualizado else None
-            }
-
-            campos_unicos = ['public_id', 'dev_eui']
-
-            dispositivo = MetadataDAO.crear_registro(
-                modelo = Dispositivo,
-                datos = datos,
-                campos_unicos = campos_unicos
-            )
-
-            if not dispositivo:
-                print(f"Error al registrar el dispisitivo {dev_eui}")
-                return None
-            
-            return dispositivo
-        
-        except Exception as e:
-            print(f"Error al registrar un nuevo dispositivos en el sistema : {e}")
-            return None
-        
-    @staticmethod
-    def crear_sensores(
-        eui : str,
-        dispositivo_id : Optional[str],
-        parcela_id : str,
-        geometria : Optional[dict]
-    ):
-        try:
-            datos = {
-                'eui' : eui,
-                'dispositivo_id' : dispositivo_id if dispositivo_id else None,
-                'parcela_id' : parcela_id,
-                'geometria' : geometria if geometria else None
-            }
-
-            campos_unicos = ['eui']
-
-            sensor = MetadataDAO.crear_registro(
-                modelo = Sensores,
-                datos = datos,
-                campos_unicos = campos_unicos
-            )
-
-            if not sensor:
-                print(f"Error al registrar el sensor {eui}")
-                return None
-            
-            return sensor
-
-        except Exception as e:
-            print(f"Error al registrar un nuevo sensor en el sistema : {e}")
-            return None
-    """

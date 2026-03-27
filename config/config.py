@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from circuitbreaker import CircuitBreaker
+from pathlib import Path
 import requests
 
 load_dotenv()
@@ -17,13 +18,17 @@ class Config:
     QUEUE_OUT_NAME = os.getenv('QUEUE_OUT_NAME')
     RABBITMQ_CONNECTION = os.getenv('RABBITMQ_CONNECTION')
 
-    #Swagger
+    # Swagger
     SWAGGER_URL = '/api/v1/ui'
     API_URL = '/api/v1/swagger.json'
 
     # Aplicacion
     SERVICE_NAME = "Servicio de datos"
     SERVICE_VERSION = "1.0.0"
+
+    # Metadata
+    def obtener_ruta_contenido_metadatos(tipo):
+        return Path(__file__).parent.parent / f"data/{tipo}"
 
 class CircuitBreakerPersonalizado(CircuitBreaker):
     FAILURE_THRESHOLD = 7
