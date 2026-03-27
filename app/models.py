@@ -284,7 +284,7 @@ class Dispositivo(db.Model):
     creado = Column(DateTime, nullable = False)
     actualizado = Column(DateTime, nullable = True)
 
-    sensor = relationship("Sensor", back_populates = 'dispositivo')
+    sensor = relationship("Sensores", back_populates = 'dispositivo')
 
 
 class Sensores(db.Model):
@@ -302,6 +302,18 @@ class Sensores(db.Model):
     cultivo = relationship("Cultivo", back_populates = 'sensor')
     dispositivo = relationship("Dispositivo", back_populates = 'sensor')
     parcela = relationship("Parcelas", back_populates = 'sensor')
+
+class Metadatos(db.Model):
+    __tablename__ = "metadatos"
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+
+    tipo = Column(String(50), nullable = False) # Controla la tabla a la que pertenece
+    entidad_id = Column(String(50), nullable = False) # Almacena el identificador unico sobre la tabla definida en tipo
+    clave = Column(String(50), nullable = False) 
+    valor = Column(String(50), nullable = False)
+    fuente = Column(String(50), nullable = True)
+    fecha_creacion = Column(DateTime, nullable = True)
 
 class MedicionesSensor(db.Model):
 

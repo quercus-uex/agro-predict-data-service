@@ -195,7 +195,7 @@ class IngestaDAO:
 
         try:
 
-            existe_sensor = db.session.query(Sensores.id).filter_by(
+            existe_sensor = db.session.query(Sensores).filter_by(
                 eui = eui
             ).first()
 

@@ -372,7 +372,7 @@ class IngestionService:
                 if codigo_formateado != "CC":
                     continue
                 
-                provincia : Provincia = Provincia.query.filter_by(codigo=codigo_formateado).one()
+                provincia : Provincia = Provincia.query.filter_by(codigo=codigo_formateado).one_or_none()
 
                 estacion = Estacion(
                     codigo = d.get('codigo'),

@@ -280,8 +280,8 @@ class HistoricDAO:
                 .where(
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
                 )
-                .outerjoin(Estacion, MedicionClimatica.estacion)
-                .outerjoin(Provincia, MedicionClimatica.provincia)
+                .join(Estacion, MedicionClimatica.estacion)
+                .join(Provincia, MedicionClimatica.provincia)
             )
 
             if estacion_id:
