@@ -16,7 +16,7 @@ from ..models import (
 from ..external_services.aemet_service import AemetService
 from ..external_services.itacyl_service import ItacylService
 from ..external_services.dtagro_service import DTAgroService
-from metadata.metadata_dao import MetadataDAO
+from ..metadata.metadata_dao import MetadataDAO
 from config.config import Config
 import pandas as pd
 import json

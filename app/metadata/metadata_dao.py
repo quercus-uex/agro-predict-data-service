@@ -1,6 +1,6 @@
 from sqlalchemy import select, and_, inspect, delete, update
-from models import Parcelas, Sensores, Dispositivo
-from extensions import db
+from ..models import Parcelas, Sensores, Dispositivo
+from ..extensions import db
 from typing import Optional
 from datetime import datetime
 

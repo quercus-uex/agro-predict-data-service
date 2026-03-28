@@ -43,7 +43,8 @@ def historicalProvincial():
             fec_init = start_date,
             fec_fin = end_date,
             provincia_id = province_code,
-            estacion_id = None
+            estacion_id = None,
+            codigo_estacion = None
         ) 
 
         logger.info(f"Datos recibidos por el servicio: {datos}")
@@ -97,7 +98,8 @@ def historicalEstacion():
             fec_init = start_date,
             fec_fin = end_date,
             provincia_id = None,
-            estacion_id = estacion_code
+            estacion_id = estacion_code,
+            codigo_estacion = estacion_code_raw,
         )
 
         if not datos:
@@ -110,7 +112,9 @@ def historicalEstacion():
         
         response = dataclass_to_json(datos)
         # Añado configuración en el header para que se descargue la respuesta en un fichero local sobre el usuario
-        response.headers["Content-Disposition"] = f"attachment; filename = agropredict_estacion_{estacion_code}_{start_date}_{end_date}.json"
+        if response.json.get('type'):
+            response.headers["Content-Disposition"] = f"attachment; filename = agropredict_estacion_{estacion_code}_{start_date}_{end_date}.json"
+        
         return response
     
     except APIException as e:

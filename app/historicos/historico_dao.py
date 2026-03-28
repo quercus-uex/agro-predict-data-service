@@ -281,8 +281,10 @@ class HistoricDAO:
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
                 )
                 .join(Estacion, MedicionClimatica.estacion)
-                .join(Provincia, MedicionClimatica.provincia)
             )
+
+            if provincia_id:
+                queryGlobal = queryGlobal.join(Provincia, MedicionClimatica.provincia)
 
             if estacion_id:
                 queryGlobal = queryGlobal.where(MedicionClimatica.estacion_id == estacion_id)

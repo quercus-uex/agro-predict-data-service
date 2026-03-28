@@ -158,7 +158,8 @@ class HistoricService:
         fec_init : datetime,
         fec_fin : datetime,
         provincia_id : Optional[str] = None,
-        estacion_id : Optional[int] = None
+        estacion_id : Optional[int] = None,
+        codigo_estacion : Optional[str] = None
     ):
         print(f"Thread running: {threading.current_thread().name}")
         if not (estacion_id or provincia_id):
@@ -274,11 +275,11 @@ class HistoricService:
             lanzar_ingesta_background(
                 app,
                 IngestionService.ingest_siar_data,
-                estacion_id,
+                codigo_estacion,
                 provincia_id,
                 tipo,
                 fec_init,
-                fec_fin 
+                fec_fin
             )
 
             # Se informa al usuario mientras el hilo va insertando datos
