@@ -4,12 +4,16 @@ from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from config.config import Config
 from .extensions import init_extensions
+from flask_cors import CORS
 import os
 
 load_dotenv()
 
 def create_app(config_class = Config):
     app = Flask(__name__)
+
+    # Evito problemas de CORS
+    CORS(app, resources = {r"/*" : {"origins" : "*"}}) # Permite CORS para todas las rutas y origenes
 
     # Configuracion de la app
     app.config.from_object(config_class)

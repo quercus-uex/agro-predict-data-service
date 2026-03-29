@@ -25,6 +25,8 @@ externalDocs:
 
 servers:
   - url: http://localhost:5000
+  - url: http://data-service:9002
+  - url: http://51.44.230.198:9002
 
 tags:
   - name: Históricos
@@ -35,6 +37,8 @@ tags:
     description: Obtención de datos de plagas sobre variedades de cultivos específicas.
   - name: Cultivos
     description: Obtención | Creación | Modificacion de datos de cultivos. 
+  - name: Metadatos
+    description: Obtiene | Crear | Modifica | Elimina metadatos relacionados con sensores, dispositivos y parcelas.
 
 paths:
   /climate/historical/provincias:
@@ -167,13 +171,8 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/HistoricoHoraResponse'
-                  - $ref: '#/components/schemas/HistoricoDiaResponse'
-                  - $ref: '#/components/schemas/HistoricoSemanaResponse'
-                  - $ref: '#/components/schemas/HistoricoMesResponse'
-                discriminator:
-                  propertyName: type
+                type : string
+                format: binary
         '400':
           description: Parámetros inválidos
           content:
@@ -924,6 +923,68 @@ paths:
                 message: "Provider Error"
                 status: 502
                 error: "Error del proveedor de datos"
+
+  /metadatos/registro{tipo}:
+    post:
+      tags:
+        - Metadatos
+      summary: Almacena en el sistema el fichero con los metadatos proporcioandos
+      description: Dado el tipo de metadato que se quiere almacenar, definido en el parámetro `tipo` y el fichero de metadatos adjuntado,
+        el sistema registra esos datos en el sistema para que los servicios predictores dispongan de ellos.
+      operationId: almacenar_fichero
+      parameters:
+        - name: tipo
+          in: path
+          required: true
+          description: Identificador del tipo de metadatos que se quiere insertar
+          schema:
+            type: string
+            enum: ['parcelas', 'dispositivos', 'sensores']
+            default: 'parcelas'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Fichero csv a adjuntar
+            encoding:
+              file:
+                contentType: text/csv
+      responses:
+        '201':
+          description: Metadatos del tipo `{tipo}` insertados correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessCreated'
+        '400':
+          description: Error en los parametros de la consulta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+            example:
+              message: "Invalid parameters"
+              status: 400
+              error: 'Debe indicarse todos los parámetros y el requestBody'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Internal Server Error"
+                status: 502
+                error: "Error del sistema"
+          
             
 components:
   schemas:
