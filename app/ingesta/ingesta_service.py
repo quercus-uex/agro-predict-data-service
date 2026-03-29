@@ -17,7 +17,6 @@ from ..external_services.aemet_service import AemetService
 from ..external_services.itacyl_service import ItacylService
 from ..external_services.dtagro_service import DTAgroService
 from ..metadata.metadata_dao import MetadataDAO
-from config.config import Config
 import pandas as pd
 import json
 import os
@@ -30,30 +29,55 @@ class IngestionService:
         campos_unicos : list[str],
         nombre_fichero : str,
         mapeo_columnas : dict,
+        ruta_fichero : str,
         transformaciones : Optional[dict] = None # Funcion especial a aplicar por campo especial
     ):
         try: 
-            ruta_fichero = Config.obtener_ruta_contenido_metadatos(modelo.__name__.lower())
+            print("Inicio la ingesta de metadatos")
             fichero = ruta_fichero / nombre_fichero
             
             # Leo los ficheros csv almacenandolos en un dataframe
             df = pd.read_csv(fichero)
 
             # Renombrar columnas segun el mapeo
-            df = df.rename(mapeo_columnas)
+            df = df.rename(columns = mapeo_columnas)
 
             # Me quedo solo con las columnas pertenecientes al modelo seleccionado
             columnas_modelo = list(mapeo_columnas.values())
             df = df[columnas_modelo]
 
+            # Extraer dev_eui del geojson antes del mapeo de columnas
+            if 'geometria' in df.columns and modelo.__name__.lower() == 'sensores':
+                def extraer_dev_eui(x):
+                    if  not isinstance(x, str):
+                        return None
+                    dev_eui = json.loads(x).get('properties', {}).get('dev_eui')
+                    if not dev_eui or dev_eui.strip() in ('-', '', 'null', 'None'):
+                        return None
+                    return dev_eui
+                
+                df['dispositivo_id'] = df['geometria'].apply(extraer_dev_eui)
+
             # Aplico transformaciones de datos opcionales por campo
             if transformaciones:
                 for campo, funcion in transformaciones.items():
                     if campo in df.columns:
-                        df[campo] = df[campo].apply(function)
+                        df[campo] = df[campo].apply(funcion)
+
+            # Obtener un campo especifico para la geometria
+            if 'geometria' in df.columns:
+                print("Tiene geometria")
+                df['geometria'] = df['geometria'].apply(
+                    lambda x : x.get('geometry').get('coordinates') if isinstance(x, dict) else x
+                )
 
             # Pasamos el contenido del dataframe a dict para manejarlo mejor
-            contenido = df.to_dict(orient = "records")
+            # Limpio los nan
+            contenido = [
+                {k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in registro.items()}
+                for registro in df.to_dict(orient="records")
+            ]
+            print(contenido)
 
             insertado = 0
             for registro in contenido:

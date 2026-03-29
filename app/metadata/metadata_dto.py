@@ -6,7 +6,7 @@ from typing import Optional
 class TipoMetadato(str, Enum):
     PARCELA = "parcela"
     SENSOR = "sensor"
-    DISPOSITIVO = "dispositivo"
+    DISPOSITIVOS = "dispositivos"
 
 @dataclass
 class ParcelaDTO:

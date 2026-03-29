@@ -1,15 +1,22 @@
 from sqlalchemy import select, and_, inspect, delete, update
-from ..models import Parcelas, Sensores, Dispositivo
+from ..models import Parcelas, Sensores, Dispositivos
 from ..extensions import db
 from typing import Optional
+from ..models import Metadatos
 from datetime import datetime
 
 class MetadataDAO:
 
     JOIN_POR_MODELO = {
         Parcelas : [Sensores],
-        Dispositivo : [Sensores],
-        Sensores : [Parcelas, Dispositivo],
+        Dispositivos : [Sensores],
+        Sensores : [Parcelas, Dispositivos],
+    }
+
+    METADATOS_POR_MODELO = {
+        Parcelas : 'area',
+        Dispositivos : 'device_plt_id',
+        Sensores : 'dev_eui'
     }
 
     # === GENERICOS === #
@@ -20,6 +27,15 @@ class MetadataDAO:
         campos_unicos : list[str]
     ):
         try:
+
+            if modelo == Sensores and datos.get('dispositivo_id'):
+                existe = db.session.query(Dispositivos).filter_by(
+                    dev_eui = datos['dispositivo_id']
+                ).first()
+                if not existe:
+                    return None
+
+
             condiciones = [
                 getattr(modelo, campo) == datos.get(campo)
                 for campo in campos_unicos
@@ -32,6 +48,24 @@ class MetadataDAO:
 
             entidad = modelo(**datos)
             db.session.add(entidad)
+            db.session.flush()
+            
+            entidad_id = next(
+                (getattr(entidad, campo) for campo in campos_unicos if getattr(entidad, campo, None)),
+                entidad.id
+            )
+            
+            metadatos = Metadatos(
+                tipo = modelo.__name__.lower(),
+                entidad_id = entidad_id,
+                clave = modelo.__name__,
+                valor = MetadataDAO.METADATOS_POR_MODELO.get(modelo.__name__),
+                fuente = 'csv',
+                fecha_creacion = datetime.today()
+            )
+
+            db.session.add(metadatos)
+
             db.session.commit()
             return entidad
         

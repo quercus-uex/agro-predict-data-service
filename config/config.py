@@ -27,8 +27,8 @@ class Config:
     SERVICE_VERSION = "1.0.0"
 
     # Metadata
-    def obtener_ruta_contenido_metadatos(tipo):
-        return Path(__file__).parent.parent / f"data/{tipo}"
+    def obtener_ruta_contenido_metadatos(tipo : str):
+        return Path(__file__).parent.parent / f"app/data/{tipo}"
 
 class CircuitBreakerPersonalizado(CircuitBreaker):
     FAILURE_THRESHOLD = 7
