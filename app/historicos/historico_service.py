@@ -29,6 +29,7 @@ class HistoricService:
                     velViento = v.get("vel_viento"),
                     precipitacion = v.get("precipitacion"),
                     estacion = v.get("estacion"),
+                    radiacion = v.get("radiacion"),
                     estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
                     fecha = v.get("fecha")
                 )
@@ -62,6 +63,7 @@ class HistoricService:
                 "precipitacion": v.get("precipitacion"),
                 "etpMon": v.get("etp_mon"),
                 "pepMon": v.get("pep_mon"),
+                "radiacion" : v.get("radiacion"),
                 "estacion": v.get("estacion"),
                 "provincia": v.get("provincia"),
                 "fecha": v.get("fecha")
@@ -107,6 +109,7 @@ class HistoricService:
                     etpMon = v.get("etp_mon"),
                     pepMon = v.get("pep_mon"), 
                     estacion = v.get("estacion"),
+                    radiacion = v.get("radiacion"),
                     estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
                     provincia = v.get("provincia")
                 )
@@ -144,6 +147,7 @@ class HistoricService:
                     etpMon = v.get("etp_mon"),
                     pepMon = v.get("pep_mon"),
                     estacion = v.get("estacion"),
+                    radiacion = v.get("radiacion"),
                     estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
                     provincia = v.get("provincia") 
                 )
@@ -201,7 +205,8 @@ class HistoricService:
                         )
 
                     case TipoHistorico.DIA:
-                        data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)    
+                        data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)
+                        print(f"Data : {data}")    
                         items = HistoricService._build_historico_dia(data, estacion_id)
 
                         return HistoricService.comprobar_devolucion(

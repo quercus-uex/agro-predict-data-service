@@ -45,7 +45,8 @@ class SiARService:
                     "precipitacion" : dato.get("Precipitacion"),
                     "etp_mon" : dato.get("EtPMon"),
                     "pep_mon" : dato.get("PePMon"),
-                    "estacion" : dato.get("Estacion")
+                    "estacion" : dato.get("Estacion"),
+                    "radiacion" : dato.get("Radiacion"),
                 }
             )
 

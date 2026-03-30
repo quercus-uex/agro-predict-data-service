@@ -253,6 +253,7 @@ class MedicionClimatica(db.Model):
     precipitacion = Column(Float, nullable = False)
     etp_mon = Column(Float, nullable = True)
     pep_mon = Column(Float, nullable = True)
+    radiacion = Column(Float, nullable = True)
 
     estacion = relationship("Estacion", back_populates = "mediciones")
     provincia = relationship("Provincia", back_populates = "mediciones")

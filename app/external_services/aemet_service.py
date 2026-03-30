@@ -67,7 +67,7 @@ class AemetService:
             # Esto será un respaldo por si no obtengo datos del broker
             #parseo = AemetParser.parse(texto = texto)
             
-            logger.info("========== RABBITMQ COMMUNICATION ==========")
+            """logger.info("========== RABBITMQ COMMUNICATION ==========")
             # Configuramos la conexion con el broker
             conn, channel, queues = RabbitMQConfig.init_config()
             print("Conexion con el broker establecida", flush = True)
@@ -94,7 +94,8 @@ class AemetService:
             print(f"JSON recibido : {json}")
             # Obtenemos datos parseados obtenidos del texto de respuesta por Aemet
             ## Esto será un respaldo por si no obtengo datos del broker
-            parseo = AemetParser.parse(texto = texto, respuesta_queue = bool(json))
+            parseo = AemetParser.parse(texto = texto, respuesta_queue = bool(json))"""
+            parseo = AemetParser.parse(texto = texto, respuesta_queue = False)
 
             
             json_predicciones = {
@@ -104,20 +105,20 @@ class AemetService:
                 "fecha_prediccion" : parseo["fecha_prediccion"],
                 "fecha_elaboracion" : datetime.now(),
                 "texto_original" : texto,
-                "estado_cielo" : json.get("estado_del_cielo") if json else parseo.get("estado_cielo"),
-                "tendencia_temp_general" : json.get("tendencias_de_temperatura_general") if json else parseo.get("tendencia_temp_general"),
-                "tendencia_temp_max" : json.get("tendencia_de_temperaturas_maximas") if json else parseo.get("tendencia_temp_max"),
-                "tendencia_temp_min" : json.get("tendencias_de_temperaturas_minimas") if json else parseo.get("tendencia_temp_min"),
-                "rachas_viento" : json.get("rachas_de_viento") if json else parseo.get("viento"),
-                "precipitaciones" : json.get("precipitaciones") if json else parseo.get("precipitaciones"),
-                "cotas_nieve" : json.get("cotas_de_nieve") if json else parseo.get("cota_nieve"),
-                "existencia_helada" : json.get("existencias_de_heladas") if json else parseo.get("existencia_helada"),
-                "zona_helada" : json.get("zonas_de_heladas") if json else parseo.get("zona_helada"),
-                "aparicion_nieblas" : json.get("aparicion_de_nieblas"),
+                "estado_cielo" : parseo.get("estado_del_cielo"),
+                "tendencia_temp_general" : parseo.get("tendencias_de_temperatura_general"),
+                "tendencia_temp_max" : parseo.get("tendencia_de_temperaturas_maximas"),
+                "tendencia_temp_min" : parseo.get("tendencias_de_temperaturas_minimas"),
+                "rachas_viento" : parseo.get("rachas_de_viento"),
+                "precipitaciones" : parseo.get("precipitaciones"),
+                "cotas_nieve" : parseo.get("cotas_de_nieve"),
+                "existencia_helada" : parseo.get("existencias_de_heladas"),
+                "zona_helada" : parseo.get("zonas_de_heladas"),
+                "aparicion_nieblas" : parseo.get("aparicion_de_nieblas"),
             }
 
             json_localidades = {
-                "temperaturas_localidades" : json.get("temperaturas_localidades")
+                "temperaturas_localidades" : parseo.get("temperaturas_localidades")
             }
 
             return json_predicciones, json_localidades

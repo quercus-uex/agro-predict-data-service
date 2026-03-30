@@ -34,7 +34,6 @@ def convertir_tipo(valor, tipo_destino):
     
     if tipo_destino in (datetime, date):
         datetime_obj = datetime.strptime(valor, "%Y-%m-%d").date()
-        print(f"Date object : {datetime_obj}")
         return datetime_obj
     
     if issubclass(tipo_destino, Enum):

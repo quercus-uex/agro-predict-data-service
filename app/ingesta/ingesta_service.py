@@ -95,11 +95,6 @@ class IngestionService:
         except Exception as e:
             print(f"Error al ingestar datos sobre el modelo {modelo.__name__} : {e}")
 
-
-
-
-
-
     @staticmethod
     def ingesta_sensores_data(
         eui : str,
@@ -368,7 +363,6 @@ class IngestionService:
             )     
 
             for d in data:
-                
                 d_timestamp = d["timestamp"]
                 anio, semana, _ = d_timestamp.isocalendar()
                 
@@ -387,6 +381,7 @@ class IngestionService:
                     temperatura = d.get('temperatura'),
                     vel_viento = d.get('vel_viento'),
                     precipitacion = d.get('precipitacion'),
+                    radiacion = d.get('radiacion'),
                     etp_mon = d.get('etp_mon'),
                     pep_mon = d.get('pep_mon')
                 )
@@ -397,7 +392,8 @@ class IngestionService:
                     vel_viento=medicion.vel_viento,
                     precipitacion=medicion.precipitacion,
                     etp_mon=medicion.etp_mon,
-                    pep_mon=medicion.pep_mon
+                    pep_mon=medicion.pep_mon,
+                    radiacion = medicion.radiacion
                 ).first()
 
                 if existe:

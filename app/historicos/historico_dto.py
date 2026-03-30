@@ -22,7 +22,8 @@ class HistHorasDTO:
     estacion: str
     estaciones : Optional[List[str]]
     provincia : str
-    fecha: datetime 
+    fecha: datetime
+    radiacion : float 
 
 @dataclass
 class HistDiasDTO:
@@ -45,6 +46,7 @@ class HistDiasDTO:
     estaciones: Optional[List[str]]
     provincia : str
     fecha: datetime
+    radiacion : float
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -70,6 +72,7 @@ class HistSemanasDTO:
     estacion: str  
     estaciones : Optional[List[str]]  
     provincia : str
+    radiacion : float
 
 @dataclass
 class HistMesesDTO:
@@ -93,6 +96,7 @@ class HistMesesDTO:
     estacion: str   
     estaciones : Optional[List[str]]
     provincia : str
+    radiacion : float
     
 ######### GENERICO PROVINCIAS #########
 @dataclass

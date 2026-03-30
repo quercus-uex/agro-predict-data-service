@@ -201,6 +201,7 @@ class HistoricDAO:
                     func.avg(MedicionClimatica.humedad).label('humedad_media'),
                     func.avg(MedicionClimatica.vel_viento).label('vel_viento'),
                     func.sum(MedicionClimatica.precipitacion).label('precipitacion'),
+                    func.avg(MedicionClimatica.radiacion).label('radiacion'),
                     Estacion.codigo.label('estacion'),
                     MedicionClimatica.timestamp.label('fecha')
                 )
@@ -217,9 +218,9 @@ class HistoricDAO:
             )
 
             if estacion_id:
-                queryGlobal = queryGlobal.where(MedicionClimatica.estacion_id == estacion_id)
+                query = query.where(MedicionClimatica.estacion_id == estacion_id)
             elif provincia_id:
-                queryGlobal = queryGlobal.where(Estacion.provincia_id == provincia_id)
+                query = query.where(Estacion.provincia_id == provincia_id)
                 estaciones_usadas = HistoricDAO.obtener_estaciones_usadas(
                     provincia_id = provincia_id,
                     fec_init = fec_init,
@@ -262,6 +263,7 @@ class HistoricDAO:
                 func.avg(MedicionClimatica.vel_viento).label("vel_viento"),
                 func.max(MedicionClimatica.vel_viento).label("vel_viento_max"),
                 func.sum(MedicionClimatica.precipitacion).label("precipitacion"),
+                func.avg(MedicionClimatica.radiacion).label("radiacion"),
                 func.avg(MedicionClimatica.etp_mon).label("etp_mon"),
                 func.avg(MedicionClimatica.pep_mon).label("pep_mon"),
                 Provincia.codigo.label('provincia'),
@@ -289,7 +291,6 @@ class HistoricDAO:
             if estacion_id:
                 queryGlobal = queryGlobal.where(MedicionClimatica.estacion_id == estacion_id)
             elif provincia_id:
-                print(f"Provincia id : {provincia_id}")
                 queryGlobal = queryGlobal.where(Estacion.provincia_id == provincia_id)
                 estaciones_usadas = HistoricDAO.obtener_estaciones_usadas(
                     provincia_id = provincia_id,
@@ -306,7 +307,6 @@ class HistoricDAO:
             )
 
             valores_globales = db.session.execute(queryGlobal).all()
-            print(f"Valores globales : {valores_globales}")
             valores_diarios = row2dict_converter(valores_globales)
 
             diccionario_datos["valores_diarios"] = valores_diarios
@@ -349,6 +349,7 @@ class HistoricDAO:
                     func.sum(MedicionClimatica.precipitacion).label('precipitacion'),
                     func.avg(MedicionClimatica.etp_mon).label('etp_mon'),
                     func.avg(MedicionClimatica.pep_mon).label('pep_mon'),
+                    func.avg(MedicionClimatica.radiacion).label('radiacion'),
                     Estacion.codigo.label('estacion') if estacion_id is not None else None,
                     Provincia.codigo.label('provincia')
                 )
@@ -418,6 +419,7 @@ class HistoricDAO:
                     func.sum(MedicionClimatica.precipitacion).label('precipitacion'),
                     func.avg(MedicionClimatica.etp_mon).label('etp_mon'),
                     func.avg(MedicionClimatica.pep_mon).label('pep_mon'),
+                    func.avg(MedicionClimatica.radiacion).label('radiacion'),
                     Estacion.codigo.label('estacion') if estacion_id is not None else None,
                     Provincia.codigo.label('provincia')
                 )
