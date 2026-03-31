@@ -2,7 +2,7 @@
 from .plagas_service import PlagasService
 from . import calendario_bp
 from flask import request, jsonify
-from ..globals.log_decorator import log
+from ..decorator.log_decorator import log
 from app.globals.dto2dict import dataclass_to_json
 from helpers.ApiExceptions import APIException
 from .plagas_dto import GrupoPlaga

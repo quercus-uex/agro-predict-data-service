@@ -1,5 +1,5 @@
 from . import cultivo_bp
-from ..globals.log_decorator import log
+from ..decorator.log_decorator import log
 from ..globals.dto2dict import dataclass_to_json
 from helpers.ApiExceptions import APIException
 from .cultivos_service import CultivoService

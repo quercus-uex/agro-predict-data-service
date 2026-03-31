@@ -207,7 +207,6 @@ class CultivoService:
         if not datos:
             return None
         
-        print(f"Datos : {datos}")
         
         return [
             dto

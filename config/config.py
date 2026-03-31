@@ -17,6 +17,11 @@ class Config:
     QUEUE_IN_NAME = os.getenv('QUEUE_IN_NAME')
     QUEUE_OUT_NAME = os.getenv('QUEUE_OUT_NAME')
     RABBITMQ_CONNECTION = os.getenv('RABBITMQ_CONNECTION')
+    KEYCLOAK_SERVER_URL = os.getenv('KEYCLOAK_SERVER_URL')
+    KEYCLOAK_REALM_NAME = os.getenv('KEYCLOAK_REALM_NAME')
+    KEYCLOAK_CLIENT_ID = os.getenv('KEYCLOAK_CLIENT_ID')
+    KEYCLOAK_CERT = os.getenv('KEYCLOAK_CERT')
+    KEYCLOAK_CLIENT_SECRET = os.getenv('KEYCLOAK_CLIENT_SECRET')
 
     # Swagger
     SWAGGER_URL = '/api/v1/ui'

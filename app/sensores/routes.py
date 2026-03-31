@@ -2,7 +2,7 @@ from .sensores_service import SensoresService
 from ..ingesta.ingesta_service import IngestionService
 from . import sensores_bp
 from flask import request, jsonify
-from ..globals.log_decorator import log
+from ..decorator.log_decorator import log
 from ..globals.convertidor_tipo import convertir_tipo
 from app.globals.dto2dict import dataclass_to_json
 from helpers.ApiExceptions import APIException

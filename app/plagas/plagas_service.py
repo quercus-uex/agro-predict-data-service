@@ -78,8 +78,6 @@ class PlagasService:
             plaga_id = plaga_id if plaga_id else None
         )
 
-        print(f"Datos de la plaga : {data_plagas}")
-
         # Obtengo los datos de los calendarios de la BD
         data_calendarios = PlagasDAO._get_calendario_plagas(
             plaga_id = plaga_id if plaga_id else None

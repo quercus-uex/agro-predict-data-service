@@ -1,5 +1,5 @@
 from . import forecast_bp
-from ..globals.log_decorator import log
+from ..decorator.log_decorator import log
 from helpers.ApiExceptions import APIException
 from .forecast_service import ForecastService
 from flask import jsonify, request, current_app

@@ -1,10 +1,11 @@
 # Métodos para crear e inicializar la app y los distintos componentes y extensiones
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from config.config import Config
 from .extensions import init_extensions
 from flask_cors import CORS
+from helpers.ApiExceptions import APIException
 import os
 
 load_dotenv()
@@ -40,5 +41,14 @@ def create_app(config_class = Config):
     app.register_blueprint(cultivo_bp)
     app.register_blueprint(sensores_bp)
     app.register_blueprint(metadata_bp)
+
+    @app.errorhandler(APIException)
+    def handle_api_exception(e):
+        return jsonify({
+            'status' : e.status,
+            'error' : e.error,
+            'message' : e.message,
+        }), e.status
+
     return app
 

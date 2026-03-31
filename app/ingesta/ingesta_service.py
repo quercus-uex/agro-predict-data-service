@@ -139,7 +139,6 @@ class IngestionService:
 
             # Recorro todas las localidades que hay almacenadas en el json
             for d in datos:
-                print(f"Dato : {d}")
                 IngestaDAO.crear_localidades(
                     nombre = d['nombre'],
                     nombre_normalizado = d['nombre_normalizado'],
@@ -467,7 +466,6 @@ class IngestionService:
 
                 db.session.add(estacion)  
             else:
-                print(f"Datos de ingestaService: {data}")
                 # Inserto primero las comunidades autonomas
                 if d.get('nombre-comunidades'):
                     todas_comunidades = d['nombre-comunidades']

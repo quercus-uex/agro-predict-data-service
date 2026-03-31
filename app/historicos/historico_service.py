@@ -205,8 +205,7 @@ class HistoricService:
                         )
 
                     case TipoHistorico.DIA:
-                        data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)
-                        print(f"Data : {data}")    
+                        data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)    
                         items = HistoricService._build_historico_dia(data, estacion_id)
 
                         return HistoricService.comprobar_devolucion(

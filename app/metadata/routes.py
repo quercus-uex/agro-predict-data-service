@@ -2,7 +2,7 @@ from .metadata_service import MetadataService
 from . import metadata_bp
 from flask import jsonify, request
 from werkzeug.utils import secure_filename
-from ..globals.log_decorator import log
+from ..decorator.log_decorator import log
 from helpers.ApiExceptions import APIException
 import logging
 import os

@@ -10,3 +10,5 @@ docs/_build/
 app/logs/*
 !app/logs/.gitkeep
 prueba-regex.txt
+*.crt
+*.key
