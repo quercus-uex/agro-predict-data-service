@@ -8,7 +8,6 @@ class GrupoPlaga(Enum):
 
 @dataclass
 class CalendarioDTO:
-    cultivo_id : int
     plaga_id : int
     grupo : str
     semana : int

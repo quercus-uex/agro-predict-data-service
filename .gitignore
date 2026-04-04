@@ -12,3 +12,4 @@ app/logs/*
 prueba-regex.txt
 *.crt
 *.key
+*.txt

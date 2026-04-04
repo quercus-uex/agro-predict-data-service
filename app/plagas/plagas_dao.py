@@ -131,7 +131,8 @@ class PlagasDAO:
         momento_critico : str,
         observaciones : Optional[str],
         mas_info : Optional[str],
-        tipo : str
+        tipo : str,
+        grupo : str
     ):
         try:
             plaga_existente = (
@@ -146,7 +147,8 @@ class PlagasDAO:
                         Plaga.momento_critico == momento_critico,
                         Plaga.observaciones == observaciones,
                         Plaga.mas_info == mas_info,
-                        Plaga.tipo == tipo
+                        Plaga.tipo == tipo,
+                        Plaga.grupo == grupo,
                     )
                 )
             )
@@ -164,7 +166,8 @@ class PlagasDAO:
                 momento_critico = momento_critico,
                 observaciones = observaciones if observaciones else None,
                 mas_info = mas_info if mas_info else None,
-                tipo = tipo
+                tipo = tipo,
+                grupo = grupo,
             )
             if not plaga:
                 return

@@ -4,18 +4,22 @@ Extensiones de Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask import jsonify
+from flask_migrate import Migrate
 from keycloak import KeycloakOpenID
 import yaml
 import pathlib
 import os
 
 db = SQLAlchemy()
+migrate = Migrate() # Aplico migracionnes de Alembic
 
 def init_extensions(app):
     """Inicializo las extensiones con la aplicación Flask"""
     db.init_app(app)
+    migrate.init_app(app, db)
     register_swagger(app)
     register_keyclaok(app)
+
 
 def register_keyclaok(app):
     global keycloak_openid

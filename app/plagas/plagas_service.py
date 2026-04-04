@@ -60,6 +60,7 @@ class PlagasService:
                     observaciones = p.get('observaciones'),
                     mas_info = p.get('mas_info'),
                     tipo = p.get('tipo'),
+                    grupo = p.get('grupo'),
                     calendario = calendarios_plaga
                 )
             )
@@ -102,7 +103,8 @@ class PlagasService:
         momento_critico : str,
         observaciones : Optional[str],
         mas_info : Optional[str],
-        tipo : str
+        tipo : str,
+        grupo : str,
     ):
         """
         Registra una nueva plaga en el sistema en base a los datos pasados por parámetros.
@@ -117,7 +119,8 @@ class PlagasService:
             momento_critico = momento_critico,
             observaciones = observaciones if observaciones else None,
             mas_info = mas_info if mas_info else None,
-            tipo = tipo
+            tipo = tipo,
+            grupo = grupo,
         )
 
         return plaga

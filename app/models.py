@@ -35,11 +35,10 @@ class Cultivo(db.Model):
     nombre_cientifico = Column(String(200), nullable = False)
     descripcion = Column(String(300), nullable = False, unique = False)
     grupo = Column(String(50), nullable = False)
-    sensor_id = Column(Integer, ForeignKey("sensores.id"), nullable = True)
 
     variedades = relationship("Variedades", back_populates = "cultivo")
     cultivos_plagas = relationship("CultivoPlaga", back_populates = "cultivo")
-    sensor = relationship("Sensores", back_populates = "cultivo")
+    parcelas = relationship("CultivoParcela", back_populates = "cultivo")
 
     __table_args__ = (
         UniqueConstraint(
@@ -47,6 +46,18 @@ class Cultivo(db.Model):
             name = 'uq_cultivo_nombre_cientifico'
         ),
     )
+
+class CultivoParcela(db.Model):
+    __tablename__ = 'cultivo_parcela'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = False)
+    parcela_id = Column(String(50), ForeignKey("parcelas.public_id"), nullable = False)
+    fecha_inicio = Column(DateTime, nullable = False)
+    fecha_fin = Column(DateTime, nullable = True) # Puede que no se haya producido rotación de cultivo todavía en una parcela
+
+    cultivo = relationship("Cultivo", back_populates = "parcelas")
+    parcela = relationship("Parcelas", back_populates = "cultivos")
 
 class CultivoPlaga(db.Model):
     __tablename__ = 'cultivo_plaga'
@@ -144,6 +155,7 @@ class Plaga(db.Model):
     observaciones = Column(String(1000), nullable = True)
     mas_info = Column(String(300), nullable = True)
     tipo = Column(String(50), nullable = False)
+    grupo = Column(String(100), nullable = True)
 
     calendarios = relationship("CalendarioPlaga", back_populates = "plaga")
     cultivos_plagas = relationship("CultivoPlaga", back_populates = "plaga")
@@ -152,7 +164,6 @@ class CalendarioPlaga(db.Model):
     __tablename__ = 'calendario_plaga'
 
     id = Column(Integer, primary_key = True, autoincrement = True)
-    cultivo_id = Column(String(50), nullable = False)
     plaga_id = Column(Integer, ForeignKey("plagas.id"), nullable = False)
     grupo = Column(String(50), nullable = False)
     semana = Column(Integer, nullable = False)
@@ -272,6 +283,7 @@ class Parcelas(db.Model):
     geometria = Column(JSON, nullable = False)
 
     sensor = relationship("Sensores", back_populates = "parcela")
+    cultivos = relationship("CultivoParcela", back_populates = "parcela")
 
 class Dispositivos(db.Model):
     __tablename__ = "dispositivos"

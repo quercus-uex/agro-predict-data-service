@@ -326,7 +326,7 @@ class CultivoService:
             nombre_cientifico = args.get('nombre_cientifico'),
             descripcion = args.get('descripcion'),
             grupo = args.get('grupo'),
-            sensor = args.get('sensor')
+            sensor = args.get('sensor') if args.get('sensor') else None
         )
 
         if not new_cultivo:

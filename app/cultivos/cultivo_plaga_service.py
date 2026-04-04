@@ -58,7 +58,6 @@ class CultivoPlagaService():
                             tipo = p['plaga'].tipo,
                             calendario = [
                                 CalendarioDTO(
-                                    cultivo_id = cal.cultivo_id,
                                     plaga_id = cal.plaga_id,
                                     grupo = cal.grupo,
                                     semana = cal.semana,

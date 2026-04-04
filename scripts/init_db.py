@@ -3,6 +3,7 @@ import logging
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
+from flask_migrate import upgrade
 from app.extensions import db
 
 # Configuracion del logging
@@ -22,14 +23,9 @@ with app.app_context():
         logger.info("Conexión establecida correctamente")
         connection.close()
         
-        # Eliminar tablas existentes (para desarrollo)
-        #logger.info("Eliminando tablas existentes...")
-        #db.drop_all()
-        #logger.info("Tablas eliminadas")
-        
         # Crear todas las tablas
         logger.info("Creando tablas...")
-        db.create_all()
+        upgrade()
         logger.info("Tablas creadas exitosamente")
         
         # Verificar que las tablas se crearon

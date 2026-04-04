@@ -52,23 +52,24 @@ class CultivosDAO:
         nombre_cientifico : str,
         descripcion : str,
         grupo : str,
-        sensor : str
+        sensor : Optional[str]
     ):
         """
         Registra un nuevo cultivo en la base de datos
         """
         try:
-
-            encontrar_id_sensor = (
-                select(
-                    Sensores.id
+            resultado_sensor = None
+            if sensor:
+                encontrar_id_sensor = (
+                    select(
+                        Sensores.id
+                    )
+                    .where(
+                        sensor == Sensores.eui
+                    )
                 )
-                .where(
-                    sensor == Sensores.eui
-                )
-            )
 
-            resultado_sensor = db.session.execute(encontrar_id_sensor).first()
+                resultado_sensor = db.session.execute(encontrar_id_sensor).first()
 
             if resultado_sensor is None:
                 return None
@@ -90,29 +91,52 @@ class CultivosDAO:
         except Exception as e:
             db.session.rollback()
             print(f"Error insertando un nuevo cultivo : {e}")
-            return []
+            return None
     
     @staticmethod
     def crear_relacion_cultivo_plaga(nombre_cultivo: str):
         try:
-            query = (
-                select(
-                    Plaga.id.label('plaga_id'),
-                    Cultivo.id.label('cultivo_id')
+
+            cultivo = db.session.query(Cultivo).filter_by(
+                nombre = nombre_cultivo
+            ).first()
+
+            if not cultivo:
+                print(f"Cultivo {nombre_cultivo} no encontrado")
+                return None
+            
+            tiene_calendario = db.session.execute(
+                select(CalendarioPlaga.id)
+                .where(CalendarioPlaga.grupo == cultivo.grupo)
+                .limit(1)
+            ).scalar()
+
+            if tiene_calendario:
+                # Obtiene plagas desde el calendario de cultivo
+                query = (
+                    select(Plaga.id.label('plaga_id'))
+                    .join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
+                    .where(CalendarioPlaga.grupo == cultivo.grupo)
+                    .distinct()
                 )
-                .select_from(Cultivo)
-                .join(CalendarioPlaga, Cultivo.grupo == CalendarioPlaga.grupo)
-                .join(Plaga, Plaga.id == CalendarioPlaga.plaga_id)
-                .where(Cultivo.nombre == nombre_cultivo)
-            )
+            else:
+                query = (
+                    select(Plaga.id.label('plaga_id'))
+                    .where(Plaga.grupo == cultivo.grupo)
+                )
 
-            resultado = db.session.execute(query).mappings().all()
+            plagas = db.session.execute(query).mappings().all()
 
-            for r in resultado:
+            if not plagas:
+                print(f"No existen plagas relacionadas con el grupo de cultivo : {cultivo.grupo}")
+                return
+            
+            for r in plagas:
                 existe = db.session.execute(
-                    select(CultivoPlaga).where(
+                    select(CultivoPlaga)
+                    .where(
                         and_(
-                            CultivoPlaga.cultivo_id == r['cultivo_id'],
+                            CultivoPlaga.cultivo_id == cultivo.id,
                             CultivoPlaga.plaga_id == r['plaga_id']
                         )
                     )
@@ -120,8 +144,8 @@ class CultivosDAO:
 
                 if not existe:
                     db.session.add(CultivoPlaga(
-                        cultivo_id=r['cultivo_id'],
-                        plaga_id=r['plaga_id']
+                        cultivo_id = cultivo.id,
+                        plaga_id = r['plaga_id']
                     ))
 
             db.session.commit()
@@ -391,21 +415,42 @@ class CultivosDAO:
             resultados = []
 
             for nombre_cultivo in nombres_cultivo:
+                cultivo = db.session.query(Cultivo).filter_by(
+                    nombre = nombre_cultivo
+                ).first()
 
-                query = (
-                    select(
-                        Cultivo,
-                        Plaga,
-                        CalendarioPlaga
+                if not cultivo:
+                    print(f"Cultivo {nombre_cultivo} no encontrado")
+                    return None
+                
+                tiene_calendario = db.session.execute(
+                    select(CalendarioPlaga.id)
+                    .where(CalendarioPlaga.grupo == cultivo.grupo)
+                    .limit(1)
+                ).scalar()
+
+                if tiene_calendario:
+                    query = (
+                        select(
+                            Cultivo,
+                            Plaga,
+                            CalendarioPlaga
+                        )
+                        .select_from(Cultivo)
+                        .join(CultivoPlaga, CultivoPlaga.cultivo_id == cultivo.id)
+                        .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
+                        .join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
                     )
-                    .select_from(Cultivo)
-                    .join(CultivoPlaga, CultivoPlaga.cultivo_id == Cultivo.id)
-                    .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
-                    .join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
-                    .where(
-                        Cultivo.nombre == nombre_cultivo
+                else:
+                    query = (
+                        select(
+                            Cultivo, 
+                            Plaga
+                        )
+                        .select_from(Cultivo)
+                        .join(CultivoPlaga, CultivoPlaga.cultivo_id == cultivo.id)
+                        .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
                     )
-                )
 
                 resultado = db.session.execute(query).mappings().all()
 
