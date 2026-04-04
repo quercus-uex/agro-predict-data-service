@@ -5,7 +5,9 @@ from ..models import Parcelas, Dispositivos, Sensores
 import os
 import json
 import pandas as pd
+import logging
 
+logger = logging.getLogger(__name__)
 
 class MetadataService:
 
@@ -83,7 +85,8 @@ class MetadataService:
 
         modelo = MetadataService.MODELOS_DISPONIBLES.get(tipo.lower())
 
-        return modelo(*datos)
+        columnas_validas = MetadataDAO.vaidar_columnas(modelo)
+        return {k: v for k, v in datos.items() if k in columnas_validas}
 
 
 
@@ -96,6 +99,8 @@ class MetadataService:
 
             modelo = MetadataService.MODELOS_DISPONIBLES.get(tipo.lower())
 
+            print(f"Modelo a utilizar : {modelo}")
+
             if not modelo:
                 raise ValueError(f"Tipo de metadato no reconocido : {tipo}")
 
@@ -103,6 +108,7 @@ class MetadataService:
                 modelo = modelo,
                 filtros = filtros
             )
+            print(datos)
 
             if not datos:
                 raise ValueError(f"Error, no se han obtenido metadatos para el tipo indicado {tipo}")
@@ -145,6 +151,12 @@ class MetadataService:
                 transformaciones = transformaciones,
                 ruta_fichero = ruta_metadatos
             )
+            # Una vez registrados en la base de datos, si el tipo de metadatos es Sensores, asociamos las parcelas a las que pertenece
+            if modelo.__name__.lower() == 'sensores':
+                resultado = MetadataDAO.asignar_parcela_a_sensores()
+                logger.info(resultado)
+                
 
         except Exception as e:
             print(f"Error al registrar el fichero {nombre_fichero} : {e}")
+            return None

@@ -66,7 +66,6 @@ class IngestionService:
 
             # Obtener un campo especifico para la geometria
             if 'geometria' in df.columns:
-                print("Tiene geometria")
                 df['geometria'] = df['geometria'].apply(
                     lambda x : x.get('geometry').get('coordinates') if isinstance(x, dict) else x
                 )
@@ -77,7 +76,6 @@ class IngestionService:
                 {k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in registro.items()}
                 for registro in df.to_dict(orient="records")
             ]
-            print(contenido)
 
             insertado = 0
             for registro in contenido:

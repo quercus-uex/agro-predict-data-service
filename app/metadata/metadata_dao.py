@@ -1,5 +1,7 @@
 from sqlalchemy import select, and_, inspect, delete, update
 from ..models import Parcelas, Sensores, Dispositivos
+from shapely.geometry import Point, Polygon
+from shapely.validation import make_valid
 from ..extensions import db
 from typing import Optional
 from ..models import Metadatos
@@ -20,6 +22,18 @@ class MetadataDAO:
     }
 
     # === GENERICOS === #
+
+    @staticmethod
+    def vaidar_columnas(
+        modelo
+    ):
+        try:
+            columnas_validas = {c.key for c in inspect(modelo).mapper.column_attrs}
+            return columnas_validas
+        except Exception as e:
+            print(f"Error al consultar las columnas válidas del modelo : {modelo.__name__}")
+            return None
+
     @staticmethod
     def crear_registro(
         modelo,
@@ -91,6 +105,7 @@ class MetadataDAO:
                     for filtro,valor in filtros.items()
                 ]
                 query = query.filter(*condiciones)
+            print(f"Query resultante : {query}")
             
             registros = query.all()
 
@@ -167,3 +182,74 @@ class MetadataDAO:
             return None
 
     # === FIN GENERICOS === #
+
+    # === ESPECÍFICOS === #
+    @staticmethod
+    def asignar_parcela_a_sensores():
+        """
+        Recorre los sensores cuya parcela_id están a NULL, comprobando si su 
+        geocoordenada se integra dentro de las geocoordenadas que almacenan 
+        las parcelas. Si encuentra la coincidencia se actualiza la parcela_id 
+        del sensor.
+        """
+        try:
+            # 1. Obtención de los sensores cuya parcela_id se encuentra a NULL
+            sensores_sin_parcela = db.session.query(Sensores).filter(
+                Sensores.parcela_id == None,
+                Sensores.geometria != None
+            ).all()
+
+            if not sensores_sin_parcela:
+                return {
+                    'actualizados' : 0,
+                    'mensaje' : 'No hay sensores pendientes de asignacion'
+                }
+            
+            # 2. Obtención de las parcelas con coordenadas
+            parcelas = db.session.query(Parcelas).filter(
+                Parcelas.geometria != None
+            )
+
+            if not parcelas:
+                return {
+                    'actualizados' : 0,
+                    'mensaje' : 'No hay parcelas registradas que incorporen geocoordenasas'
+                }
+            
+            # 3. Preconfiguración de la geomentría de parcelas
+            geometrias_parcelas = []
+            for parcela in parcelas:
+                try:
+                    coordenadas = parcela.geometria
+                    # Disposición de coordenadas: [[[logn, lat]]], extraer la capa exterior
+                    capa_exterior = coordenadas[0]
+                    poligono = make_valid(Polygon(capa_exterior))
+                    geometrias_parcelas.append((parcela, poligono))
+                except Exception as e:
+                    print(f"Parcela {parcela.public_id} tiene coordenadas inválidad, se omite: {e}")
+                    continue
+            
+            # 4. Para cada sensor, comprobar si dentro de un polígono de parcela
+            actualizados = 0
+            for sensor in sensores_sin_parcela:
+                try:
+                    coordenadas = sensor.geometria # [long, lat]
+                    punto = Point(coordenadas[0], coordenadas[1])
+
+                    for parcela, poligono in geometrias_parcelas:
+                        if poligono.covers(punto): # covers, por si los sensores se encuentran en el borde del polígono procesado
+                            sensor.parcela_id = parcela.public_id
+                            actualizados += 1
+                            break # Un sensor solo puede pertenecer a una partcela, no a más
+                except Exception as e:
+                    print(f"Error procesando el sensor {sensor.id}: {e}")
+                    continue
+            
+            db.session.commit()
+            return {"actualizados" : actualizados, "total_procesados" : len(sensores_sin_parcela)}
+        
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error en asignación geoespacial de sensores : {e}")
+            return None
+

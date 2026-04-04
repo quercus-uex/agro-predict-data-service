@@ -4,6 +4,7 @@ from flask import jsonify, request
 from werkzeug.utils import secure_filename
 from ..decorator.log_decorator import log
 from helpers.ApiExceptions import APIException
+from ..globals.dto2dict import dataclass_to_json
 import logging
 import os
 
@@ -82,10 +83,63 @@ def almacenar_fichero(
         }), 201
     
     except APIException as e:
-            logger.error(f"API Exception : {e}")
-            return jsonify({
+        logger.error(f"API Exception : {e}")
+        return jsonify({
+            'success' : 'false',
+            'code' : '500',
+            'message' : 'Internal Server Error',
+            'error' : str(e)
+        }), 500
+
+@metadata_bp.route('/metadatos/<string:tipo>')
+@log('../logs/fichero_salida.json')
+def obtener_metadatos(
+    tipo : str
+):
+    try:
+        if tipo.lower() not in ['parcelas', 'sensores', 'dispositivos']:
+            return jsonify(
+                {
+                    'success' : 'false',
+                    'code' : '400',
+                    'message' : 'Invalid Parameters',
+                    'error' : 'El tipo de metadato consultado no es soportado'
+                }
+            )
+        
+        filtros = []
+
+        entidad_id = request.args.get('entidad_id')
+
+        if entidad_id:
+            filtros.append({
+                'entidad_id' : entidad_id,
+            })
+        
+        datos = MetadataService.obtener_metadatos(tipo, filtros)
+
+        if not datos:
+            return jsonify(
+                {
+                    'success' : 'false',
+                    'code' : '404',
+                    'message' : 'Data Not Found',
+                    'error' : f'No se han encontrado datos registrados sobre el tipo {tipo}'
+                }
+            )
+        
+        return dataclass_to_json(datos)
+    
+    except APIException as e:
+        logger.error(f"API Exception : {e}")
+        return jsonify(
+            {
                 'success' : 'false',
                 'code' : '500',
                 'message' : 'Internal Server Error',
-                'error' : str(e)
-            }), 500
+                'error' : 'Error interno del servidor'
+            }
+        )
+
+
+
