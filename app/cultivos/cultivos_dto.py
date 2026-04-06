@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from ..plagas.plagas_dto import PlagaConCalendarioDTO, CalendarioDTO
+from datetime import datetime
 
 @dataclass
 class EtapaFenologicaDTO:
@@ -13,13 +14,17 @@ class CultivoDTO:
     nombre_cientifico : str
     descripcion : str
     grupo : str
-    sensor : str
 
 @dataclass
 class ModeloFrioDTO:
     nombre : str
     codigo : str
     descripcion : str
+
+@dataclass
+class ParcelaDTO:
+    public_id : str
+    nombre : str
 
 @dataclass
 class VariedadDTO:
@@ -42,3 +47,10 @@ class UmbralesTemperaturaDTO:
 class CultivoPlagaDTO:
     cultivo : CultivoDTO
     plaga : list[PlagaConCalendarioDTO]
+
+@dataclass
+class CultivoParcelaDTO:
+    cultivo : CultivoDTO
+    parcela : ParcelaDTO
+    fecha_inicio : datetime
+    fecha_fin : datetime

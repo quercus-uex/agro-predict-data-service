@@ -1,15 +1,16 @@
-from .cultivos_dto import (
+from ..cultivos_dto import (
     CultivoDTO,
     VariedadDTO,
     ModeloFrioDTO,
     EtapaFenologicaDTO,
     UmbralesTemperaturaDTO
 )
-from .cultivos_dao import CultivosDAO
+from ..cultivos_dao import CultivosDAO
 from typing import Optional
 from datetime import date, datetime
-from ..historicos.historico_dao import HistoricDAO
+from ...historicos.historico_dao import HistoricDAO
 from .cultivo_plaga_service import CultivoPlagaService
+from .cultivo_parcela_service import CultivoParcelaService
 
 class CultivoService:
 
@@ -31,7 +32,6 @@ class CultivoService:
             nombre_cientifico = datos.get('nombre_cientifico'),
             descripcion = datos.get('descripcion'),
             grupo = datos.get('grupo'),
-            sensor = datos.get('eui')
         )
 
     @staticmethod
@@ -326,7 +326,7 @@ class CultivoService:
             nombre_cientifico = args.get('nombre_cientifico'),
             descripcion = args.get('descripcion'),
             grupo = args.get('grupo'),
-            sensor = args.get('sensor') if args.get('sensor') else None
+            #sensor = args.get('sensor') if args.get('sensor') else None
         )
 
         if not new_cultivo:
@@ -336,6 +336,13 @@ class CultivoService:
         CultivoPlagaService.crear_cultivo_asociado_plaga(
             cultivo = new_cultivo
         )
+
+        # Si se ha indicado el nombre de la parcela, creo la asociacion del cultivo con la parcela
+        if args.get('parcela'):
+            CultivoParcelaService.registrar_asociacion_parcela_cultivo(
+                cultivo = new_cultivo,
+                nombre_parcela = args.get('parcela')
+            )
 
     @staticmethod
     def registrar_variedad_nueva(

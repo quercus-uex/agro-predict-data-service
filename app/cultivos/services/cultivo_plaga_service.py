@@ -1,13 +1,13 @@
-from .cultivos_dao import CultivosDAO
-from ..plagas.plagas_dao import PlagasDAO
-from .cultivos_dto import (
+from ..cultivos_dao import CultivosDAO
+from ...plagas.plagas_dao import PlagasDAO
+from ..cultivos_dto import (
     CultivoPlagaDTO, 
     CultivoDTO, 
     CalendarioDTO, 
     PlagaConCalendarioDTO
 )
 from typing import Optional
-from ..models import Cultivo
+from ...models import Cultivo
 import logging 
 
 logger = logging.getLogger(__name__)

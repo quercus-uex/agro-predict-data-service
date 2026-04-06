@@ -51,15 +51,14 @@ class CultivosDAO:
         nombre : str,
         nombre_cientifico : str,
         descripcion : str,
-        grupo : str,
-        sensor : Optional[str]
+        grupo : str
     ):
         """
         Registra un nuevo cultivo en la base de datos
         """
         try:
-            resultado_sensor = None
-            if sensor:
+            #resultado_sensor = None
+            """if sensor:
                 encontrar_id_sensor = (
                     select(
                         Sensores.id
@@ -73,13 +72,13 @@ class CultivosDAO:
 
             if resultado_sensor is None:
                 return None
-
+            """
             cultivo = Cultivo(
                 nombre = nombre,
                 nombre_cientifico = nombre_cientifico,
                 descripcion = descripcion,
                 grupo = grupo,
-                sensor_id = resultado_sensor.id
+                #sensor_id = resultado_sensor.id
             )
 
             # Si existiera ya un cultivo con este nombre y nombre_cientifico, salta la constraint y no se inserta

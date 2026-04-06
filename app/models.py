@@ -310,7 +310,6 @@ class Sensores(db.Model):
     geometria = Column(JSON, nullable = True)
 
     mediciones = relationship("MedicionesSensor", back_populates = 'sensor')
-    cultivo = relationship("Cultivo", back_populates = 'sensor')
     dispositivo = relationship("Dispositivos", back_populates = 'sensor')
     parcela = relationship("Parcelas", back_populates = 'sensor')
 
