@@ -1,4 +1,4 @@
-from ..cultivos_dao import CultivosDAO
+from ..daos.cultivos_plaga_dao import CultivoPlagaDAO
 from ...plagas.plagas_dao import PlagasDAO
 from ..cultivos_dto import (
     CultivoPlagaDTO, 
@@ -8,6 +8,7 @@ from ..cultivos_dto import (
 )
 from typing import Optional
 from ...models import Cultivo
+from helpers.ApiExceptions import APIException
 import logging 
 
 logger = logging.getLogger(__name__)
@@ -44,8 +45,7 @@ class CultivoPlagaService():
                         nombre = datos_cultivo.nombre,
                         nombre_cientifico = datos_cultivo.nombre_cientifico,
                         descripcion = datos_cultivo.descripcion,
-                        grupo = datos_cultivo.grupo,
-                        sensor = datos_cultivo.sensor_id
+                        grupo = datos_cultivo.grupo
                     ),
                     plaga = [
                         PlagaConCalendarioDTO(
@@ -54,6 +54,7 @@ class CultivoPlagaService():
                             agente_causante = p['plaga'].agente_causante,
                             momento_critico = p['plaga'].momento_critico,
                             observaciones = p['plaga'].observaciones,
+                            grupo = p['plaga'].grupo,
                             mas_info = p['plaga'].mas_info,
                             tipo = p['plaga'].tipo,
                             calendario = [
@@ -78,12 +79,12 @@ class CultivoPlagaService():
             return cultivos_plagas
         
         except Exception as e:
-            print(f"Error al crear DTOs de cultivo_plaga : {e}")
-            return None
+            raise
 
     @staticmethod
     def crear_cultivo_asociado_plaga(
-        cultivo : Cultivo
+        cultivo : Cultivo,
+        recursos : Optional[list]
     ):
         """
         Registra en la base de datos la asociación del cultivo creado con sus potenciales plagas
@@ -100,8 +101,9 @@ class CultivoPlagaService():
         if grupo_cultivo_creado not in grupos_calendarios:
             logger.warn(f'No hay registros de calendarios sobre el grupo del cultivo : {grupo_cultivo_creado}')
         
-        CultivosDAO.crear_relacion_cultivo_plaga(
-            nombre_cultivo = cultivo.nombre
+        CultivoPlagaDAO.crear_relacion_cultivo_plaga(
+            nombre_cultivo = cultivo.nombre,
+            recursos = recursos if recursos else None
         )
 
     @staticmethod
@@ -114,17 +116,27 @@ class CultivoPlagaService():
         :param nombre_cultivo: Nombre del cultivo a obtener la información
         :type nombre_cultivo: str
         """
-        datos : list[dict] = CultivosDAO.obtener_info_cultivo_plaga(
-            nombres_cultivo = nombres_cultivo
-        )
+        try:
+            print(nombres_cultivo)
+            datos : list[dict] = CultivoPlagaDAO.obtener_info_cultivo_plaga(
+                nombres_cultivo = nombres_cultivo
+            )
 
-        dto_cargado  = CultivoPlagaService._build_cultivo_plaga_dto(
-            datos = datos
-        )
+            if not datos:
+                raise APIException(
+                    status = 404,
+                    message = "No se registran datos asociados a los cultivos indicados sobre plagas",
+                    error = "Data Not Found"
+                )
+
+            dto_cargado  = CultivoPlagaService._build_cultivo_plaga_dto(
+                datos = datos
+            )
+            
+            if not dto_cargado:
+                return
+            
+            return dto_cargado
         
-        if not dto_cargado:
-            return
-        
-        return dto_cargado
-
-
+        except Exception as e:
+            raise

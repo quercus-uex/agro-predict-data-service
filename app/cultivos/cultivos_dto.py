@@ -25,6 +25,7 @@ class ModeloFrioDTO:
 class ParcelaDTO:
     public_id : str
     nombre : str
+    geometria : dict
 
 @dataclass
 class VariedadDTO:

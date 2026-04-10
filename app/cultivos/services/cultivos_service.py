@@ -5,7 +5,7 @@ from ..cultivos_dto import (
     EtapaFenologicaDTO,
     UmbralesTemperaturaDTO
 )
-from ..cultivos_dao import CultivosDAO
+from ..daos.cultivos_dao import CultivosDAO
 from typing import Optional
 from datetime import date, datetime
 from ...historicos.historico_dao import HistoricDAO

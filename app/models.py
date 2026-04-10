@@ -17,6 +17,15 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from .extensions import db
 
+class TipoDato(db.Model):
+    __tablemane__ = 'tipo_dato'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    nombre = Column(String(50), nullable = False, unique = True)
+    descripcion = Column(String(300), nullable = True)
+
+    plagas_tipo_dato = relationship("PlagaTipoDato", back_populates = "tipo_dato")
+
 class EtapaFenologica(db.Model):
     __tablename__ = 'etapa_fenologica'
 
@@ -68,6 +77,30 @@ class CultivoPlaga(db.Model):
 
     cultivo = relationship("Cultivo", back_populates = "cultivos_plagas")
     plaga = relationship("Plaga", back_populates = "cultivos_plagas")
+
+    __table__args__ = (
+        UniqueConstraint(
+            'cultivo_id', 'plaga_id',
+            name = 'uq_cultivo_plaga'
+        ),
+    )
+
+class PlagaTipoDato(db.Model):
+    __tablename__ = 'plaga_tipo_dato'
+
+    id = Column(Integer, primary_key = True, autoincrement = True)
+    plaga_id = Column(Integer, ForeignKey("plagas.id"), nullable = False)
+    tipo_dato_id = Column(Integer, ForeignKey('tipo_dato.id'), nullable = False)
+
+    plaga = relationship("Plaga", back_populates = "plagas_tipo_dato")
+    tipo_dato = relationship("TipoDato", back_populates = "plagas_tipo_dato")
+
+    __table__args__ = (
+        UniqueConstraint(
+            'plaga_id', 'tipo_dato_id',
+            name = 'uq_plaga_tipo_dato'
+        )
+    )
 
 
 class Variedades(db.Model):
@@ -159,6 +192,7 @@ class Plaga(db.Model):
 
     calendarios = relationship("CalendarioPlaga", back_populates = "plaga")
     cultivos_plagas = relationship("CultivoPlaga", back_populates = "plaga")
+    plagas_tipo_dato = relationship("PlagaTipoDato", back_populates = "plaga")
 
 class CalendarioPlaga(db.Model):
     __tablename__ = 'calendario_plaga'
@@ -321,7 +355,7 @@ class Metadatos(db.Model):
     tipo = Column(String(50), nullable = False) # Controla la tabla a la que pertenece
     entidad_id = Column(String(50), nullable = False) # Almacena el identificador unico sobre la tabla definida en tipo
     clave = Column(String(50), nullable = False) 
-    valor = Column(String(50), nullable = False)
+    valor = Column(Text, nullable = False)
     fuente = Column(String(50), nullable = True)
     fecha_creacion = Column(DateTime, nullable = True)
 

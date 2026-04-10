@@ -1,6 +1,7 @@
 from .plagas_dao import PlagasDAO
 from .plagas_dto import *
 from typing import Optional
+from helpers.ApiExceptions import APIException
 
 class PlagasService:
 
@@ -19,7 +20,6 @@ class PlagasService:
         for c in data:
             calendarios.append(
                 CalendarioDTO(
-                    cultivo_id = c.get('cultivo_id'),
                     plaga_id = c.get('plaga_id'),
                     grupo = c.get('grupo'),
                     semana = c.get('semana'),
@@ -69,58 +69,94 @@ class PlagasService:
     
     @staticmethod
     def get_plagas(
+        grupo : str,
         tipo : str,
         plaga_id : Optional[int]
     ):
+        try:
+            # Obtengo los datos de las plagas de la BD
+            data_plagas = PlagasDAO._get_plagas(
+                grupo = grupo,
+                tipo = tipo,
+                plaga_id = plaga_id if plaga_id else None
+            )
 
-        # Obtengo los datos de las plagas de la BD
-        data_plagas = PlagasDAO._get_plagas(
-            tipo = tipo,
-            plaga_id = plaga_id if plaga_id else None
-        )
+            plagas_con_calendario = []
+            for d in data_plagas:
+                if d['calendario'] is not None:
+                    plagas_con_calendario.append(d['calendario'])
 
-        # Obtengo los datos de los calendarios de la BD
-        data_calendarios = PlagasDAO._get_calendario_plagas(
-            plaga_id = plaga_id if plaga_id else None
-        )
+            # Contruyo los DTOs de los calendarios
+            calendarios = []
+            if plagas_con_calendario is not []:
+                calendarios = PlagasService._build_calendar(plagas_con_calendario)
 
-        # Contruyo los DTOs de los calendarios
-        calendarios = PlagasService._build_calendar(data_calendarios)
+            # Construyo los DTOs de las plagas
+            plagas = PlagasService._build_plagas(
+                data_plagas = data_plagas,
+                data_calendario = calendarios
+            )
 
-        # Construyo los DTOs de las plagas
-        plagas = PlagasService._build_plagas(
-            data_plagas = data_plagas,
-            data_calendario = calendarios
-        )
-
-        return plagas
+            return plagas
+        
+        except Exception as e:
+            raise APIException(
+                status=500,
+                message = f"Error interno al consultar datos sobre plagas : {e}",
+                error="INTERNAL_ERROR"
+            )
     
     @staticmethod
     def registrar_plaga(
-        public_id : str,
-        nombre : str,
-        agente_causante : str,
-        momento_critico : str,
-        observaciones : Optional[str],
-        mas_info : Optional[str],
-        tipo : str,
-        grupo : str,
+        public_id: str,
+        nombre: str,
+        agente_causante: str,
+        momento_critico: str,
+        observaciones: Optional[str],
+        mas_info: Optional[str],
+        tipo: str,
+        grupo: str,
+        recursos: list
     ):
-        """
-        Registra una nueva plaga en el sistema en base a los datos pasados por parámetros.
-        """
-        if not all([public_id, nombre, agente_causante, momento_critico, tipo]):
-            raise ValueError("Error, se deben indicar valores válidos para crear una nueva plaga en el sistema")
-        
-        plaga = PlagasDAO.crear_plagas(
-            public_id = public_id,
-            nombre = nombre,
-            agente_causante = agente_causante,
-            momento_critico = momento_critico,
-            observaciones = observaciones if observaciones else None,
-            mas_info = mas_info if mas_info else None,
-            tipo = tipo,
-            grupo = grupo,
-        )
+        if not all([public_id, nombre, agente_causante, momento_critico, tipo, recursos]):
+            raise APIException(
+                status=400,
+                message="Datos obligatorios incompletos",
+                error="BAD_REQUEST"
+            )
 
-        return plaga
+        try:
+            plaga = PlagasDAO.crear_plagas(
+                public_id=public_id,
+                nombre=nombre,
+                agente_causante=agente_causante,
+                momento_critico=momento_critico,
+                observaciones=observaciones,
+                mas_info=mas_info,
+                tipo=tipo,
+                grupo=grupo,
+                recursos=recursos
+            )
+
+            if not plaga:
+                raise APIException(
+                    status=400,
+                    message="La plaga ya existe",
+                    error="DATA_ALREADY_EXISTS"
+                )
+
+            return plaga
+
+        except ValueError as e:
+            raise APIException(
+                status=400,
+                message=str(e),
+                error="INVALID_DATA"
+            )
+
+        except Exception as e:
+            raise APIException(
+                status=500,
+                message = f"Error interno al registrar la plaga : {e}",
+                error="INTERNAL_ERROR"
+            )

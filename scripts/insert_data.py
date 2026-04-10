@@ -124,3 +124,6 @@ def job(app):
     
     # Cargar datos de Localidades
     IngestionService.ingest_localidad_data()
+
+    # Cargar tipos de datos
+    IngestionService.ingesta_recursos_globales_plagas()

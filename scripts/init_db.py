@@ -26,6 +26,7 @@ with app.app_context():
         # Crear todas las tablas
         logger.info("Creando tablas...")
         upgrade()
+        #db.create_all()
         logger.info("Tablas creadas exitosamente")
         
         # Verificar que las tablas se crearon

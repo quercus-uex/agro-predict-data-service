@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @historic_bp.route('/climate/historical/provincias', methods = ['GET'])
 @log('../logs/fichero_salida.json')
-@token_required(roles = ['public', 'data-reader'])
+#@token_required(roles = ['public', 'data-reader'])
 def historicalProvincial():
 
     try: 

@@ -2,7 +2,7 @@ from .sensores_dao import SensoresDAO
 from .sensores_dto import SensoresDTO
 from typing import Optional
 from datetime import date
-
+from helpers.ApiExceptions import APIException
 
 class SensoresService():
 
@@ -70,4 +70,17 @@ class SensoresService():
         )
 
         return dto_cargado
+    
+    @staticmethod
+    def procesar_dtagro(
+        datos
+    ):
+        try:
+            pass
+        except Exception as e:
+            raise APIException(
+                status=500,
+                message = f"Error interno al consultar datos sobre plagas : {e}",
+                error="INTERNAL_ERROR"
+            )
         

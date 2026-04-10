@@ -8,7 +8,8 @@ from ..models import (
     Provincia, 
     LocalidadesClimaticas, 
     Sensores,
-    MedicionesSensor
+    MedicionesSensor,
+    TipoDato
 )
 from datetime import datetime
 from typing import Optional
@@ -367,5 +368,28 @@ class IngestaDAO:
             db.session.add(localidad)
         
         except Exception as e:
-            print(f"Algo ha salido mal insertando una nueva localidad en la BD : {e}")
+            print(f"Algo ha salido mal insertando una nueva localidad en el sistema : {e}")
+            db.session.rollback()
+
+    @staticmethod
+    def crear_tipos_datos(
+        datos
+    ):
+        try:
+            for d in datos:
+                existe = db.session.query(TipoDato).filter(
+                    TipoDato.nombre == d['nombre']
+                ).first()
+
+                if existe:
+                    continue
+                
+                tipo_dato = TipoDato(
+                    nombre = d['nombre'],
+                    descripcion = d.get('descripcion')
+                )
+                db.session.add(tipo_dato)
+        
+        except Exception as e:
+            print(f"Algo ha salido mal insertando nuevos tipos de datos en el sistema : {e}")
             db.session.rollback()

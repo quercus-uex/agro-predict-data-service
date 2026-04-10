@@ -1,9 +1,9 @@
-from ..models import CultivoParcela, Cultivo, Parcelas
+from ...models import CultivoParcela, Cultivo, Parcelas
 from sqlalchemy import select, and_
 from app.extensions import db
 from typing import Optional
 from datetime import datetime
-from ..globals.row2dict_converter import row2dict_converter
+from ...globals.row2dict_converter import row2dict_converter
 
 class CultivoParcelaDAO:
 
@@ -61,14 +61,14 @@ class CultivoParcelaDAO:
     @staticmethod
     def obtener_asociaciones_cultivo_parcela(
         nombre_cultivo : str,
-        nombre_parcelas : str
+        parcela_id : str
     ):
         """
         Obtiene los registros de los cultivos que se encuentran asociados a las parcelas
 
         Args:
             nombre_cultivo (str)
-            nombre_parcela (str)
+            parcela_id (str)
         
         Returns
             Optional[list[CultivoParcela]]
@@ -92,15 +92,11 @@ class CultivoParcelaDAO:
 
                 query = query.where(CultivoParcela.cultivo_id == cultivo.id)
 
-            if nombre_parcelas:
-                parcela = db.session.query(Parcelas).filter(
-                    Parcelas.nombre == nombre_parcelas
-                ).first()
-
-                query = query.where(CultivoParcela.parcela_id == parcela.public_id)
+            if parcela_id:
+                query = query.where(CultivoParcela.parcela_id == parcela_id)
             
             return db.session.execute(query).all()
         
         except Exception as e:
-            print(f"Error consultando cultivos asociados a parcelas sobre el cultivo {nombre_cultivo} y la parcela {nombre_parcelas}")
+            print(f"Error real : {e}")
             return None

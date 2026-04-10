@@ -1,5 +1,5 @@
 from typing import Optional
-from ..cultivo_parcela_dao import CultivoParcelaDAO
+from ..daos.cultivo_parcela_dao import CultivoParcelaDAO
 from ..cultivos_dto import CultivoDTO, ParcelaDTO, CultivoParcelaDTO
 
 class CultivoParcelaService:
@@ -20,7 +20,8 @@ class CultivoParcelaService:
 
         parcela = ParcelaDTO(
             public_id = parcela.public_id,
-            nombre = parcela.nombre
+            nombre = parcela.nombre,
+            geometria = parcela.geometria
         )
 
         asociaciones = CultivoParcelaDTO(
@@ -51,15 +52,12 @@ class CultivoParcelaService:
         
     @staticmethod
     def obtener_asociacion_parcela_cultivo(
-        nombre_cultivo : Optional[str],
-        nombre_parcelas : Optional[str]
-    ):
-        if not nombre_cultivo and not nombre_parcelas:
-            raise ValueError("Error, se debe indical al menos el nombre del cultivo o de la parcela")
-        
+        nombre_cultivo : str,
+        parcela_id : str
+    ):  
         datos = CultivoParcelaDAO.obtener_asociaciones_cultivo_parcela(
             nombre_cultivo = nombre_cultivo,
-            nombre_parcelas = nombre_parcelas
+            parcela_id = parcela_id
         )
 
         if not datos:

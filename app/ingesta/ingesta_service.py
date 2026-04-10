@@ -9,8 +9,7 @@ from ..models import (
     Provincia, 
     CCAA, 
     Plaga,
-    CalendarioPlaga,
-    Sensores
+    CalendarioPlaga
 )
 
 from ..external_services.aemet_service import AemetService
@@ -22,6 +21,22 @@ import json
 import os
 
 class IngestionService:
+
+    @staticmethod
+    def ingesta_recursos_globales_plagas():
+        try:
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(BASE_DIR, "..", "data", "datos_recursos_plagas_glob.json")
+            
+            with open(file_path, 'r', encoding = 'utf-8') as f:
+                datos = json.load(f)
+            
+            IngestaDAO.crear_tipos_datos(datos)
+
+            db.session.commit()
+
+        except Exception as e:
+            print(f"Error al insertar tipos de datos : {e}")
 
     @staticmethod
     def ingesta_metadata(
@@ -100,7 +115,6 @@ class IngestionService:
         fecha_fin : date
     ):
         try:
-            print(f"Parametros : {eui} - {fecha_inicio} - {fecha_fin}")
             # Obtengo los datos que recibe DTAgroService
             datos = DTAgroService.get_dtagro_datos(
                 eui = eui,

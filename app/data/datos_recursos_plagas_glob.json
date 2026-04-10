@@ -1,0 +1,20 @@
+[
+  { "nombre": "temperatura_aire",      "descripcion": "Temperatura del aire ambiente (°C)" },
+  { "nombre": "humedad_relativa",      "descripcion": "Humedad relativa del aire (%)" },
+  { "nombre": "precipitacion",         "descripcion": "Precipitación acumulada (mm)" },
+  { "nombre": "velocidad_viento",      "descripcion": "Velocidad del viento (m/s)" },
+  { "nombre": "direccion_viento",      "descripcion": "Dirección del viento (°)" },
+  { "nombre": "radiacion_solar",       "descripcion": "Radiación solar global (W/m²)" },
+  { "nombre": "presion_atmosferica",   "descripcion": "Presión atmosférica (hPa)" },
+  { "nombre": "punto_rocio",           "descripcion": "Temperatura de punto de rocío (°C)" },
+  { "nombre": "evapotranspiracion",    "descripcion": "Evapotranspiración de referencia ETo (mm/día)" },
+  { "nombre": "horas_frio",            "descripcion": "Horas acumuladas por debajo de umbral térmico" },
+  { "nombre": "grados_dia",            "descripcion": "Grados-día acumulados sobre umbral base" },
+  { "nombre": "humedad_suelo",         "descripcion": "Contenido volumétrico de agua en el suelo (%)" },
+  { "nombre": "temperatura_suelo",     "descripcion": "Temperatura del suelo (°C)" },
+  { "nombre": "ph_suelo",              "descripcion": "pH del suelo" },
+  { "nombre": "conductividad_electrica","descripcion": "Conductividad eléctrica del suelo (dS/m)" },
+  { "nombre": "humedad_hoja",          "descripcion": "Humedad superficial de la hoja (mojadura foliar)" },
+  { "nombre": "ndvi",                  "descripcion": "Índice de vegetación normalizado (salud del cultivo)" },
+  { "nombre": "compuestos_volatiles",  "descripcion": "COVs emitidos por la planta (detección precoz de plagas)" }
+]

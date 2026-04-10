@@ -7,6 +7,9 @@ from .extensions import init_extensions
 from flask_cors import CORS
 from helpers.ApiExceptions import APIException
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -49,6 +52,16 @@ def create_app(config_class = Config):
             'error' : e.error,
             'message' : e.message,
         }), e.status
+    
+    @app.errorhandler(Exception)
+    def handle_generic_exception(e):
+        logger.exception("Unhandled exception")
+
+        return jsonify({
+            'success': False,
+            'status': 500,
+            'message': 'Internal Server Error'
+        }), 500
 
     return app
 

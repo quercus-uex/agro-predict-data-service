@@ -22,6 +22,7 @@ class PlagaDTO:
     observaciones : str
     mas_info : str
     tipo : str
+    grupo : str
 
 @dataclass
 class PlagaConCalendarioDTO(PlagaDTO):

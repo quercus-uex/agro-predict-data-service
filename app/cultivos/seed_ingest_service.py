@@ -1,4 +1,4 @@
-from .cultivos_dao import CultivosDAO
+from .daos.cultivos_dao import CultivosDAO
 from app import create_app
 import os
 import json
