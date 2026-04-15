@@ -2,10 +2,27 @@ from sqlalchemy import select, and_, inspect
 from ..models import Sensores, MedicionesSensor
 from datetime import date, datetime, time
 from app.extensions import db
-from ..globals.row2dict_converter import row2dict_converter
 
 
 class SensoresDAO():
+    @staticmethod
+    def existe_sensor(
+        eui : str
+    ) -> bool:
+        try:
+            if not eui:
+                return False
+
+            sensor = db.session.query(Sensores.id).filter_by(
+                eui = eui
+            ).first()
+
+            return sensor is not None
+
+        except Exception as e:
+            print(f"Error comprobando la existencia del sensor por eui - {eui} : {e}")
+            return False
+
     @staticmethod
     def consultar_datos_sensores(
         eui : str,

@@ -3,7 +3,7 @@ from app.extensions import db
 from typing import Optional
 from ...globals.row2dict_converter import row2dict_converter
 from sqlalchemy.inspection import inspect
-from ...models import Cultivo, CalendarioPlaga, CultivoPlaga, Plaga
+from ...models import Cultivo, CalendarioPlaga, CultivoPlaga, Plaga, PlagaTipoDato, TipoDato
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,18 @@ class CultivoPlagaDAO:
     ):
         try:
             resultados = []
+            datos_finales_json = {}
+            def definicion_query_base(args):
+                base_query = (
+                    select(
+                        Cultivo,
+                        Plaga,
+                    )
+                    .select_from(Cultivo)
+                    .join(CultivoPlaga, CultivoPlaga.cultivo_id == args.id)
+                    .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
+                )
+                return base_query
 
             for nombre_cultivo in nombres_cultivo:
                 cultivo = db.session.query(Cultivo).filter(
@@ -32,28 +44,10 @@ class CultivoPlagaDAO:
                 ).scalar()
 
                 if tiene_calendario:
-                    query = (
-                        select(
-                            Cultivo,
-                            Plaga,
-                            CalendarioPlaga
-                        )
-                        .select_from(Cultivo)
-                        .join(CultivoPlaga, CultivoPlaga.cultivo_id == cultivo.id)
-                        .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
-                        .join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
-                    )
+                    query = definicion_query_base(cultivo).add_columns(CalendarioPlaga).join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
                 else:
                     logger.info(f"El cultivo {nombre_cultivo} no tiene asociado un calendario")
-                    query = (
-                        select(
-                            Cultivo, 
-                            Plaga
-                        )
-                        .select_from(Cultivo)
-                        .join(CultivoPlaga, CultivoPlaga.cultivo_id == cultivo.id)
-                        .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
-                    )
+                    query = definicion_query_base(cultivo).add_columns(TipoDato).join(PlagaTipoDato, PlagaTipoDato.plaga_id == Plaga.id).join(TipoDato, TipoDato.id == PlagaTipoDato.tipo_dato_id)
 
                 resultado = db.session.execute(query).mappings().all()
 
@@ -62,6 +56,7 @@ class CultivoPlagaDAO:
                 
                 cultivo_info = None
                 plagas = {}
+                recursos = []
 
                 for r in resultado:
                     if cultivo_info is None:
@@ -77,13 +72,21 @@ class CultivoPlagaDAO:
                         }
                     if tiene_calendario:
                         plagas[plaga.id]['calendario'].append(r['CalendarioPlaga'])
-
+                        datos_finales_json = {
+                            'cultivo' : cultivo_info,
+                            'plagas' : list(plagas.values())
+                        }
+                    else:
+                        if r['TipoDato'] not in recursos:
+                            recursos.append(r['TipoDato'])
+                            datos_finales_json = {
+                                'cultivo' : cultivo_info,
+                                'plagas' : list(plagas.values()),
+                                'recursos' : recursos
+                            }
 
                 resultados.append(
-                    {
-                        'cultivo' : cultivo_info,
-                        'plagas' : list(plagas.values()) # Convertir el diccionario a lista
-                    }
+                    datos_finales_json
                 )
             
             return resultados
@@ -93,8 +96,7 @@ class CultivoPlagaDAO:
 
     @staticmethod
     def crear_relacion_cultivo_plaga(
-        nombre_cultivo: str,
-        recursos: dict
+        nombre_cultivo: str
     ):
         try:
 

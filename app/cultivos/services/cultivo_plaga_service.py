@@ -4,7 +4,8 @@ from ..cultivos_dto import (
     CultivoPlagaDTO, 
     CultivoDTO, 
     CalendarioDTO, 
-    PlagaConCalendarioDTO
+    PlagaConCalendarioDTO,
+    RecursosPlagaDTO
 )
 from typing import Optional
 from ...models import Cultivo
@@ -35,9 +36,9 @@ class CultivoPlagaService():
             cultivos_plagas = []
 
             for dato in datos:
-
                 datos_cultivo = dato['cultivo']
                 datos_plagas = dato['plagas']
+                datos_recursos = dato.get('recursos', None)
 
 
                 cultivo_plaga_dto = CultivoPlagaDTO(
@@ -68,8 +69,20 @@ class CultivoPlagaService():
                             ]
                         )
                         for p in datos_plagas
-                    ]
+                    ],
+                    recursos = None
                 )
+
+                if datos_recursos:
+                    recursos = []
+                    for r in datos_recursos:
+                        recursos.append(
+                            RecursosPlagaDTO(
+                                nombre = r.nombre,
+                                descripcion = r.descripcion
+                            )
+                        )
+                    cultivo_plaga_dto.recursos = recursos
 
                 if not cultivo_plaga_dto:
                     return None
@@ -83,8 +96,7 @@ class CultivoPlagaService():
 
     @staticmethod
     def crear_cultivo_asociado_plaga(
-        cultivo : Cultivo,
-        recursos : Optional[list]
+        cultivo : Cultivo
     ):
         """
         Registra en la base de datos la asociación del cultivo creado con sus potenciales plagas
@@ -102,8 +114,7 @@ class CultivoPlagaService():
             logger.warn(f'No hay registros de calendarios sobre el grupo del cultivo : {grupo_cultivo_creado}')
         
         CultivoPlagaDAO.crear_relacion_cultivo_plaga(
-            nombre_cultivo = cultivo.nombre,
-            recursos = recursos if recursos else None
+            nombre_cultivo = cultivo.nombre
         )
 
     @staticmethod

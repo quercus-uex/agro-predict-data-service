@@ -18,27 +18,35 @@ class DTAgroService:
     @classmethod
     def get_dtagro_datos(
         cls,
-        eui : str,
+        euis : list[str],
         fecha_inicio : date,
         fecha_fin : date
     ):
         cliente = cls._get_cliente()
-        datos = cliente.get_dtagro_data(
-            eui = eui,
-            fecha_inicio = fecha_inicio,
-            fecha_fin = fecha_fin
-        )
+        lista_resultados = []  # Contiene una lista de diccionarios, identificador por el eui del sensor analizado
 
-        lista_datos = []
+        for eui in euis:
+            # Almaceno la estructura incial del json de datos por eui
+            json_eui = {'eui' : eui, 'resultados' : []}
 
-        for dato in datos:
-            lista_datos.append(
-                {
-                    "humedad_foliar" : dato['measurements'].get('Leaf_Moisture', 0.0),
-                    "temp_DS18B20": dato['measurements'].get('TempC_DS18B20', 0),
-                    "temperatura_hoja" : dato['measurements'].get('Leaf_Temperature', 0.0),
-                    "timestamp" : dato['time']
-                }
+            datos_por_eui = cliente.get_dtagro_data(
+                eui = eui,
+                fecha_inicio = fecha_inicio,
+                fecha_fin = fecha_fin
             )
+            lista_datos = []
+            for dato in datos_por_eui:
+                lista_datos.append(
+                    {
+                        "humedad_foliar" : dato['measurements'].get('Leaf_Moisture', 0.0),
+                        "temp_DS18B20": dato['measurements'].get('TempC_DS18B20', 0),
+                        "temperatura_hoja" : dato['measurements'].get('Leaf_Temperature', 0.0),
+                        "timestamp" : dato['time']
+                    }
+                )
+
+            # Actualizo el valor de los resultados por la lista de datos obtenido del sensor analizado
+            json_eui['resultados'] = lista_datos
+            lista_resultados.append(json_eui)
         
-        return lista_datos
+        return lista_resultados

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from ..plagas.plagas_dto import PlagaConCalendarioDTO, CalendarioDTO
 from datetime import datetime
+from typing import Optional
 
 @dataclass
 class EtapaFenologicaDTO:
@@ -45,9 +46,15 @@ class UmbralesTemperaturaDTO:
     bajo : float
 
 @dataclass
+class RecursosPlagaDTO:
+    nombre : str
+    descripcion : str
+
+@dataclass
 class CultivoPlagaDTO:
     cultivo : CultivoDTO
     plaga : list[PlagaConCalendarioDTO]
+    recursos : Optional[list[RecursosPlagaDTO]]
 
 @dataclass
 class CultivoParcelaDTO:
