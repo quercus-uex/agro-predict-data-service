@@ -67,7 +67,7 @@ class AemetService:
             # Esto será un respaldo por si no obtengo datos del broker
             #parseo = AemetParser.parse(texto = texto)
             
-            """logger.info("========== RABBITMQ COMMUNICATION ==========")
+            logger.info("========== RABBITMQ COMMUNICATION ==========")
             # Configuramos la conexion con el broker
             conn, channel, queues = RabbitMQConfig.init_config()
             print("Conexion con el broker establecida", flush = True)
@@ -94,8 +94,8 @@ class AemetService:
             print(f"JSON recibido : {json}")
             # Obtenemos datos parseados obtenidos del texto de respuesta por Aemet
             ## Esto será un respaldo por si no obtengo datos del broker
-            parseo = AemetParser.parse(texto = texto, respuesta_queue = bool(json))"""
-            parseo = AemetParser.parse(texto = texto, respuesta_queue = False)
+            parseo = AemetParser.parse(texto = texto, respuesta_queue = bool(json))
+            #parseo = AemetParser.parse(texto = texto, respuesta_queue = False)
 
             
             json_predicciones = {

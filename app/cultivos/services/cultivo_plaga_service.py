@@ -58,6 +58,7 @@ class CultivoPlagaService():
                             grupo = p['plaga'].grupo,
                             mas_info = p['plaga'].mas_info,
                             tipo = p['plaga'].tipo,
+                            condiciones_evaluables = p['plaga'].condiciones_evaluables,
                             calendario = [
                                 CalendarioDTO(
                                     plaga_id = cal.plaga_id,

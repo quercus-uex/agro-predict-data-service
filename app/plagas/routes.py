@@ -33,7 +33,8 @@ def post_plaga():
         mas_info=datos.get('mas_info'),
         tipo=datos['tipo'],
         grupo=datos['grupo'],
-        recursos=datos['recursos']
+        recursos=datos['recursos'],
+        condiciones_evaluables = datos['condiciones_evaluables'],
     )
 
     return jsonify({

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 class GrupoPlaga(Enum):
@@ -14,6 +14,12 @@ class CalendarioDTO:
     nivel_alerta : int
 
 @dataclass
+class CondicionesDTO:
+    tipo : str
+    value : any
+    operador : str
+
+@dataclass
 class PlagaDTO:
     public_id : str
     nombre : str
@@ -23,6 +29,8 @@ class PlagaDTO:
     mas_info : str
     tipo : str
     grupo : str
+    condiciones_evaluables : Optional[list[CondicionesDTO]]
+
 
 @dataclass
 class PlagaConCalendarioDTO(PlagaDTO):

@@ -9,6 +9,13 @@ from typing import Optional
 class PlagasDAO:
 
     @staticmethod
+    def _get_recursos_disponibles():
+        try:
+            return db.session.query(TipoDato.nombre).all()
+        except Exception as e:
+            raise
+
+    @staticmethod
     def _get_plagas(
         grupo : str,
         tipo : str,
@@ -82,29 +89,14 @@ class PlagasDAO:
         mas_info: Optional[str],
         tipo: str,
         grupo: str,
-        recursos: list
+        recursos: list,
+        condiciones_evaluables: list
     ):
         try:
-            query = (
-                select(Plaga)
-                .where(
-                    and_(
-                        Plaga.public_id == public_id,
-                        Plaga.nombre == nombre,
-                        Plaga.agente_causante == agente_causante,
-                        Plaga.momento_critico == momento_critico,
-                        Plaga.observaciones == observaciones,
-                        Plaga.mas_info == mas_info,
-                        Plaga.tipo == tipo,
-                        Plaga.grupo == grupo,
-                    )
-                )
-            )
-
-            resultado = db.session.execute(query).scalar_one_or_none()
-
-            if resultado:
-                return None 
+            # Compruebo si ya existe la plaga a insertae
+            existe = db.session.query(Plaga).filter_by(public_id = public_id).first()
+            if existe:
+                return None
 
             plaga = Plaga(
                 public_id=public_id,
@@ -115,6 +107,7 @@ class PlagasDAO:
                 mas_info=mas_info,
                 tipo=tipo,
                 grupo=grupo,
+                condiciones_evaluables=condiciones_evaluables,
             )
 
             db.session.add(plaga)

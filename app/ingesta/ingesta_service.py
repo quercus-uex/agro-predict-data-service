@@ -9,18 +9,43 @@ from ..models import (
     Provincia, 
     CCAA, 
     Plaga,
-    CalendarioPlaga
+    CalendarioPlaga,
+    Cultivo
 )
-
+from helpers.ApiExceptions import APIException
 from ..external_services.aemet_service import AemetService
 from ..external_services.itacyl_service import ItacylService
 from ..external_services.dtagro_service import DTAgroService
 from ..metadata.metadata_dao import MetadataDAO
+from ..cultivos.services.cultivo_plaga_service import CultivoPlagaService
 import pandas as pd
 import json
 import os
 
 class IngestionService:
+
+    @staticmethod
+    def ingesta_asociacion_cultivo_plaga(
+        grupo_plaga : str
+    ):
+        try:
+            cultivos_asociados_plaga = db.session.query(Cultivo).filter_by(
+                grupo = grupo_plaga
+            ).all()
+
+            if not cultivos_asociados_plaga:
+                raise APIException(
+                    message = "No se han encontrado cultivos asociados a la plaga registrada por la ingesta",
+                    status = 404,
+                    error = 'DATA_NOT_FOUND'
+                )
+
+            for cultivo in cultivos_asociados_plaga:
+                CultivoPlagaService.crear_cultivo_asociado_plaga(cultivo)
+
+        except Exception as e:
+            raise
+
 
     @staticmethod
     def ingesta_recursos_globales_plagas():
