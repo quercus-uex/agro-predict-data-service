@@ -41,7 +41,11 @@ class DTAgroService:
                         "humedad_foliar" : dato['measurements'].get('Leaf_Moisture', 0.0),
                         "temp_DS18B20": dato['measurements'].get('TempC_DS18B20', 0),
                         "temperatura_hoja" : dato['measurements'].get('Leaf_Temperature', 0.0),
-                        "timestamp" : dato['time']
+                        "timestamp" : dato['time'],
+                        "temperatura_suelo" : dato['measurements'].get('temp_SOIL', 0.0),
+                        "humedad_suelo" : dato['measurements'].get('water_SOIL', 0.0),
+                        "temperatura_minima" : dato['measurements'].get('Temp_Channel1', 0.0),
+                        "temperatura_maxima" : dato['measurements'].get('Temp_Channel2', 0.0)
                     }
                 )
 

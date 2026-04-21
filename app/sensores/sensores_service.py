@@ -4,6 +4,7 @@ from typing import Optional
 from datetime import date
 from helpers.ApiExceptions import APIException
 from ..external_services.dtagro_service import DTAgroService
+from ..ingesta.ingesta_service import IngestionService
 
 class SensoresService():
 
@@ -33,7 +34,11 @@ class SensoresService():
                             humedad_foliar = r.get('humedad_foliar', 0.0),
                             temperatura_DS18B20 = r.get('temperatura_DS18B20', 0),
                             temperatura_hojas = r.get('temperatura_hojas', 0.0),
-                            timestamp = r.get('timestamp')
+                            timestamp = r.get('timestamp'),
+                            temperatura_suelo = r.get('temperatura_suelo', 0.0),
+                            humedad_suelo = r.get('humedad_suelo', 0.0),
+                            temperatura_minima = r.get('temperatura_minima', 0.0),
+                            temperatura_maxima = r.get('temperatura_maxima', 0.0)
                         )
                         for r in resultados
                     ]
@@ -74,13 +79,21 @@ class SensoresService():
                 error = "Data Not Found"
             )
 
-        datos = DTAgroService.get_dtagro_datos(
-            euis = sensores_existentes,
+        # Almaceno los datos de los sensores en DB
+        IngestionService.ingesta_sensores_data(
+            euis = euis,
             fecha_inicio = fecha_inicio,
             fecha_fin = fecha_fin
         )
 
-        if not datos:
+        # Obtengo los datos de los sensores sobre DTAgro
+        datos_resultantes = []
+        for eui in euis:
+            datos = SensoresDAO.consultar_datos_sensores(eui, fecha_inicio, fecha_fin)
+            datos_resultantes.append(datos)
+
+
+        if datos_resultantes is []:
             raise APIException(
                 status = 404,
                 message = "No se han encontrado datos del sensor en DTAgro para los parámetros indicados",
@@ -88,7 +101,7 @@ class SensoresService():
             )
 
         dto_cargado = SensoresService._build_sensores_dto(
-            data = datos
+            data = datos_resultantes
         )
 
         return dto_cargado

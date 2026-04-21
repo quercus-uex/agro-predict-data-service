@@ -135,28 +135,33 @@ class IngestionService:
 
     @staticmethod
     def ingesta_sensores_data(
-        eui : str,
+        euis : list[str],
         fecha_inicio : date,
         fecha_fin : date
     ):
         try:
             # Obtengo los datos que recibe DTAgroService
             datos = DTAgroService.get_dtagro_datos(
-                eui = eui,
+                euis = euis,
                 fecha_inicio = fecha_inicio,
                 fecha_fin = fecha_fin
             )
 
             # Recorro los datos obtenidos y los inserto en la base de datos
-            for d in datos:
-                if d is not None:
-                    IngestaDAO.crear_datos_sensores(
-                        eui = eui,
-                        humedad_foliar = d['humedad_foliar'],
-                        temperatura_sensor = d['temp_DS18B20'],
-                        temperatura_hojas = d['temperatura_hoja'],
-                        timestamp = d['timestamp']
-                    )
+            for medicion in datos: # Va leyendo por cada eui
+                if medicion is not None:
+                    for resultado in medicion['resultados']:
+                        IngestaDAO.crear_datos_sensores(
+                            eui = medicion['eui'],
+                            humedad_foliar = resultado['humedad_foliar'],
+                            temperatura_sensor = resultado['temp_DS18B20'],
+                            temperatura_hojas = resultado['temperatura_hoja'],
+                            timestamp = resultado['timestamp'],
+                            temperatura_suelo = resultado['temperatura_suelo'],
+                            humedad_suelo = resultado['humedad_suelo'],
+                            temperatura_minima = resultado['temperatura_minima'],
+                            temperatura_maxima = resultado['temperatura_maxima']
+                        )
 
             # Si no ha habido ningún error, se da paso a creat todos los datos obtenidos
             db.session.commit()

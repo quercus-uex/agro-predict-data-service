@@ -196,7 +196,8 @@ class PlagasService:
         tipo: str,
         grupo: str,
         recursos: list,
-        condiciones_evaluables: Optional[list] = None
+        condiciones_evaluables: Optional[list] = None,
+        ventana_temporal: Optional[list] = None
     ):
         if not all([public_id, nombre, agente_causante, momento_critico, tipo, recursos]):
             raise APIException(
@@ -219,7 +220,8 @@ class PlagasService:
                 tipo=tipo,
                 grupo=grupo,
                 recursos=recursos,
-                condiciones_evaluables = condiciones_evaluables
+                condiciones_evaluables = condiciones_evaluables,
+                ventana_temporal = ventana_temporal,
             )
 
             if not plaga:

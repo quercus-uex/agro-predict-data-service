@@ -90,7 +90,8 @@ class PlagasDAO:
         tipo: str,
         grupo: str,
         recursos: list,
-        condiciones_evaluables: list
+        condiciones_evaluables: list,
+        ventana_temporal: list
     ):
         try:
             # Compruebo si ya existe la plaga a insertae
@@ -108,6 +109,7 @@ class PlagasDAO:
                 tipo=tipo,
                 grupo=grupo,
                 condiciones_evaluables=condiciones_evaluables,
+                ventana_temporal = ventana_temporal,
             )
 
             db.session.add(plaga)

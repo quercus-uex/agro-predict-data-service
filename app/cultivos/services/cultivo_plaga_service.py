@@ -59,6 +59,7 @@ class CultivoPlagaService():
                             mas_info = p['plaga'].mas_info,
                             tipo = p['plaga'].tipo,
                             condiciones_evaluables = p['plaga'].condiciones_evaluables,
+                            ventana_temporal = p['plaga'].ventana_temporal,
                             calendario = [
                                 CalendarioDTO(
                                     plaga_id = cal.plaga_id,
@@ -129,7 +130,6 @@ class CultivoPlagaService():
         :type nombre_cultivo: str
         """
         try:
-            print(nombres_cultivo)
             datos : list[dict] = CultivoPlagaDAO.obtener_info_cultivo_plaga(
                 nombres_cultivo = nombres_cultivo
             )

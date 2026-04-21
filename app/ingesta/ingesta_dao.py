@@ -178,7 +178,11 @@ class IngestaDAO:
         humedad_foliar : float,
         temperatura_sensor : int,
         temperatura_hojas : float,
-        timestamp : datetime
+        timestamp : datetime,
+        temperatura_suelo : float,
+        humedad_suelo : float,
+        temperatura_minima : float,
+        temperatura_maxima : float
     ):
         """
         Crea un objeto de tipo Sensor sobre los valores 
@@ -225,6 +229,10 @@ class IngestaDAO:
                 temperatura_DS18B20 = temperatura_sensor,
                 temperatura_hojas = temperatura_hojas,
                 timestamp = timestamp,
+                temperatura_suelo = temperatura_suelo,
+                humedad_suelo = humedad_suelo,
+                temperatura_minima = temperatura_minima,
+                temperatura_maxima = temperatura_maxima,
                 sensor_id = sensor.id
             )
             

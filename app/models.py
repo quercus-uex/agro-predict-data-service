@@ -190,6 +190,7 @@ class Plaga(db.Model):
     tipo = Column(String(50), nullable = False)
     grupo = Column(String(100), nullable = True)
     condiciones_evaluables = Column(JSON, nullable = False)
+    ventana_temporal = Column(JSON, nullable = True)
 
     calendarios = relationship("CalendarioPlaga", back_populates = "plaga")
     cultivos_plagas = relationship("CultivoPlaga", back_populates = "plaga")
@@ -364,10 +365,14 @@ class MedicionesSensor(db.Model):
 
     id = Column(Integer, primary_key = True, autoincrement = True)
 
-    humedad_foliar = Column(Float, nullable = False)
-    temperatura_DS18B20 = Column(Integer, nullable = False)
-    temperatura_hojas = Column(Float, nullable = False)
+    humedad_foliar = Column(Float, nullable = True)
+    temperatura_DS18B20 = Column(Integer, nullable = True)
+    temperatura_hojas = Column(Float, nullable = True)
     timestamp = Column(String(50), nullable = False)
+    temperatura_suelo = Column(Float, nullable = True)
+    humedad_suelo = Column(Float, nullable = True)
+    temperatura_minima = Column(Float, nullable = True)
+    temperatura_maxima = Column(Float, nullable = True)
     sensor_id = Column(Integer, ForeignKey("sensores.id"), nullable = False)
 
     sensor = relationship("Sensores", back_populates = 'mediciones')
