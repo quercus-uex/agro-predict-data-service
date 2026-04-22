@@ -23,27 +23,25 @@ class SensoresService():
         lista_dtos = []
         # Me llega una lista
         for d in data:
-            eui = d['eui']
-            resultados = d.get('resultados', None)
-
-            lista_dtos.append(
-                GloablSensorDTO(
-                    eui = eui,
-                    resultados = [
-                        SensoresDTO(
-                            humedad_foliar = r.get('humedad_foliar', 0.0),
-                            temperatura_DS18B20 = r.get('temperatura_DS18B20', 0),
-                            temperatura_hojas = r.get('temperatura_hojas', 0.0),
-                            timestamp = r.get('timestamp'),
-                            temperatura_suelo = r.get('temperatura_suelo', 0.0),
-                            humedad_suelo = r.get('humedad_suelo', 0.0),
-                            temperatura_minima = r.get('temperatura_minima', 0.0),
-                            temperatura_maxima = r.get('temperatura_maxima', 0.0)
-                        )
-                        for r in resultados
-                    ]
+            for sensor in d:
+                eui = sensor['id']
+                lista_dtos.append(
+                    GloablSensorDTO(
+                        eui = eui,
+                        resultados = [
+                            SensoresDTO(
+                                humedad_foliar = sensor.get('humedad_foliar', 0.0),
+                                temperatura_DS18B20 = sensor.get('temperatura_DS18B20', 0),
+                                temperatura_hojas = sensor.get('temperatura_hojas', 0.0),
+                                timestamp = sensor.get('timestamp'),
+                                temperatura_suelo = sensor.get('temperatura_suelo', 0.0),
+                                humedad_suelo = sensor.get('humedad_suelo', 0.0),
+                                temperatura_minima = sensor.get('temperatura_minima', 0.0),
+                                temperatura_maxima = sensor.get('temperatura_maxima', 0.0)
+                            )
+                        ]
+                    )
                 )
-            )
 
         return lista_dtos
 
@@ -65,12 +63,25 @@ class SensoresService():
         :type fecha_fin: date
         """
         sensores_existentes = []
+        contador_verificaciones = 0 
+        sensores_sin_datos_almacenados = []
         for eui in euis:
             existe_sensor = SensoresDAO.existe_sensor(
                 eui = eui
             )
             if existe_sensor:
                 sensores_existentes.append(eui)
+
+            existe_sensor_data = SensoresDAO.existe_sensor_data(
+                eui = eui,
+                fec_init = fecha_inicio,
+                fec_fin = fecha_fin
+            )
+
+            if existe_sensor_data:
+                contador_verificaciones += 1
+            else:
+                sensores_sin_datos_almacenados.append(eui)
 
         if sensores_existentes is []:
             raise APIException(
@@ -79,12 +90,14 @@ class SensoresService():
                 error = "Data Not Found"
             )
 
+
+        if contador_verificaciones != len(euis):
         # Almaceno los datos de los sensores en DB
-        IngestionService.ingesta_sensores_data(
-            euis = euis,
-            fecha_inicio = fecha_inicio,
-            fecha_fin = fecha_fin
-        )
+            IngestionService.ingesta_sensores_data(
+                euis = sensores_sin_datos_almacenados,
+                fecha_inicio = fecha_inicio,
+                fecha_fin = fecha_fin
+            )
 
         # Obtengo los datos de los sensores sobre DTAgro
         datos_resultantes = []
@@ -99,6 +112,9 @@ class SensoresService():
                 message = "No se han encontrado datos del sensor en DTAgro para los parámetros indicados",
                 error = "Data Not Found"
             )
+        # 'a' añade contenido al final, 'w' sobrescribe el archivo
+        with open('registro.txt', 'a') as f:                
+            print(datos_resultantes, file=f)
 
         dto_cargado = SensoresService._build_sensores_dto(
             data = datos_resultantes

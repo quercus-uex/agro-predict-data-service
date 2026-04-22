@@ -44,8 +44,8 @@ class DTAgroService:
                         "timestamp" : dato['time'],
                         "temperatura_suelo" : dato['measurements'].get('temp_SOIL', 0.0),
                         "humedad_suelo" : dato['measurements'].get('water_SOIL', 0.0),
-                        "temperatura_minima" : dato['measurements'].get('Temp_Channel1', 0.0),
-                        "temperatura_maxima" : dato['measurements'].get('Temp_Channel2', 0.0)
+                        "temperatura_minima" : dato['measurements'].get('Temp_Channel2', 0.0),
+                        "temperatura_maxima" : dato['measurements'].get('Temp_Channel1', 0.0)
                     }
                 )
 

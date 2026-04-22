@@ -13,7 +13,7 @@ class SensoresDAO():
             if not eui:
                 return False
 
-            sensor = db.session.query(Sensores.id).filter_by(
+            sensor = db.session.query(Sensores.dispositivo_id).filter_by(
                 eui = eui
             ).first()
 
@@ -21,6 +21,34 @@ class SensoresDAO():
 
         except Exception as e:
             print(f"Error comprobando la existencia del sensor por eui - {eui} : {e}")
+            return False
+        
+    @staticmethod
+    def existe_sensor_data(
+        eui : str,
+        fec_init,
+        fec_fin
+    ) -> bool:
+        try:
+            if not eui:
+                return False
+            
+            sensor_registrado = db.session.query(Sensores.id).filter(
+                Sensores.dispositivo_id == eui
+            ).first()
+
+            if not sensor_registrado:
+                return False
+
+            datos = db.session.query(MedicionesSensor).filter(
+                MedicionesSensor.sensor_id == sensor_registrado.id,
+                MedicionesSensor.timestamp.between(fec_init, fec_fin)
+            ).first()
+
+            return datos is not None
+
+        except Exception as e:
+            print(f"Error comprobando la existencia de datos del sensor por eui - {eui} : {e}")
             return False
 
     @staticmethod
@@ -32,13 +60,12 @@ class SensoresDAO():
         try:
             query = (
                 select(
-                    Sensores,
                     MedicionesSensor
                 )
-                .join(MedicionesSensor, Sensores.id == MedicionesSensor.sensor_id)
+                .join(Sensores, Sensores.id == MedicionesSensor.sensor_id)
                 .where(
                     and_(
-                        Sensores.eui == eui,
+                        Sensores.dispositivo_id == eui,
                         MedicionesSensor.timestamp.between(datetime.combine(fecha_inicio, time.min), datetime.combine(fecha_fin, time.max)) # Conversión de date a datetime
                     )
                 )
@@ -51,7 +78,6 @@ class SensoresDAO():
             
             return [
                 {
-                    **{s.key: getattr(row.Sensores, s.key) for s in inspect(row.Sensores).mapper.column_attrs},
                     **{s.key: getattr(row.MedicionesSensor, s.key) for s in inspect(row.MedicionesSensor).mapper.column_attrs}
                 }
                 for row in resultado

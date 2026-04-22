@@ -200,8 +200,8 @@ class IngestaDAO:
 
         try:
 
-            existe_sensor = db.session.query(Sensores).filter_by(
-                eui = eui
+            existe_sensor = db.session.query(Sensores.id).filter(
+                Sensores.dispositivo_id == eui
             ).first()
 
 
@@ -214,15 +214,6 @@ class IngestaDAO:
                 db.session.flush()
             else:
                 sensor = existe_sensor
-
-            # Comprobar que esa medicion a insertar no existe ya en la DB
-            existe_medicion = db.session.query(MedicionesSensor.id).filter_by(
-                timestamp = timestamp,
-                sensor_id = sensor.id
-            ).first()
-
-            if existe_medicion:
-                return
             
             mediciones = MedicionesSensor(
                 humedad_foliar = humedad_foliar,

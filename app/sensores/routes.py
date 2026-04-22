@@ -14,9 +14,11 @@ logger = logging.getLogger(__name__)
 @log('../logs/fichero_salida.json')
 def sensores():
     
-    euis = request.args.getlist('eui', [])
+    euis = request.args.getlist('eui')
     fecha_inicio = request.args.get('fecha_inicio', '')
     fecha_fin = request.args.get('fecha_fin', '')
+
+    print(euis)
 
     if not all([euis, fecha_inicio, fecha_fin]):
         raise APIException(
