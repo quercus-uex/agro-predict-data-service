@@ -36,6 +36,8 @@ def post_plaga():
         recursos=datos['recursos'],
         condiciones_evaluables = datos.get('condiciones_evaluables', None),
         ventana_temporal = datos.get('ventana_temporal', None),
+        algoritmo = datos['algoritmo'],
+        algoritmo_url = datos.get('algoritmo_url', None),
     )
 
     return jsonify({

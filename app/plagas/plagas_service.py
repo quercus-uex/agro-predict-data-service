@@ -196,6 +196,8 @@ class PlagasService:
         tipo: str,
         grupo: str,
         recursos: list,
+        algoritmo : str,
+        algoritmo_url : Optional[str] = None,
         condiciones_evaluables: Optional[list] = None,
         ventana_temporal: Optional[list] = None
     ):
@@ -222,6 +224,8 @@ class PlagasService:
                 recursos=recursos,
                 condiciones_evaluables = condiciones_evaluables,
                 ventana_temporal = ventana_temporal,
+                algoritmo = algoritmo,
+                algoritmo_url = algoritmo_url
             )
 
             if not plaga:

@@ -191,6 +191,8 @@ class Plaga(db.Model):
     grupo = Column(String(100), nullable = True)
     condiciones_evaluables = Column(JSON, nullable = False)
     ventana_temporal = Column(JSON, nullable = True)
+    algoritmo = Column(String(50), nullable = False)
+    algoritmo_url = Column(String(200), nullable = True)
 
     calendarios = relationship("CalendarioPlaga", back_populates = "plaga")
     cultivos_plagas = relationship("CultivoPlaga", back_populates = "plaga")

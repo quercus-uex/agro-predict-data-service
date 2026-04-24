@@ -90,6 +90,8 @@ class PlagasDAO:
         tipo: str,
         grupo: str,
         recursos: list,
+        algoritmo : str,
+        algoritmo_url : str,
         condiciones_evaluables: list,
         ventana_temporal: list
     ):
@@ -110,6 +112,8 @@ class PlagasDAO:
                 grupo=grupo,
                 condiciones_evaluables=condiciones_evaluables,
                 ventana_temporal = ventana_temporal,
+                algoritmo = algoritmo,
+                algoritmo_url = algoritmo_url
             )
 
             db.session.add(plaga)

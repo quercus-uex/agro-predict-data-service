@@ -40,6 +40,8 @@ class PlagaDTO:
     mas_info : str
     tipo : str
     grupo : str
+    algoritmo : str
+    algoritmo_url : Optional[str]
     condiciones_evaluables : Optional[list[CondicionesDTO]]
     ventana_temporal : Optional[list[VentanaTemporalDTO]]
 

@@ -1,4 +1,4 @@
-from sqlalchemy import select, and_, update
+from sqlalchemy import select, and_, update, text
 from app.extensions import db
 from typing import Optional
 from ...globals.row2dict_converter import row2dict_converter
@@ -23,8 +23,9 @@ class CultivoPlagaDAO:
                         Plaga,
                     )
                     .select_from(Cultivo)
-                    .join(CultivoPlaga, CultivoPlaga.cultivo_id == args.id)
+                    .join(CultivoPlaga, CultivoPlaga.cultivo_id == Cultivo.id)
                     .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
+                    .where(Cultivo.id == args.id)
                 )
                 return base_query
 
@@ -44,6 +45,7 @@ class CultivoPlagaDAO:
                 ).scalar()
 
                 if tiene_calendario:
+                    logger.info("El cultivo tiene calendario asociado")
                     query = definicion_query_base(cultivo).add_columns(CalendarioPlaga).join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
                 else:
                     logger.info(f"El cultivo {nombre_cultivo} no tiene asociado un calendario")
