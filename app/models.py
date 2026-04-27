@@ -61,7 +61,7 @@ class CultivoParcela(db.Model):
 
     id = Column(Integer, primary_key = True, autoincrement = True)
     cultivo_id = Column(Integer, ForeignKey("cultivos.id"), nullable = False)
-    parcela_id = Column(String(50), ForeignKey("parcelas.public_id"), nullable = False)
+    parcela_id = Column(Integer, ForeignKey("parcelas.id"), nullable = False)
     fecha_inicio = Column(DateTime, nullable = False)
     fecha_fin = Column(DateTime, nullable = True) # Puede que no se haya producido rotación de cultivo todavía en una parcela
 
@@ -315,8 +315,10 @@ class MedicionClimatica(db.Model):
 
 class Parcelas(db.Model):
     __tablename__ = "parcelas"
+    
+    id = Column(Integer, primary_key = True, autoincrement = True)
 
-    public_id = Column(String(50), primary_key = True, nullable = False, unique = True)
+    public_id = Column(String(50), nullable = False, unique = True)
     nombre = Column(String(100), nullable = False)
     geometria = Column(JSON, nullable = False)
 
@@ -325,9 +327,11 @@ class Parcelas(db.Model):
 
 class Dispositivos(db.Model):
     __tablename__ = "dispositivos"
+    
+    id = Column(Integer, primary_key = True, autoincrement = True)
 
     public_id = Column(String(50), nullable = False)
-    dev_eui = Column(String(50), primary_key = True, nullable = False, unique = True)
+    dev_eui = Column(String(50), nullable = False, unique = True)
     descripcion = Column(String(300), nullable = True)
     nombre = Column(String(100), nullable = True)
     creado = Column(DateTime, nullable = False)

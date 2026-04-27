@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 echo "Inicializando la base de datos..."
 python scripts/init_db.py

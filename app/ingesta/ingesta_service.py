@@ -282,92 +282,71 @@ class IngestionService:
 
     @staticmethod
     def ingest_itacyl_data(
-        cultivo : Optional[int],
-        grupo : Optional[str]
+        cultivo: Optional[int],
+        grupo: Optional[str]
     ):
         try:
-            # ITACyL no tiene un controlador del estado de ingesta de datos
-            # La información es global y estática, no cambia con el tiempo
-            # No influyen las fechas para la recopilación de datos.
             data = ItacylService.get_itacyl_datos(
-                cultivo = cultivo,
-                grupo = grupo
+                cultivo=cultivo,
+                grupo=grupo
             )
 
-            # Extraigo todas los calendarios almacenados en la db
-            # Para comprobar futuros repetidos
-            existing_calendars = set(
-                (c.cultivo_id, c.grupo, c.semana)
+            # Sets para búsqueda eficiente O(1)
+            existing_plagas_ids = {
+                p.public_id for p in db.session.query(Plaga.public_id).all()
+            }
+            existing_calendar_keys = {
+                (c.plaga_id, c.grupo, c.semana)
                 for c in db.session.query(
-                    CalendarioPlaga.cultivo_id,
+                    CalendarioPlaga.plaga_id,
                     CalendarioPlaga.grupo,
                     CalendarioPlaga.semana
                 ).all()
-            )
+            }
 
-            # Extraigo todas las plagas almacenadas en la db
-            # Para comprobar futuros repetidos
-            existing_plagas = set(
-                (p.public_id, p.nombre, p.agente_causante, p.momento_critico, p.tipo)
-                for p in db.session.query(
-                    Plaga.public_id,
-                    Plaga.nombre,
-                    Plaga.agente_causante,
-                    Plaga.momento_critico,
-                    Plaga.tipo
-                ).all()
-            )
-
-            # Itero sobre los datos recibidos
             for d in data:
-                plaga_key = (
-                    d.get('id'),
-                    d.get('nombre'),
-                    d.get('agente_causante'),
-                    d.get('momento_critico'),
-                    d.get('tipo')
-                )
+                public_id = d.get('id')
 
-                if plaga_key not in existing_plagas:
+                # Obtengo o creo la plaga
+                if public_id not in existing_plagas_ids:
                     plaga = Plaga(
-                        public_id = d.get('id'),
-                        nombre = d.get('nombre'),
-                        agente_causante = d.get('agente_causante'),
-                        momento_critico = d.get('momento_critico'),
-                        observaciones = d.get('observaciones'),
-                        mas_info = d.get('enlace'),
-                        tipo = d.get('tipo')
+                        public_id=public_id,
+                        nombre=d.get('nombre'),
+                        agente_causante=d.get('agente_causante'),
+                        momento_critico=d.get('momento_critico'),
+                        observaciones=d.get('observaciones'),
+                        mas_info=d.get('enlace'),
+                        tipo=d.get('tipo'),
+                        grupo=grupo or None,
+                        condiciones_evaluables = [],
+                        algoritmo = "por_defecto"
                     )
-
                     db.session.add(plaga)
-                    db.session.flush() # Debo de enviar los cambios a la bd antes del commit para que lo use el calendario
-                    existing_plagas.add(plaga_key) # Evito duplicados en el procesamiento de datos
+                    db.session.flush()  # Necesario para obtener plaga.id antes del commit
+                    existing_plagas_ids.add(public_id)  # Evitar duplicados en el mismo batch
+                else:
+                    plaga = db.session.query(Plaga).filter_by(public_id=public_id).first()
 
-                # Calendarios
+                # Proceso calendarios de la plaga
                 for calendario_item in d.get('calendario_de_productos', []):
                     for c in calendario_item.get('calendar', []):
-                        calendario_key = (
-                            cultivo if cultivo else "General",
-                            grupo,
-                            c.get('week')
-                        )
-                        if calendario_key not in existing_calendars:
-                            calendario = CalendarioPlaga(
-                                cultivo_id = cultivo,
-                                plaga_id = plaga.id,
-                                grupo = grupo,
-                                semana = c.get('week'),
-                                nivel_alerta = c.get('alertLevel')
-                            )
+                        calendario_key = (plaga.id, grupo, c.get('week'))
 
+                        if calendario_key not in existing_calendar_keys:
+                            calendario = CalendarioPlaga(
+                                plaga_id=plaga.id,
+                                grupo=grupo,
+                                semana=c.get('week'),
+                                nivel_alerta=c.get('alertLevel')
+                            )
                             db.session.add(calendario)
-                            existing_calendars.add(calendario)
+                            existing_calendar_keys.add(calendario_key)
 
             db.session.commit()
+
         except Exception as e:
-            print(f"Ha ocurrido un error insertando datos de plagas con sus calendarios : {e}")
-            # Para echar para atrás el flush que se hace
             db.session.rollback()
+            print(f"Error insertando datos de plagas con sus calendarios: {e}")
             return []
             
 

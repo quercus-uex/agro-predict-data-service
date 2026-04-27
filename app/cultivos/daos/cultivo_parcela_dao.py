@@ -44,7 +44,7 @@ class CultivoParcelaDAO:
             
             cultivo_parcela = CultivoParcela(
                 cultivo_id = cultivo.id,
-                parcela_id = parcela.public_id,
+                parcela_id = parcela.id,
                 fecha_inicio = datetime.today(),
                 fecha_fin = None
             )
@@ -73,7 +73,6 @@ class CultivoParcelaDAO:
         Returns
             Optional[list[CultivoParcela]]
         """
-
         try:
             query = (
                 select(
@@ -82,7 +81,7 @@ class CultivoParcelaDAO:
                     CultivoParcela.fecha_inicio,
                     CultivoParcela.fecha_fin
                 ).join(CultivoParcela, CultivoParcela.cultivo_id == Cultivo.id)
-                .join(Parcelas, CultivoParcela.parcela_id == Parcelas.public_id)
+                .join(Parcelas, CultivoParcela.parcela_id == Parcelas.id)
             )
 
             if nombre_cultivo:
@@ -93,7 +92,7 @@ class CultivoParcelaDAO:
                 query = query.where(CultivoParcela.cultivo_id == cultivo.id)
 
             if parcela_id:
-                query = query.where(CultivoParcela.parcela_id == parcela_id)
+                query = query.where(Parcelas.public_id == parcela_id)
             
             return db.session.execute(query).all()
         
