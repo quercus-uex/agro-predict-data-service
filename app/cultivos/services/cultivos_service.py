@@ -231,7 +231,7 @@ class CultivoService:
             raise ValueError("Error, se debe especificar el nombre de la variedad")
         
         # Proceso de cálculo de sus horas de frío actuales
-        CultivoService.calcular_horas_frio_actuales(
+        estaciones_calculo = CultivoService.calcular_horas_frio_actuales(
             nombre_variedad = nombre_variedad
         )
 
@@ -246,7 +246,8 @@ class CultivoService:
             "nombre_variedad" : nombre_variedad,
             "horas_frio_max" : datos.get('horas_frio_max'),
             "horas_frio_min" : datos.get('horas_frio_min'),
-            "horas_frio_actuales" : datos.get('horas_frio_actuales')
+            "horas_frio_actuales" : datos.get('horas_frio_actuales'),
+            "estaciones_utilizadas" : estaciones_calculo
         }
     
     @staticmethod
@@ -549,7 +550,7 @@ class CultivoService:
         if codigo_modelo == "UF":
 
             horas_frio_acumuladas = CultivoService.calcular_unidades_frio(
-                temperaturas = temperaturas
+                temperaturas = temperaturas[0]
             )
         
         elif codigo_modelo == "CM7":
@@ -582,3 +583,5 @@ class CultivoService:
                 nombre_variedad = nombre_variedad,
                 horas_frio = horas_frio_acumuladas
             )
+
+        return temperaturas[1]

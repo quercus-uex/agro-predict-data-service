@@ -1,7 +1,7 @@
 from ..models import MedicionClimatica, Estacion, Provincia
 from typing import List, Optional
 from datetime import datetime
-from sqlalchemy import and_, select, func, or_
+from sqlalchemy import and_, select, func, or_, distinct
 from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
 
@@ -125,7 +125,8 @@ class HistoricDAO:
         :type fec_fin: datetime
         """
         try:
-            query = (
+            # Query que me devuelve las temperaturas en una fecha dada
+            query_temperatura = (
                 select(
                     MedicionClimatica.temperatura
                 )
@@ -134,12 +135,27 @@ class HistoricDAO:
                 )
             )
 
-            result = db.session.execute(query).all()
+            # Query que me devuelve metadatos distinct de las estaciones utilizadas
 
-            if not result:
+            query_metadatos = (
+                select(
+                    Estacion.codigo,
+                    Estacion.nombre
+                )
+                .distinct()
+                .join(MedicionClimatica, MedicionClimatica.estacion_id == Estacion.id)
+                .where(
+                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
+                )
+            )
+
+            result_temperaturas = db.session.execute(query_temperatura).all()
+            result_estaciones = db.session.execute(query_metadatos).all()
+
+            if not result_estaciones and not result_estaciones:
                 return None
             
-            return row2dict_converter(result)
+            return row2dict_converter(result_temperaturas), row2dict_converter(result_estaciones)
         
         except Exception as e:
             print(f"Error consultando temperaturas sobre las fechas {fec_init} - {fec_fin} : {e}")
