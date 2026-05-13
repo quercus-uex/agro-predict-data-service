@@ -1,7 +1,11 @@
 from typing import Optional
 from flask import current_app
-from datetime import date
+from datetime import date, timedelta
 from dateutil.parser import isoparse as parse_iso
+import logging
+import time
+
+logger = logging.getLogger(__name__)
 
 class SiARService:
 
@@ -22,34 +26,61 @@ class SiARService:
         provincia_id: Optional[str],
         tipo,
         fec_init: date,
-        fec_fin: date
+        fec_fin: date,
+        on_datos_obtenidos: Optional[callable] = None
     ): 
         cliente = cls._get_cliente()
-        datos = cliente.get_historical_data_by_date(
-            estacion_id = estacion_id,
-            provincia_id = provincia_id,
-            tipo = tipo,
-            fec_init = fec_init,
-            fec_fin = fec_fin
-        )
-        
-
         lista_datos = []
-        for dato in datos:
-            lista_datos.append(
-                {
-                    "timestamp" : parse_iso(dato.get('Fecha')),
-                    "temperatura" : dato.get("TempMedia"),
-                    "humedad" : dato.get("HumedadMedia"),
-                    "vel_viento" : dato.get("VelViento"),
-                    "precipitacion" : dato.get("Precipitacion"),
-                    "etp_mon" : dato.get("EtPMon"),
-                    "pep_mon" : dato.get("PePMon"),
-                    "estacion" : dato.get("Estacion"),
-                    "radiacion" : dato.get("Radiacion"),
-                }
-            )
+        # Necesito un cursor para almacenar datos faltantes para la peticiónm cada día del rango
+        cursor = fec_init
 
+        while cursor <= fec_fin:
+            datos = cliente.get_historical_data_by_date(
+                estacion_id = estacion_id,
+                provincia_id = provincia_id,
+                tipo = tipo,
+                fec_init = cursor,
+                fec_fin = cursor
+            )
+            print(f"DEBUG: siar {datos}")
+            # Si devuelve un success = false quiere decir que se puede haber rebosado el límite
+            contador_timeouts = 0 # Si supera un umbral, el límite es diario y no por minuto
+            if not isinstance(datos, list):
+                if datos.get('success') == False:
+                    print('entro')
+                    logger.warning('Limite por minuto de datos alcanzado')
+                    time.sleep(62)
+                    contador_timeouts +=1
+                    if contador_timeouts >= 2:
+                        return {
+                            'success' : False,
+                            'meesage': 'Has consultado el límite máximo de datos diario por SiAR, intentalo de nuevo mañana'
+                        }       
+            else:
+                datos_dia = []
+                for dato in (datos or []):
+                    datos_dia.append(
+                        {
+                            "timestamp" : parse_iso(dato.get('Fecha')),
+                            "temperatura" : dato.get("TempMedia"),
+                            "humedad" : dato.get("HumedadMedia"),
+                            "vel_viento" : dato.get("VelViento"),
+                            "precipitacion" : dato.get("Precipitacion"),
+                            "etp_mon" : dato.get("EtPMon"),
+                            "pep_mon" : dato.get("PePMon"),
+                            "estacion" : dato.get("Estacion"),
+                            "radiacion" : dato.get("Radiacion"),
+                        }
+                    )
+                
+                if datos_dia:
+                    lista_datos.extend(datos_dia)
+                    if on_datos_obtenidos:
+                        on_datos_obtenidos(datos_dia)
+
+                cursor += timedelta(days=1)
+
+        print(lista_datos)
         return lista_datos
 
     @classmethod

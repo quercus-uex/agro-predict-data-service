@@ -1,7 +1,7 @@
 from ..models import MedicionClimatica, Estacion, Provincia
 from typing import List, Optional
-from datetime import datetime
-from sqlalchemy import and_, select, func, or_, distinct
+from datetime import datetime, time
+from sqlalchemy import and_, select, func, or_, distinct, text
 from app.extensions import db
 from ..globals.row2dict_converter import row2dict_converter
 
@@ -183,7 +183,8 @@ class HistoricDAO:
         try:
             query = (
                 select(
-                    MedicionClimatica.id
+                    MedicionClimatica.id,
+                    MedicionClimatica.timestamp
                 )
                 .where(
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
@@ -219,12 +220,15 @@ class HistoricDAO:
                     func.sum(MedicionClimatica.precipitacion).label('precipitacion'),
                     func.avg(MedicionClimatica.radiacion).label('radiacion'),
                     Estacion.codigo.label('estacion'),
+                    Provincia.codigo.label('provincia'),
                     MedicionClimatica.timestamp.label('fecha')
                 )
+                .select_from(MedicionClimatica)
+                .join(Estacion, MedicionClimatica.estacion_id == Estacion.id)
+                .join(Provincia, MedicionClimatica.provincia_id == Provincia.id)
                 .where(
                     MedicionClimatica.timestamp.between(fec_init, fec_fin)
                 )
-                .join(Estacion, MedicionClimatica.estacion)
                 .group_by(
                     "hora"
                 )
@@ -263,8 +267,8 @@ class HistoricDAO:
         fec_fin: datetime
     ):
         """Obtiene los datos computados necesarios para cargar un DTO diario"""
+        print(f"Fec ini  {fec_init} fec fin {fec_fin}")
         try:
-            print(f"{fec_init} - {fec_fin}")
             diccionario_datos = {}
 
             fecha_truncada = func.date(MedicionClimatica.timestamp).label("fecha")
@@ -295,14 +299,16 @@ class HistoricDAO:
                 select(
                     *columnas
                 )
+                .select_from(MedicionClimatica)
+                .join(Estacion, MedicionClimatica.estacion_id == Estacion.id)
+                .outerjoin(Provincia, MedicionClimatica.provincia_id == Provincia.id)
                 .where(
-                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
+                    MedicionClimatica.timestamp.between(
+                        datetime.combine(fec_init.date() if isinstance(fec_init, datetime) else fec_init, time.min),
+                        datetime.combine(fec_fin.date() if isinstance(fec_fin, datetime) else fec_fin, time.max)
+                    )
                 )
-                .join(Estacion, MedicionClimatica.estacion)
             )
-
-            if provincia_id:
-                queryGlobal = queryGlobal.join(Provincia, MedicionClimatica.provincia)
 
             if estacion_id:
                 queryGlobal = queryGlobal.where(MedicionClimatica.estacion_id == estacion_id)
@@ -321,8 +327,9 @@ class HistoricDAO:
                 .group_by(fecha_truncada)
                 .order_by(fecha_truncada)
             )
-
+            print(queryGlobal.compile(dialect=db.engine.dialect, compile_kwargs={"literal_binds": True}))
             valores_globales = db.session.execute(queryGlobal).all()
+            print(valores_globales)
             valores_diarios = row2dict_converter(valores_globales)
 
             diccionario_datos["valores_diarios"] = valores_diarios

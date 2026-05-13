@@ -38,10 +38,10 @@ class SiARClient(BaseClient):
             
             if response.status_code == 404:
                 logger.error(f"No se han encontrado datos para la los parámetros indicados")
-                return None
+                return response.json()
             if response.status_code >= 500:
                 logger.error("Ha ocurrido un problema con el servicio al que te comunicas")
-                return None
+                return response.json()
 
             response.raise_for_status()
             

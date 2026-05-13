@@ -31,9 +31,12 @@ class HistoricService:
                     estacion = v.get("estacion"),
                     radiacion = v.get("radiacion"),
                     estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
+                    provincia = v.get("provincia"),
                     fecha = v.get("fecha")
                 )
             )
+            for historico in historicos:
+                print(historico)
 
         return historicos
     
@@ -238,20 +241,65 @@ class HistoricService:
                         )
                     case _:
                         raise NotImplementedError(f"Tipo {tipo} no implementado")
+            else:
+                return ProcesoIngestaDTO(
+                    status = 'FAILED',
+                    datos_solicitados = f"{tipo.value} - {estado.get('zona')} - Fecha: {estado.get('day')}-{estado.get('month')}-{estado.get('year')}",
+                    started_at = estado.get('started_at'),
+                    finished_at = datetime.now() 
+                )
+                    
         # Si existen datos ya registrados, incluimos su estado a ready    
-        elif HistoricDAO.define_computing_general(estacion_id,provincia_id,fec_init,fec_fin) is not None or []:
-            IngestaDAO.create(
-                status = 'READY',
-                dataset = 'historico',
-                tipo = tipo.value,
-                year = fec_init.year,
-                month = fec_init.month,
-                day = fec_init.day,
-                zona = "provincia" if provincia_id else "estacion",
-                started_at = datetime.now(),
-                finished_at = datetime.now(),
-                error_message = None
-            )
+        computing_general = HistoricDAO.define_computing_general(estacion_id,provincia_id,fec_init,fec_fin)
+        if computing_general is not None or []:
+            # Comparo si existe gap entre la fecha del primer valor almacenado y la fecha inicial de la petición
+            if fec_init != computing_general.timestamp:
+                IngestaDAO.create(
+                    status = 'PENDING',
+                    dataset = 'historico',
+                    tipo = tipo.value,
+                    year = fec_init.year,
+                    month = fec_init.month,
+                    day = fec_init.day,
+                    zona = "provincia" if provincia_id else "estacion",
+                    started_at = datetime.now(),
+                    finished_at = None,
+                    error_message = None
+                )
+
+                # Hilo independiente al main que inserta datos
+                lanzar_ingesta_background(
+                    app,
+                    IngestionService.ingest_siar_data,
+                    codigo_estacion,
+                    provincia_id,
+                    tipo,
+                    fec_init,
+                    computing_general.timestamp.date()
+                )
+
+                # Se informa al usuario mientras el hilo va insertando datos
+                return ProcesoIngestaDTO(
+                    status = 'PENDING',
+                    datos_solicitados = tipo.value,
+                    started_at = datetime.now(),
+                    finished_at = None
+                )
+            else:
+                IngestaDAO.create(
+                    status = 'READY',
+                    dataset = 'historico',
+                    tipo = tipo.value,
+                    year = fec_init.year,
+                    month = fec_init.month,
+                    day = fec_init.day,
+                    zona = "provincia" if provincia_id else "estacion",
+                    started_at = datetime.now(),
+                    finished_at = datetime.now(),
+                    error_message = None
+                )
+
+            print(f"DEBUG: datos generales: {computing_general.timestamp.date()}")
 
             # Retornamos READY para que el usuario sepa que tiene que refrescar
             return ProcesoIngestaDTO(
@@ -305,6 +353,7 @@ class HistoricService:
         if provincia_id:
             return ProvinciaHistDTO(type = tipo, datos = datos)
         elif estacion_id:
+            print(datos)
             return EstacionHistDTO(type = tipo, datos = datos)
         else:
             raise ValueError("Se debe proporcionar el valor de estacion_id o de provincia_id, no pueden estar los dos a null")

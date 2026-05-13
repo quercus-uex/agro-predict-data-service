@@ -351,6 +351,68 @@ class IngestionService:
             
 
     @staticmethod
+    def callback_db_siar(
+        data, 
+        codigo_provincia_id, 
+        fec_init, 
+        tipo
+    ):
+        for d in data:
+            d_timestamp = d["timestamp"]
+            anio, semana, _ = d_timestamp.isocalendar()
+            
+            # Mapeo de estacion y provincia 
+            estacion : Estacion = Estacion.query.filter_by(codigo = d["estacion"]).first()
+            provincia : Provincia = Provincia.query.filter_by(codigo = codigo_provincia_id).first()
+
+            medicion = MedicionClimatica(
+                estacion_id = estacion.id if estacion else None,
+                provincia_id = provincia.id if provincia else None,
+                semana = semana,
+                mes = d_timestamp.month,
+                anio = anio,
+                timestamp = d_timestamp,
+                humedad = d.get('humedad'),
+                temperatura = d.get('temperatura'),
+                vel_viento = d.get('vel_viento'),
+                precipitacion = d.get('precipitacion'),
+                radiacion = d.get('radiacion'),
+                etp_mon = d.get('etp_mon'),
+                pep_mon = d.get('pep_mon')
+            )
+            # Comprobamos si existe ya el dato a insertar, para evitar duplicados
+            existe = db.session.query(MedicionClimatica.id).filter_by(
+                temperatura=medicion.temperatura,
+                humedad=medicion.humedad,
+                vel_viento=medicion.vel_viento,
+                precipitacion=medicion.precipitacion,
+                etp_mon=medicion.etp_mon,
+                pep_mon=medicion.pep_mon,
+                radiacion = medicion.radiacion
+            ).first()
+
+            if existe:
+                continue
+
+            # Almacenamos los datos en la base de datos
+            db.session.add(medicion)
+
+        IngestaDAO.actualizar_estado(
+            status = 'READY',
+            dataset = 'historico',
+            tipo = tipo.value,
+            year = fec_init.year,
+            month = fec_init.month,
+            day = fec_init.day,
+            finish_time = datetime.now(),
+            zona = "provincia" if codigo_provincia_id else "estacion",
+            error = None
+        )
+        # Cuando estén todos los datos formados correctamente, se confirma la inserción de los datos
+        db.session.commit()
+
+
+    @staticmethod
     def ingest_siar_data(
         codigo_estacion_id : Optional[str],
         codigo_provincia_id : Optional[str],
@@ -379,62 +441,15 @@ class IngestionService:
                 provincia_id = codigo_provincia_id,
                 tipo = tipo,
                 fec_init = fec_init,
-                fec_fin = fec_fin  
-            )     
+                fec_fin = fec_fin,
+                on_datos_obtenidos = lambda datos_dia : IngestionService.callback_db_siar(datos_dia, 
+                                                                                          codigo_provincia_id, 
+                                                                                          fec_init, 
+                                                                                          tipo
+                                                        )  
+            )   
 
-            for d in data:
-                d_timestamp = d["timestamp"]
-                anio, semana, _ = d_timestamp.isocalendar()
-                
-                # Mapeo de estacion y provincia 
-                estacion : Estacion = Estacion.query.filter_by(codigo=d["estacion"]).first()
-                provincia : Provincia = Provincia.query.filter_by(codigo=codigo_provincia_id).first()
-
-                medicion = MedicionClimatica(
-                    estacion_id = estacion.id if estacion else None,
-                    provincia_id = provincia.id if provincia else None,
-                    semana = semana,
-                    mes = d_timestamp.month,
-                    anio = anio,
-                    timestamp = d_timestamp,
-                    humedad = d.get('humedad'),
-                    temperatura = d.get('temperatura'),
-                    vel_viento = d.get('vel_viento'),
-                    precipitacion = d.get('precipitacion'),
-                    radiacion = d.get('radiacion'),
-                    etp_mon = d.get('etp_mon'),
-                    pep_mon = d.get('pep_mon')
-                )
-                # Comprobamos si existe ya el dato a insertar, para evitar duplicados
-                existe = db.session.query(MedicionClimatica.id).filter_by(
-                    temperatura=medicion.temperatura,
-                    humedad=medicion.humedad,
-                    vel_viento=medicion.vel_viento,
-                    precipitacion=medicion.precipitacion,
-                    etp_mon=medicion.etp_mon,
-                    pep_mon=medicion.pep_mon,
-                    radiacion = medicion.radiacion
-                ).first()
-
-                if existe:
-                    continue
-
-                # Almacenamos los datos en la base de datos
-                db.session.add(medicion)
-
-            IngestaDAO.actualizar_estado(
-                status = 'READY',
-                dataset = 'historico',
-                tipo = tipo.value,
-                year = fec_init.year,
-                month = fec_init.month,
-                day = fec_init.day,
-                finish_time = datetime.now(),
-                zona = "provincia" if codigo_provincia_id else "estacion",
-                error = None
-            )
-            # Cuando estén todos los datos formados correctamente, se confirma la inserción de los datos
-            db.session.commit()
+            
         
         except Exception as e:
             IngestaDAO.actualizar_estado(
