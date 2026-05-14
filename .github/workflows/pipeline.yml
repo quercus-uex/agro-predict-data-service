@@ -53,7 +53,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{vars.DOCKER_USERNAME}}/data-service
+          images: ${{vars.DOCKER_USERNAME}}/agro-predict
           tags: |
             type=sha,prefix=,format=short
             type=raw,value=latest,enable=${{github.ref == 'refs/heads/main'}}
