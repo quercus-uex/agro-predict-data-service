@@ -63,7 +63,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [HORA, DIA, SEMANA, MES]
+            enum: [HORA, DIA, SEMANA]
             default: "DIA"
         - name: startDate
           in: query
@@ -81,6 +81,13 @@ paths:
             type: string
             format: date
             example: "2026-01-04"
+        - name: download
+          in: query
+          description: Si se habilita, se descarga en el equipo un fichero json con la Respuesta
+          required: false
+          schema:
+            type: boolean
+            example: false
       responses:
         '200':
           description: Datos históricos provinciales obtenidos correctamente
@@ -164,6 +171,13 @@ paths:
             type: string
             format: date
             example: "2025-01-01"
+        - name: download
+          in: query
+          description: Si se habilita, se descarga en el equipo un fichero json con la Respuesta
+          required: false
+          schema:
+            type: boolean
+            example: false
 
       responses:
         '200':
@@ -715,6 +729,61 @@ paths:
                 error: "Invalid Parameters"
         "404":
           description: Datos de plagas asociadas a cultivos no encuntrados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "No se han encontrado datos de plagas asociados al cultivo indicado"
+                status: 404
+                error: "Data Not Found"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:  
+                message: "Provider Error"
+                status: 500
+                error: "Error del proveedor de datos"
+  /crop/parcel:
+    get:
+      tags:
+        - Cultivos
+      summary: Obtener asociación cultivo-parcela
+      parameters:
+        - name: parcela
+          in: query
+          required: false
+          schema:
+            type: string
+
+        - name: cultivo
+          in: query
+          required: false
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: Cultivos con parcela asociada obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrediccionPlagasCalculadas'
+        "400":
+          description: Parámetro cultivos o parcela no indicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                message: "Se debe indicar el nombre de el/los cultivos o la parcela a analizar"
+                status: 400
+                error: "Invalid Parameters"
+        "404":
+          description: Datos de parcelas asociadas a cultivos no encuntrados
           content:
             application/json:
               schema:
