@@ -41,7 +41,7 @@ jobs:
   docker:
 
     needs: [build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push'
 
     runs-on: ubuntu-latest
     steps:
@@ -88,6 +88,7 @@ jobs:
           client-payload: |
             {
               "service": "data-service",
-              "tag": "${{steps.meta.outputs.version}}"
+              "tag": "${{ steps.meta.outputs.version }}"
+              "branch": "${{ github.ref_name }}"
             }
 
