@@ -13,3 +13,4 @@ prueba-regex.txt
 *.crt
 *.key
 *.txt
+.secrets
