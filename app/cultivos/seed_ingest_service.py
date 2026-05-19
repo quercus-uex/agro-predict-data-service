@@ -57,7 +57,7 @@ class SeedIngestService:
                     )
 
                     if not c:
-                        raise Exception(f'No se ha podido insertar la variedad {v}')
+                        raise Exception(f'No se ha podido insertar el cultivo {c}')
                     
                     variedades = cultivo['variedades']
                     for variedad in variedades:
