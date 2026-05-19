@@ -31,6 +31,22 @@ class HistoricDAO:
         except Exception as e:
             print(f"Error obteniendo el id de la provincia: {e}")
             return []
+        
+    @staticmethod
+    def obtener_id_estacion_por_str(
+        estacion_code : str
+    ):
+        """
+            Obtiene el identificador de la estacion por el código asociado por parámetros
+            :param estacion_code: Código de la estacion
+            :type estacion_code: str
+        """
+        try:
+            return db.session.query(Estacion.id).where(Estacion.codigo == estacion_code).scalar()
+        
+        except Exception as e:
+            print(f"Error obteniendo el identificador de la provincia: {e}")
+            return []
     
     @staticmethod
     def define_horas_pico(
@@ -210,6 +226,7 @@ class HistoricDAO:
         fec_fin: datetime
     ):
         """Obtiene los datos computados necesarios para cargar un DTO horario"""
+        diccionario_datos = {}
         try:
             query = (
                 select(
@@ -225,9 +242,12 @@ class HistoricDAO:
                 )
                 .select_from(MedicionClimatica)
                 .join(Estacion, MedicionClimatica.estacion_id == Estacion.id)
-                .join(Provincia, MedicionClimatica.provincia_id == Provincia.id)
+                .outerjoin(Provincia, MedicionClimatica.provincia_id == Provincia.id)
                 .where(
-                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
+                    MedicionClimatica.timestamp.between(
+                        datetime.combine(fec_init.date() if isinstance(fec_init, datetime) else fec_init, time.min),
+                        datetime.combine(fec_fin.date() if isinstance(fec_fin, datetime) else fec_fin, time.max)
+                    )
                 )
                 .group_by(
                     "hora"
@@ -246,14 +266,17 @@ class HistoricDAO:
                     fec_init = fec_init,
                     fec_fin = fec_fin
                 )
-
             valores_globales = db.session.execute(query).all()
             valores_horarios = row2dict_converter(valores_globales)
 
-            return {
-                "valores_diarios": valores_horarios,
-                "estaciones_usadas":  estaciones_usadas if estacion_id is None else None
-            }
+            diccionario_datos["valores_horarios"] = valores_horarios
+            diccionario_datos["horas_pico"] = HistoricDAO.define_horas_pico(
+                    estacion_id,
+                    provincia_id,
+                    fec_init,
+                    fec_fin
+                )
+            return diccionario_datos
         
         except Exception as e:
             print(f"Error computando los datos horarios: {e}")
@@ -320,16 +343,13 @@ class HistoricDAO:
                     fec_fin = fec_fin
                 )
                 diccionario_datos["estaciones_usadas"] = estaciones_usadas
-                print(diccionario_datos["estaciones_usadas"])
             
             queryGlobal = (
                 queryGlobal
                 .group_by(fecha_truncada)
                 .order_by(fecha_truncada)
             )
-            print(queryGlobal.compile(dialect=db.engine.dialect, compile_kwargs={"literal_binds": True}))
             valores_globales = db.session.execute(queryGlobal).all()
-            print(valores_globales)
             valores_diarios = row2dict_converter(valores_globales)
 
             diccionario_datos["valores_diarios"] = valores_diarios
@@ -376,11 +396,14 @@ class HistoricDAO:
                     Estacion.codigo.label('estacion') if estacion_id is not None else None,
                     Provincia.codigo.label('provincia')
                 )
-                .where(
-                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
-                )
                 .join(Estacion, MedicionClimatica.estacion)
-                .join(Provincia, MedicionClimatica.provincia)
+                .outerjoin(Provincia, MedicionClimatica.provincia)
+                .where(
+                    MedicionClimatica.timestamp.between(
+                        datetime.combine(fec_init.date() if isinstance(fec_init, datetime) else fec_init, time.min),
+                        datetime.combine(fec_fin.date() if isinstance(fec_fin, datetime) else fec_fin, time.max)
+                    )
+                )
             )
 
             if estacion_id:
@@ -403,7 +426,7 @@ class HistoricDAO:
             valores_globales = db.session.execute(queryGlobal).all()
             valores_semanales = row2dict_converter(valores_globales)
 
-            diccionario_datos["valores_diarios"] = valores_semanales
+            diccionario_datos["valores_semanales"] = valores_semanales
             diccionario_datos["horas_pico"] = HistoricDAO.define_horas_pico(
                     estacion_id,
                     provincia_id,

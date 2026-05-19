@@ -3,14 +3,13 @@ from .sensores_dto import SensoresDTO, GloablSensorDTO
 from typing import Optional
 from datetime import date
 from helpers.ApiExceptions import APIException
-from ..external_services.dtagro_service import DTAgroService
 from ..ingesta.ingesta_service import IngestionService
 
 class SensoresService():
 
     @staticmethod
     def _build_sensores_dto(
-        data
+        data : list
     ) -> Optional[list[SensoresDTO]]:
         """
         Carga los DTO definidos de Sensores en base a los datos que llegan de 
@@ -83,7 +82,7 @@ class SensoresService():
             else:
                 sensores_sin_datos_almacenados.append(eui)
 
-        if sensores_existentes is []:
+        if sensores_existentes == []:
             raise APIException(
                 status = 404,
                 message = f"No existe ningún sensor registrado con eui '{eui}'",
@@ -106,7 +105,7 @@ class SensoresService():
             datos_resultantes.append(datos)
 
 
-        if datos_resultantes is []:
+        if datos_resultantes == []:
             raise APIException(
                 status = 404,
                 message = "No se han encontrado datos del sensor en DTAgro para los parámetros indicados",

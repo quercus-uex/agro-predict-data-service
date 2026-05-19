@@ -54,8 +54,10 @@ class SeedIngestService:
                         nombre_cientifico = cultivo['nombre_cientifico'],
                         descripcion = cultivo['descripcion'],
                         grupo = cultivo['grupo'],
-                        sensor = cultivo['sensor']
                     )
+
+                    if not c:
+                        raise Exception(f'No se ha podido insertar la variedad {v}')
                     
                     variedades = cultivo['variedades']
                     for variedad in variedades:
@@ -86,9 +88,6 @@ class SeedIngestService:
 
                             if not u:
                                 raise Exception(f"No se ha podido insertar el umbral {u}")
-
-                    #if not c:
-                    #    raise Exception(f'No se ha podido insertar el cultivo {c}')
                 
 
 

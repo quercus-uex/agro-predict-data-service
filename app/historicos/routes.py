@@ -8,10 +8,11 @@ from app.historicos.historico_service import HistoricService
 from flask import jsonify
 from ..globals.dto2dict import dataclass_to_json
 from .historico_dto import TipoHistorico
+from ..ingesta.ingesta_dto import ProcesoIngestaDTO
+from .tasks import procesar_cola_pendientes_task
 from app.globals.convertidor_tipo import convertir_tipo
 from datetime import datetime
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,6 @@ def historicalProvincial():
             fec_init = start_date,
             fec_fin = end_date,
             provincia_id = province_code,
-            estacion_id = None,
             codigo_estacion = None
         ) 
 
@@ -59,6 +59,18 @@ def historicalProvincial():
             )
         
         response = dataclass_to_json(datos)
+
+        if isinstance(datos, ProcesoIngestaDTO):
+            if datos.status == "FAILED":
+
+                error_to_status = {
+                    'BAD_REQUEST': 400,
+                    'FORBIDDEN': 403,
+                }
+        
+                status_code = error_to_status.get(datos.error, 500)
+                return response, status_code
+        
         # Añado configuración en el header para que se descargue la respuesta en un fichero local sobre el usuario
         download = request.args.get('download', 'false').lower() == 'true'
         if download:
@@ -106,7 +118,6 @@ def historicalEstacion():
             fec_init = start_date,
             fec_fin = end_date,
             provincia_id = None,
-            estacion_id = estacion_code,
             codigo_estacion = estacion_code_raw,
         )
 
@@ -116,9 +127,19 @@ def historicalEstacion():
                 status = 404,
                 error = 'Data Not Found'
             )
-        
-        
+
         response = dataclass_to_json(datos)
+        if isinstance(datos, ProcesoIngestaDTO):
+            if datos.status == "FAILED":
+
+                error_to_status = {
+                    'BAD_REQUEST': 400,
+                    'FORBIDDEN': 403,
+                }
+        
+                status_code = error_to_status.get(datos.error, 500)
+                return response, status_code
+            
         # Añado configuración en el header para que se descargue la respuesta en un fichero local sobre el usuario
         download = request.args.get('download', 'false').lower() == 'true'
         if download:
@@ -137,3 +158,10 @@ def historicalEstacion():
             }
         ), 502
 
+@historic_bp.route('/climate/historical/reintentar-pendientes', methods=['POST'])
+def reintentar_pendientes():
+    task = procesar_cola_pendientes_task.delay()
+    return jsonify({
+        'task_id' : task.id,
+        'status' : 'PROCESSING'
+    }), 202

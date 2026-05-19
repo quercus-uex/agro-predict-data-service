@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from ..plagas.plagas_dto import PlagaConCalendarioDTO, CalendarioDTO
+from ..plagas.plagas_dto import PlagaConCalendarioDTO
 from datetime import datetime
 from typing import Optional
 

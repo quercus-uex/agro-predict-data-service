@@ -4,9 +4,6 @@ from ...models import(
     ModelosHoraFrio, 
     Variedades, 
     UmbralesTemperatura,
-    Plaga,
-    CultivoPlaga,
-    CalendarioPlaga,
     Sensores,
 )
 from sqlalchemy import select, and_, update
@@ -14,6 +11,7 @@ from app.extensions import db
 from typing import Optional
 from ...globals.row2dict_converter import row2dict_converter
 from sqlalchemy.inspection import inspect
+from helpers.bd_exceptions import *
 import logging
 
 logger = logging.getLogger(__name__)
@@ -59,22 +57,10 @@ class CultivosDAO:
         Registra un nuevo cultivo en la base de datos
         """
         try:
-            #resultado_sensor = None
-            """if sensor:
-                encontrar_id_sensor = (
-                    select(
-                        Sensores.id
-                    )
-                    .where(
-                        sensor == Sensores.eui
-                    )
-                )
+            cultivo_existe = db.session.query(Cultivo).filter_by(nombre = Cultivo.nombre).first()
+            if cultivo_existe:
+                raise DataAlreadyExists(f"Ya se encuentran registros del cultivo {nombre}")
 
-                resultado_sensor = db.session.execute(encontrar_id_sensor).first()
-
-            if resultado_sensor is None:
-                return None
-            """
             cultivo = Cultivo(
                 nombre = nombre,
                 nombre_cientifico = nombre_cientifico,
@@ -139,7 +125,7 @@ class CultivosDAO:
             cultivo_id = db.session.execute(query_cultivo).scalar_one_or_none()
 
             if not cultivo_id:
-                raise ValueError("El cultivo no existe")
+                raise DataNotStoreged("El cultivo no existe")
 
             # Modelo asociado a la variedad
             query_modelo = (
@@ -154,7 +140,7 @@ class CultivosDAO:
             modelo_id = db.session.execute(query_modelo).scalar_one_or_none()
 
             if not modelo_id:
-                raise ValueError("El modelo no existe")
+                raise DataNotStoreged("El modelo no existe")
 
             # Creación de la variedad
             variedad = Variedades(
@@ -195,7 +181,7 @@ class CultivosDAO:
             variedad_id = db.session.execute(query_variedad).scalar_one_or_none()
 
             if not variedad_id:
-                raise ValueError("La variedad no existe")
+                raise DataNotStoreged("La variedad no existe")
 
             # Etapa fenologica asociada al umbral
             query_etapa = (
@@ -210,7 +196,7 @@ class CultivosDAO:
             etapa_id = db.session.execute(query_etapa).scalar_one_or_none()
 
             if not etapa_id:
-                raise ValueError("La etapa fenologica no existe")
+                raise DataNotStoreged("La etapa fenologica no existe")
 
             # Crear un nuevo umbral de temperaturas
             umbral = UmbralesTemperatura(
@@ -284,7 +270,7 @@ class CultivosDAO:
         nombre_variedad : str,
         horas_min_frio : int,
         horas_max_frio : int
-    ):
+    ) -> None:
         try: 
             query = (
                 update(
@@ -303,7 +289,7 @@ class CultivosDAO:
 
             if resultado_actualizado.rowcount == 0:
                 print(f"No se ha actualizado el rango de horas_frio en la variedad : {nombre_variedad}")
-                return 
+                return []
             
             db.session.commit()
         
@@ -316,7 +302,7 @@ class CultivosDAO:
     def actualizar_horas_frio_actuales(
         nombre_variedad : str,
         horas_frio : int
-    ):
+    ) -> None:
         try:
             query = (
                 update(
@@ -334,7 +320,7 @@ class CultivosDAO:
 
             if actualizacion.rowcount == 0:
                 print(f"No se han podido actualizar las horas_frio en la variedad : {nombre_variedad}")
-                return
+                return []
             
             db.session.commit()
 
@@ -560,6 +546,7 @@ class CultivosDAO:
                 }
                 for e in resultado
             ]
+            return etapas
 
         except Exception as e:
             print(f"Error obteniendo las etapas fenologicas disponibles : {e}")

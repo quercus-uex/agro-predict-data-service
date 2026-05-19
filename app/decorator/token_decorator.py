@@ -1,13 +1,8 @@
 from functools import wraps
 from flask import request, jsonify, current_app
 from jose import jwt
-from jose.backends import RSAKey
-from jose.utils import base64url_decode
-import sys
-import os
 from helpers.ApiExceptions import APIException
 import requests
-import json
 
 # Cache para JWKS
 _jwks_cache = None
@@ -70,7 +65,6 @@ def token_required(roles: list = None):
         def decorated(*args, **kwargs):
             auth_header = request.headers.get('Authorization')
             current_app.logger.info("Verificando token...")
-            print
             if not auth_header:
                 raise APIException(
                     message="Token requerido para completar la acción",

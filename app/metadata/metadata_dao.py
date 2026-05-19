@@ -1,4 +1,4 @@
-from sqlalchemy import select, and_, inspect, delete, update
+from sqlalchemy import inspect
 from ..models import Parcelas, Sensores, Dispositivos
 from shapely.geometry import Point, Polygon
 from shapely.validation import make_valid
@@ -195,8 +195,8 @@ class MetadataDAO:
         try:
             # 1. Obtención de los sensores cuya parcela_id se encuentra a NULL
             sensores_sin_parcela = db.session.query(Sensores).filter(
-                Sensores.parcela_id == None,
-                Sensores.geometria != None
+                Sensores.parcela_id is None,
+                Sensores.geometria is not None
             ).all()
 
             if not sensores_sin_parcela:

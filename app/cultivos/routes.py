@@ -5,7 +5,7 @@ from helpers.ApiExceptions import APIException
 from .services.cultivos_service import CultivoService
 from .services.cultivo_plaga_service import CultivoPlagaService
 from .services.cultivo_parcela_service import CultivoParcelaService
-from flask import jsonify, request
+from flask import jsonify, request, Response
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 @log('../logs/fichero_salida.json')
 def umbrales_variedad(
     nombre : str
-):
+) -> Response:
     if not nombre:
         raise APIException(
             message = 'Parametros de entrada incompletos',
@@ -69,7 +69,7 @@ def umbrales_variedad(
 @log('../logs/fichero_salida.json')
 def horas_frio_variedad(
     nombre : str
-):
+) -> Response:
     if not nombre:
         raise APIException(
             message = 'Parametros de entrada incompletos',
@@ -204,7 +204,7 @@ def obtener_cultivos_asociados_a_parcelas():
 @log('../logs/fichero_salida.json')
 def obtener_crear_campos(
     campo : str
-):
+) -> Response:
     RECURSOS = {
         "variedades": {
             "get_method": "obtener_variedades_disponibles",

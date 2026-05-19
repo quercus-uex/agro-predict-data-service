@@ -167,7 +167,7 @@ class PlagasService:
 
             # Contruyo los DTOs de los calendarios
             calendarios = []
-            if plagas_con_calendario is not []:
+            if plagas_con_calendario != []:
                 calendarios = PlagasService._build_calendar(plagas_con_calendario)
 
             # Construyo los DTOs de las plagas

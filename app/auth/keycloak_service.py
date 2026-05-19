@@ -1,5 +1,4 @@
 import requests
-from flask import current_app
 from typing import Optional, Dict
 import logging
 

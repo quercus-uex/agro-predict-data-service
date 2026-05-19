@@ -31,6 +31,19 @@ class Config:
     SERVICE_NAME = "Servicio de datos"
     SERVICE_VERSION = "1.0.0"
 
+    # CELERY
+    CELERY = {
+        "broker_url"    : os.getenv("RABBITMQ_CONNECTION"),
+        "result_backend": os.getenv("REDIS_URL"),
+        "worker_pool"   : "solo" if os.name == "nt" else "prefork",
+        "redis_backend_use_ssl": False,
+        "redis_username": "default",
+        "redis_password": os.getenv("REDIS_PASS"),  # ← extrae el password aparte
+        "redis_host"    : os.getenv("REDIS_HOST", "localhost"),
+        "redis_port"    : int(os.getenv("REDIS_PORT", 6379)),
+        "redis_db"      : int(os.getenv("REDIS_DB", 0)),
+    }
+
     # Metadata
     def obtener_ruta_contenido_metadatos(tipo : str):
         return Path(__file__).parent.parent / f"app/data/{tipo}"

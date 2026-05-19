@@ -124,7 +124,7 @@ class CultivoPlagaService():
     @staticmethod
     def obtener_cultivo_plaga_asociado(
         nombres_cultivo : list[str]
-    ):
+    ) -> Optional[list[CultivoPlagaDTO]]:
         """
         Obtiene información del cultivo con información de posibles plagas y enfermedades asociada
 

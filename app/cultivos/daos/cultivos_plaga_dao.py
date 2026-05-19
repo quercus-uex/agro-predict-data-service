@@ -1,8 +1,5 @@
-from sqlalchemy import select, and_, update, text
+from sqlalchemy import select, and_
 from app.extensions import db
-from typing import Optional
-from ...globals.row2dict_converter import row2dict_converter
-from sqlalchemy.inspection import inspect
 from ...models import Cultivo, CalendarioPlaga, CultivoPlaga, Plaga, PlagaTipoDato, TipoDato
 import logging
 

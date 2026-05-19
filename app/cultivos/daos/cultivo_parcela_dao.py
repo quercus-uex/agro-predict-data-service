@@ -36,7 +36,7 @@ class CultivoParcelaDAO:
             existe_asociacion = db.session.query(CultivoParcela).filter(
                 CultivoParcela.cultivo_id == cultivo.id,
                 CultivoParcela.parcela_id == parcela.public_id,
-                CultivoParcela.fecha_fin == None
+                CultivoParcela.fecha_fin is None
             ).first()
 
             if existe_asociacion:

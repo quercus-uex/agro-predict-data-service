@@ -10,7 +10,6 @@ from sqlalchemy import (
     Index, 
     Date, 
     Text, 
-    Boolean, 
     UniqueConstraint,
     JSON
 )

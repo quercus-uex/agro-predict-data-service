@@ -7,8 +7,6 @@ from ..external_communication.rabbitmq_config import RabbitMQConfig
 from ..external_communication.rabbitmq_receive import RabbitMQConsumer
 from ..globals.normalizar_json import normalizar_json
 import logging
-import json as json_module
-import ast
 
 logger = logging.getLogger(__name__)
 

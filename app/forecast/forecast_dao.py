@@ -112,7 +112,7 @@ class ForecastDAO:
             return None      
 
     @staticmethod
-    def _get_localidades():
+    def _get_localidades() -> list[dict] | None:
         try:
             query = (
                 select(
@@ -133,14 +133,10 @@ class ForecastDAO:
 
             result = db.session.execute(query)
 
-            if result is None:
-                return
+            if not result:
+                return []
             
-            result_final = []
-            for r in result:
-                r_to_dict = row2dict_converter(r)
-                result_final.append(r_to_dict)
-            return result_final
+            return [row2dict_converter(r) for r in result]
 
         except Exception as e:
             print(f"Algo ha ido mal obteniendo todas las localidades almacenadas en la DB : {e}")

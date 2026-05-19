@@ -1,379 +1,321 @@
 from sqlalchemy import and_, select, inspect, update, delete
 from app.extensions import db
 from ..models import (
-    IngestaStatus, 
-    Localidades, 
-    CCAA, 
-    Predicciones, 
-    Provincia, 
-    LocalidadesClimaticas, 
+    IngestaStatus,
+    Localidades,
+    CCAA,
+    Predicciones,
+    Provincia,
+    LocalidadesClimaticas,
     Sensores,
     MedicionesSensor,
     TipoDato
 )
 from datetime import datetime
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class IngestaDAO:
+
+    # -------------------------------------------------------------------------
+    # Helper privado
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _filtro_ingesta(dataset: str, tipo: str, year: int, month: int, day: int, zona: str):
+        """
+        Devuelve la cláusula AND compartida por obtener_estado, actualizar_estado y delete_estado.
+        Centraliza el filtro para evitar repetición y posibles inconsistencias.
+        """
+        return and_(
+            IngestaStatus.dataset == dataset,
+            IngestaStatus.tipo    == tipo,
+            IngestaStatus.year    == year,
+            IngestaStatus.month   == month,
+            IngestaStatus.day     == day,
+            IngestaStatus.zona    == zona,
+        )
+
+    # -------------------------------------------------------------------------
+    # CRUD de IngestaStatus
+    # -------------------------------------------------------------------------
+
     @staticmethod
     def obtener_estado(
-        dataset : str,
-        tipo : str,
-        year : int,
-        month : int,
-        day : int,
-        zona : str
+        dataset: str,
+        tipo: str,
+        year: int,
+        month: int,
+        day: int,
+        zona: str,
+        error: Optional[str]
     ):
         try:
             query = (
-                select(
-                    IngestaStatus
-                )
-                .where(
-                    and_(
-                        IngestaStatus.dataset == dataset,
-                        IngestaStatus.tipo == tipo,
-                        IngestaStatus.year == year,
-                        IngestaStatus.month == month,
-                        IngestaStatus.day == day,
-                        IngestaStatus.zona == zona
-                    )
-                )
+                select(IngestaStatus)
+                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona))
             )
 
-            result = db.session.execute(query).scalar_one_or_none()
+            if error:
+                query = query.where(IngestaStatus.error_message == error)
 
+            result = db.session.execute(query).scalar_one_or_none()
             if not result:
                 return None
 
-            status = {
-                s.key : getattr(result, s.key)
+            return {
+                s.key: getattr(result, s.key)
                 for s in inspect(result).mapper.column_attrs
             }
-
-            return status
-        
         except Exception as e:
-            print(f"Error leyendo datos de estados de ingesta: {e}")
+            logger.error(f"Error leyendo estado de ingesta: {e}")
             return None
-    
+
     @staticmethod
     def create(
-        status : str,
-        dataset : str,
-        tipo : str,
-        year : int,
-        month : int,
-        day : int,
-        zona : str,
-        started_at : datetime,
-        finished_at : Optional[datetime],
-        error_message : Optional[str]
+        status: str,
+        dataset: str,
+        tipo: str,
+        year: int,
+        month: int,
+        day: int,
+        zona: str,
+        started_at: datetime,
+        finished_at: Optional[datetime],
+        error_message: Optional[str]
     ):
         try:
             ingesta = IngestaStatus(
-                dataset = dataset,
-                tipo = tipo,
-                year = year,
-                month = month,
-                day = day,
-                status = status,
-                zona = zona,
-                started_at = started_at,
-                finished_at = finished_at if finished_at else None,
-                error_message = error_message if error_message else None
+                dataset      = dataset,
+                tipo         = tipo,
+                year         = year,
+                month        = month,
+                day          = day,
+                status       = status,
+                zona         = zona,
+                started_at   = started_at,
+                finished_at  = finished_at,
+                error_message = error_message
             )
-
             db.session.add(ingesta)
             db.session.commit()
-
         except Exception as e:
-            print(f"Error creando un nuevo estado de ingesta : {e}")
+            logger.error(f"Error creando estado de ingesta: {e}")
             db.session.rollback()
-            return None
-        
+
     @staticmethod
     def actualizar_estado(
-        status : str,
-        dataset : str,
-        tipo : str,
-        year : int,
-        month : int,
-        day : int,
-        zona : str,
-        finish_time : Optional[datetime],
-        error : Optional[str]
+        status: str,
+        dataset: str,
+        tipo: str,
+        year: int,
+        month: int,
+        day: int,
+        zona: str,
+        finish_time: Optional[datetime],
+        error: Optional[str]
     ):
         try:
             query = (
-                update(
-                    IngestaStatus
-                )
-                .where(
-                    and_(
-                        IngestaStatus.dataset == dataset,
-                        IngestaStatus.tipo == tipo,
-                        IngestaStatus.year == year,
-                        IngestaStatus.month == month,
-                        IngestaStatus.day == day,
-                        IngestaStatus.zona == zona
-                    )
-                )
+                update(IngestaStatus)
+                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona))
                 .values(
-                    status = status,
-                    error_message = error if error else None,
-                    finished_at = finish_time if finish_time else None
+                    status        = status,
+                    error_message = error,
+                    finished_at   = finish_time
                 )
             )
-
             result = db.session.execute(query)
 
             if result.rowcount == 0:
-                print("No se actualizó ninguna fila (no encontrada)")
+                logger.warning("actualizar_estado: no se encontró ninguna fila para actualizar")
 
             db.session.commit()
-            
         except Exception as e:
-            print(f"Algo fue mal actualizando el estado de ingesta: {e}")
+            logger.error(f"Error actualizando estado de ingesta: {e}")
             db.session.rollback()
-            return None
-        
+
     @staticmethod
     def delete_estado(
-        status : str,
-        dataset : str,
-        tipo : str,
-        year : int,
-        month : int,
-        day : int,
-        zona : str,
-        error : Optional[str]
+        dataset: str,
+        tipo: str,
+        year: int,
+        month: int,
+        day: int,
+        zona: str
     ):
         try:
             query = (
-                delete(
-                    IngestaStatus
-                )
-                .where(
-                    and_(
-                        IngestaStatus.dataset == dataset,
-                        IngestaStatus.tipo == tipo,
-                        IngestaStatus.year == year,
-                        IngestaStatus.month == month,
-                        IngestaStatus.day == day,
-                        IngestaStatus.zona == zona
-                    )
-                )
+                delete(IngestaStatus)
+                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona))
             )
-
             db.session.execute(query)
+            db.session.commit()
         except Exception as e:
-            print(f"Algo fue mal eliminando el estado de ingesta: {e}")
+            logger.error(f"Error eliminando estado de ingesta: {e}")
             db.session.rollback()
-            return None
-    
+
+    # -------------------------------------------------------------------------
+    # Inserción de datos de dominio
+    # -------------------------------------------------------------------------
+
     @staticmethod
     def crear_datos_sensores(
-        eui : str,
-        humedad_foliar : float,
-        temperatura_sensor : int,
-        temperatura_hojas : float,
-        timestamp : datetime,
-        temperatura_suelo : float,
-        humedad_suelo : float,
-        temperatura_minima : float,
-        temperatura_maxima : float
+        eui: str,
+        humedad_foliar: float,
+        temperatura_sensor: int,
+        temperatura_hojas: float,
+        timestamp: datetime,
+        temperatura_suelo: float,
+        humedad_suelo: float,
+        temperatura_minima: float,
+        temperatura_maxima: float
     ):
         """
-        Crea un objeto de tipo Sensor sobre los valores 
-        pasados por parámetro y lo inserta en la base de datos.
+        Inserta una medición de sensor, creando el sensor si no existe.
 
         :param eui: Identificador público del sensor
-        :type eui: str
         :param humedad_foliar: Agua presente en la superficie de la hoja
-        :type humedad_foliar: float
-        :param temperatura_sensor: Temperatura que lee el sensor DS18B20
-        :type temperatura_sensor: int,
+        :param temperatura_sensor: Temperatura leída por el sensor DS18B20
         :param temperatura_hojas: Temperatura registrada por la hoja
-        :type temperatura_hojas: float 
         """
-
         try:
-
             existe_sensor = db.session.query(Sensores.id).filter(
                 Sensores.dispositivo_id == eui
             ).first()
 
-
             if not existe_sensor:
-                sensor = Sensores(
-                    eui = eui
-                )
-                # Lo incluyo antes del commit en la db para poder crear sus mediciones asociadas
+                sensor = Sensores(eui=eui)
                 db.session.add(sensor)
                 db.session.flush()
             else:
                 sensor = existe_sensor
-            
-            mediciones = MedicionesSensor(
-                humedad_foliar = humedad_foliar,
+
+            medicion = MedicionesSensor(
+                humedad_foliar      = humedad_foliar,
                 temperatura_DS18B20 = temperatura_sensor,
-                temperatura_hojas = temperatura_hojas,
-                timestamp = timestamp,
-                temperatura_suelo = temperatura_suelo,
-                humedad_suelo = humedad_suelo,
-                temperatura_minima = temperatura_minima,
-                temperatura_maxima = temperatura_maxima,
-                sensor_id = sensor.id
+                temperatura_hojas   = temperatura_hojas,
+                timestamp           = timestamp,
+                temperatura_suelo   = temperatura_suelo,
+                humedad_suelo       = humedad_suelo,
+                temperatura_minima  = temperatura_minima,
+                temperatura_maxima  = temperatura_maxima,
+                sensor_id           = sensor.id
             )
-            
-            # Inserto la medicion
-            db.session.add(mediciones)
-            
-        
+            db.session.add(medicion)
         except Exception as e:
-            print(f"Ha ocurrido un error intentando crear un nuevo dato de sensor : {e}")
+            logger.error(f"Error creando dato de sensor: {e}")
             db.session.rollback()
 
     @staticmethod
-    def crear_predicciones(
-        codigo_zona : Optional[str],
-        data
-    ):
+    def crear_predicciones(codigo_zona: Optional[str], data) -> Predicciones:
+        """
+        Crea una Prediccion si no existe ya para esa zona/fecha/tipo.
+
+        :param codigo_zona: Código de la zona sobre la que se hace la consulta
+        :param data: Datos obtenidos de la IA
+        """
         try:
-            """
-            Crea un objeto de tipo Prediccion sobre los valores pasados y 
-            lo inserta en la base de datos si no existe
-            
-            :param codigo_zona: Código de la zona sobre la que se hace la consulta
-            :type codigo_zona: Optional[str]
-            :param data: Datos obtenidos de la IA
-            """
-            ccaa : CCAA = CCAA.query.filter_by(codigo=codigo_zona).first()
-            provincia : Provincia = Provincia.query.filter_by(codigo=codigo_zona).first()
-            # Solo vamos a obtener un datos porque solo se realiza la peticion sobre un factor
-            predicciones = Predicciones(
-                ccaa_id = ccaa.id if ccaa else None,
+            ccaa     = CCAA.query.filter_by(codigo=codigo_zona).first()
+            provincia = Provincia.query.filter_by(codigo=codigo_zona).first()
+
+            prediccion = Predicciones(
+                ccaa_id     = ccaa.id if ccaa else None,
                 provincia_id = provincia.id if provincia else None,
                 **data
             )
 
             existe = Predicciones.query.filter_by(
-                tipo_prediccion = predicciones.tipo_prediccion,
-                tipo_zona = predicciones.tipo_zona,
-                codigo_zona = predicciones.codigo_zona,
-                fecha_prediccion = predicciones.fecha_prediccion
+                tipo_prediccion  = prediccion.tipo_prediccion,
+                tipo_zona        = prediccion.tipo_zona,
+                codigo_zona      = prediccion.codigo_zona,
+                fecha_prediccion = prediccion.fecha_prediccion
             ).first()
 
             if existe:
                 return existe
-            
-            #[✔]Tiene que ser los datos que reciba del broker
-            db.session.add(predicciones)
-            db.session.flush()
-            return predicciones
 
+            db.session.add(prediccion)
+            db.session.flush()
+            return prediccion
         except Exception as e:
-            print(f"Algo fue mal insertando predicciones a la BD : {e}")
+            logger.error(f"Error insertando prediccion: {e}")
             db.session.rollback()
 
     @staticmethod
     def crear_localidades_climaticas(
-        prediccion_id : int,
-        loc : str,
-        temp_max : int,
-        temp_min : int
-    ) : 
+        prediccion_id: int,
+        loc: str,
+        temp_max: int,
+        temp_min: int
+    ):
         """
-        Crea un objeto de tipo Localidad y lo inserta en la BD si no existe
-        
-        :param prediccion_id: Clave foránea que hace referencia a la prediccion
-        :type prediccion_id: int
-        :param loc: Nombre de la localidad a insertar
-        :type loc: str
-        :param temp_max: Temperatura maxima registrada por la localidad a insertar
-        :type temp_max: int
-        :param temp_min: Temperatura minima registrada por la localidad a insertar
-        :type temp_min: int
+        Crea una LocalidadClimatica si no existe ya para esa prediccion.
+
+        :param prediccion_id: FK de la prediccion asociada
+        :param loc: Nombre de la localidad
+        :param temp_max: Temperatura máxima
+        :param temp_min: Temperatura mínima
         """
         try:
-            print(f"localidad : {loc}")
-            # Obtener la referencia a la localidad
             query = (
-                select(
-                    Localidades.id
-                )
-                .where(
-                    Localidades.nombre_normalizado == loc.lower().replace(" ", "_") # Por si acaso
-                )
+                select(Localidades.id)
+                .where(Localidades.nombre_normalizado == loc.lower().replace(" ", "_"))
             )
-
             localidad = db.session.execute(query).first()
 
             localidad_climatica = LocalidadesClimaticas(
-                prediccion_id = prediccion_id,
-                localidad_id = localidad[0],
-                nombre = loc,
+                prediccion_id    = prediccion_id,
+                localidad_id     = localidad[0],
+                nombre           = loc,
                 temperatura_maxima = temp_max,
                 temperatura_minima = temp_min
             )
 
             existe = db.session.query(LocalidadesClimaticas.id).filter_by(
-                nombre = localidad_climatica.nombre,
+                nombre        = localidad_climatica.nombre,
                 prediccion_id = prediccion_id
             ).first()
 
             if existe:
-                print(f"Localidad : {localidad} ya existe")
                 return existe
-            
-            db.session.add(localidad_climatica)
 
+            db.session.add(localidad_climatica)
         except Exception as e:
-            print(f"Algo fue mal insertando localidades_climaticas a la BD: {e}")
+            logger.error(f"Error insertando localidad climatica: {e}")
             db.session.rollback()
 
     @staticmethod
     def crear_localidades(
-        nombre : str,
-        nombre_normalizado : str,
-        altitud : int,
-        longitud : float,
-        latitud : float,
-        provincia : str
+        nombre: str,
+        nombre_normalizado: str,
+        altitud: int,
+        longitud: float,
+        latitud: float,
+        provincia: str
     ):
         try:
-            # Obtengo la provincia relacionada con la localidad a insertar
-            query = (
-                select (
-                    Provincia.id
-                )
-                .where(
-                    Provincia.codigo == provincia
-                )
-            )
-
-            provincia : Provincia = db.session.execute(query).fetchone()
+            query = select(Provincia.id).where(Provincia.codigo == provincia)
+            prov  = db.session.execute(query).fetchone()
 
             localidad = Localidades(
-                nombre = nombre,
+                nombre             = nombre,
                 nombre_normalizado = nombre_normalizado,
-                altitud = altitud,
-                latitud = latitud,
-                longitud = longitud,
-                provincia_id = provincia.id
+                altitud            = altitud,
+                latitud            = latitud,
+                longitud           = longitud,
+                provincia_id       = prov.id
             )
-
             db.session.add(localidad)
-        
         except Exception as e:
-            print(f"Algo ha salido mal insertando una nueva localidad en el sistema : {e}")
+            logger.error(f"Error insertando localidad: {e}")
             db.session.rollback()
 
     @staticmethod
-    def crear_tipos_datos(
-        datos
-    ):
+    def crear_tipos_datos(datos):
         try:
             for d in datos:
                 existe = db.session.query(TipoDato).filter(
@@ -382,13 +324,11 @@ class IngestaDAO:
 
                 if existe:
                     continue
-                
-                tipo_dato = TipoDato(
-                    nombre = d['nombre'],
+
+                db.session.add(TipoDato(
+                    nombre     = d['nombre'],
                     descripcion = d.get('descripcion')
-                )
-                db.session.add(tipo_dato)
-        
+                ))
         except Exception as e:
-            print(f"Algo ha salido mal insertando nuevos tipos de datos en el sistema : {e}")
+            logger.error(f"Error insertando tipos de datos: {e}")
             db.session.rollback()

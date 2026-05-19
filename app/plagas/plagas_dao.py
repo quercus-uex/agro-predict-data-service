@@ -1,8 +1,6 @@
 from ..models import Plaga, CalendarioPlaga, PlagaTipoDato, TipoDato
-from helpers.ApiExceptions import APIException
 from sqlalchemy import select, and_
 from app.extensions import db
-from ..globals.row2dict_converter import row2dict_converter
 from sqlalchemy.inspection import inspect
 from typing import Optional
 

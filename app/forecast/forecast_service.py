@@ -205,7 +205,12 @@ class ForecastService:
         provincia_id : Optional[str],
         tipo_prediccion : TipoPrediccion,
         tipo_zona : TipoZona
-    ) :
+    ) -> (
+        ProcesoIngestaDTO
+        | CccaaActualFuturoDTO
+        | ProvinciaActualFuturoDTO
+        | NacionActualFuturoDTO
+    ):
         # Descomentar solo si se quieren actualizar las localidades que hay en la base de datos
         #IngestionService.ingest_localidad_data()
         
@@ -215,22 +220,23 @@ class ForecastService:
         
         #-------------- DESCOMENTAR CUANDO FUNCIONE AEMET
         # Obtengo la fecha de hoy, que es la fecha en la que se consultan los datos
-        #hoy = date.today() if tipo_prediccion.value == "actual" else date.today() - timedelta(days = 1)
+        hoy = date.today() if tipo_prediccion.value == "actual" else date.today() - timedelta(days = 1)
 
-        fecha_valida_str = "27-04-2026"
-        fecha_valida_date = datetime.strptime(fecha_valida_str, "%d-%m-%Y").date()
+        #fecha_valida_str = "27-04-2026"
+        #fecha_valida_date = datetime.strptime(fecha_valida_str, "%d-%m-%Y").date()
         
         # Obtenemos el estado de ingesta buscado
         estado : IngestaStatus = IngestaDAO.obtener_estado(
             dataset = "actual_futuro",
             tipo = tipo_prediccion.value,
-            #year = hoy.year,
-            #month = hoy.month,
-            #day = hoy.day,
-            year = fecha_valida_date.year,
-            month = fecha_valida_date.month,
-            day = fecha_valida_date.day,
-            zona = tipo_zona.value
+            year = hoy.year,
+            month = hoy.month,
+            day = hoy.day,
+            #year = fecha_valida_date.year,
+            #month = fecha_valida_date.month,
+            #day = fecha_valida_date.day,
+            zona = tipo_zona.value,
+            error = None
         )
 
         if estado:
@@ -241,7 +247,8 @@ class ForecastService:
                     status = estado['status'],
                     datos_solicitados = tipo_prediccion.value,
                     started_at = datetime.now(),
-                    finished_at = None
+                    finished_at = None,
+                    error = None
                 )
             # Los datos ya se encuentran en la BD
             elif estado['status'] == 'READY':
@@ -251,8 +258,8 @@ class ForecastService:
                     provincia_id = provincia_id,
                     tipo_zona = tipo_zona.value,
                     tipo_prediccion = tipo_prediccion.value,
-                    #fecha_prediccion = hoy
-                    fecha_prediccion = fecha_valida_date
+                    fecha_prediccion = hoy
+                    #fecha_prediccion = fecha_valida_date
                 )
 
                 if ccaa_id:
@@ -278,25 +285,36 @@ class ForecastService:
                         type_zone = tipo_zona,
                         datos = items
                     )
+            else:
+                return ProcesoIngestaDTO(
+                    status            = estado.get('status'),
+                    datos_solicitados = (
+                        f"{tipo_prediccion.value} - {estado.get('zona')} "
+                        f"- Fecha: {estado.get('day')}-{estado.get('month')}-{estado.get('year')}"
+                    ),
+                    started_at  = estado.get('started_at'),
+                    finished_at = datetime.now(),
+                    error       = estado.get('error_message')
+                )
                 
         elif ForecastDAO._get_predicciones(
                 tipo_prediccion = tipo_prediccion.value, 
                 tipo_zona = tipo_zona.value, 
                 zona_id = ccaa_id if ccaa_id else provincia_id,
-                #fecha_prediccion = hoy
-                fecha_prediccion = fecha_valida_date
+                fecha_prediccion = hoy
+                #fecha_prediccion = fecha_valida_date
             ) is not None:
 
             IngestaDAO.create(
                 status = 'READY',
                 dataset = 'actual_futuro',
                 tipo = tipo_prediccion.value,
-                #year = hoy.year,
-                #month = hoy.month,
-                #day = hoy.day,
-                year = fecha_valida_date.year,
-                month = fecha_valida_date.month,
-                day = fecha_valida_date.day,
+                year = hoy.year,
+                month = hoy.month,
+                day = hoy.day,
+                #year = fecha_valida_date.year,
+                #month = fecha_valida_date.month,
+                #day = fecha_valida_date.day,
                 zona = tipo_zona.value,
                 started_at = datetime.now(),
                 finished_at = datetime.now(),
@@ -308,7 +326,8 @@ class ForecastService:
                 status = 'READY',
                 datos_solicitados = tipo_prediccion.value,
                 started_at = datetime.now(),
-                finished_at = datetime.now()
+                finished_at = datetime.now(),
+                error = None
             )
         # Si no se ha comenzado con el proceso de incluir datos nuevos solicitados en la BD se comienza
         else:
@@ -316,12 +335,12 @@ class ForecastService:
                 status = 'PENDING',
                 dataset = 'actual_futuro',
                 tipo = tipo_prediccion.value,
-                #year = hoy.year,
-                #month = hoy.month,
-                #day = hoy.day,
-                year = fecha_valida_date.year,
-                month = fecha_valida_date.month,
-                day = fecha_valida_date.day,
+                year = hoy.year,
+                month = hoy.month,
+                day = hoy.day,
+                #year = fecha_valida_date.year,
+                #month = fecha_valida_date.month,
+                #day = fecha_valida_date.day,
                 zona = tipo_zona.value,
                 started_at = datetime.now(),
                 finished_at = None,
@@ -334,8 +353,8 @@ class ForecastService:
                 tipo_zona,
                 tipo_prediccion,
                 ccaa_id if ccaa_id else provincia_id,
-                #hoy
-                fecha_valida_date
+                hoy
+                #fecha_valida_date
             )
 
             # Se informa al usuario mientras el hilo va insertando datos
@@ -343,5 +362,6 @@ class ForecastService:
                 status = 'PENDING',
                 datos_solicitados = tipo_prediccion.value,
                 started_at = datetime.now(),
-                finished_at = None
+                finished_at = None,
+                error = None
             )

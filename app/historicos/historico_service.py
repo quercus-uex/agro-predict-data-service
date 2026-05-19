@@ -8,352 +8,294 @@ from ..ingesta.ingesta_service import IngestionService
 from ..ingesta.ingesta_thread import lanzar_ingesta_background
 import threading
 import calendar
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Mapa tipo → (método DAO, builder de DTO, clave de valores en el dict)
+_TIPO_CONFIG: dict[TipoHistorico, tuple] = {
+    TipoHistorico.HORA:   (HistoricDAO.define_computing_data_hora,   "_build_historico_hora",   "valores_horarios"),
+    TipoHistorico.DIA:    (HistoricDAO.define_computing_data_dia,    "_build_historico_dia",    "valores_diarios"),
+    TipoHistorico.SEMANA: (HistoricDAO.define_computing_data_semana, "_build_historico_semana", "valores_semanales"),
+}
+
 
 class HistoricService:
 
-    @staticmethod
-    def _build_historico_hora(
-        data,
-        estacion_id
-    ):
-        """Construye DTOs diarios usando los datos del DAO"""
-        historicos = []
-        valores = data.get("valores_diarios")
+    # -------------------------------------------------------------------------
+    # Helpers privados de DTO
+    # -------------------------------------------------------------------------
 
-        for v in valores:
-            historicos.append(
-                HistHorasDTO(
-                    horaMin = v.get("hora"),
-                    tempMedia = v.get("temp_media"),
-                    humedadMedia = v.get("humedad_media"),
-                    velViento = v.get("vel_viento"),
-                    precipitacion = v.get("precipitacion"),
-                    estacion = v.get("estacion"),
-                    radiacion = v.get("radiacion"),
-                    estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
-                    provincia = v.get("provincia"),
-                    fecha = v.get("fecha")
-                )
+    @staticmethod
+    def _horas_pico(horas_pico: dict, key: str):
+        """Devuelve el valor de horas_pico solo si existe, evitando el patrón 'x if x else None'."""
+        return horas_pico.get(key) or None
+
+    @staticmethod
+    def _estaciones_usadas(data: dict, estacion_id) -> list | None:
+        """Devuelve las estaciones usadas solo cuando la consulta es a nivel provincial."""
+        return data.get("estaciones_usadas") if estacion_id is None else None
+
+    # -------------------------------------------------------------------------
+    # Builders de DTO
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _build_historico_hora(data: dict, estacion_id) -> list:
+        """Construye DTOs horarios."""
+        return [
+            HistHorasDTO(
+                horaMin      = v.get("hora"),
+                tempMedia    = v.get("temp_media"),
+                humedadMedia = v.get("humedad_media"),
+                velViento    = v.get("vel_viento"),
+                precipitacion = v.get("precipitacion"),
+                estacion     = v.get("estacion"),
+                radiacion    = v.get("radiacion"),
+                estaciones   = HistoricService._estaciones_usadas(data, estacion_id),
+                provincia    = v.get("provincia"),
+                fecha        = v.get("fecha")
             )
-            for historico in historicos:
-                print(historico)
+            for v in data.get("valores_horarios", [])
+        ]
 
-        return historicos
-    
     @staticmethod
-    def _build_historico_dia(
-        data,
-        estacion_id
-    ):
-        """Constuye una lista de DTO por datos agrupados de timestamp diario"""
-        historicos = []
-        valores = data.get("valores_diarios")
-        horas_pico = data.get("horas_pico")
-        for v in valores:
-            dto_kwargs = {
-                "tempMedia": v.get("temp_media"),
-                "tempMax": v.get("temp_max"),
-                "horMinTempMax": horas_pico.get("hora_temp_max") if horas_pico.get("hora_temp_max") else None,
-                "tempMin": v.get("temp_min"),
-                "horMinTempMin": horas_pico.get("hora_temp_min") if horas_pico.get("hora_temp_min") else None,
-                "humedadMedia": v.get("humedad_media"),
-                "humedadMax": v.get("humedad_max"),
-                "horMinHumMax": horas_pico.get("hora_humedad_max") if horas_pico.get("hora_humedad_max") else None,
-                "humedadMin": v.get("humedad_min"),
-                "horMinHumMin": horas_pico.get("hora_humedad_min") if horas_pico.get("hora_humedad_min") else None,
-                "velViento": v.get("vel_viento"),
-                "velVientoMax": v.get("vel_viento_max"),
-                "precipitacion": v.get("precipitacion"),
-                "etpMon": v.get("etp_mon"),
-                "pepMon": v.get("pep_mon"),
-                "radiacion" : v.get("radiacion"),
-                "estacion": v.get("estacion"),
-                "provincia": v.get("provincia"),
-                "fecha": v.get("fecha")
-            }
-
-            if estacion_id is None:
-                dto_kwargs["estaciones"] = data.get("estaciones_usadas")
-            else:
-                dto_kwargs["estaciones"] = None
-
-            historicos.append(HistDiasDTO(**dto_kwargs))
-
-        return historicos
-    
-    @staticmethod
-    def _build_historico_semana(
-        data,
-        estacion_id
-    ):
-        """Construye una lista DTO por datos agrupados de timestamp semanal"""
-        historicos = []
-        valores = data.get("valores_diarios")
-        horas_pico = data.get("horas_pico")
-
-        for v in valores:
-            historicos.append(
-                HistSemanasDTO(
-                    anio = v.get("anio"),
-                    semana = v.get("semana"),
-                    tempMedia = v.get("temp_media"),
-                    tempMax = v.get("temp_max"),
-                    tempMin = v.get("temp_min"),
-                    diaHoraTempMax = horas_pico.get("hora_temp_max") if horas_pico.get("hora_temp_max") else None,
-                    diaHoraTempMin = horas_pico.get("hora_temp_min") if horas_pico.get("hora_temp_min") else None,
-                    humedadMedia = v.get("humedad_media"),
-                    humedadMax = v.get("humedad_max"),
-                    humedadMin = v.get("humedad_min"),
-                    diaHoraHumMax = horas_pico.get("hora_humedad_max") if horas_pico.get("hora_humedad_max") else None,
-                    diaHoraHumMin = horas_pico.get("hora_humedad_min") if horas_pico.get("hora_humedad_min") else None,
-                    velViento = v.get("vel_viento"),
-                    velVientoMax = v.get("vel_viento_max"),
-                    precipitacion = v.get("precipitacion"),
-                    etpMon = v.get("etp_mon"),
-                    pepMon = v.get("pep_mon"), 
-                    estacion = v.get("estacion"),
-                    radiacion = v.get("radiacion"),
-                    estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
-                    provincia = v.get("provincia")
-                )
+    def _build_historico_dia(data: dict, estacion_id) -> list:
+        """Construye DTOs diarios."""
+        horas_pico = data.get("horas_pico", {})
+        return [
+            HistDiasDTO(
+                tempMedia     = v.get("temp_media"),
+                tempMax       = v.get("temp_max"),
+                horMinTempMax = HistoricService._horas_pico(horas_pico, "hora_temp_max"),
+                tempMin       = v.get("temp_min"),
+                horMinTempMin = HistoricService._horas_pico(horas_pico, "hora_temp_min"),
+                humedadMedia  = v.get("humedad_media"),
+                humedadMax    = v.get("humedad_max"),
+                horMinHumMax  = HistoricService._horas_pico(horas_pico, "hora_humedad_max"),
+                humedadMin    = v.get("humedad_min"),
+                horMinHumMin  = HistoricService._horas_pico(horas_pico, "hora_humedad_min"),
+                velViento     = v.get("vel_viento"),
+                velVientoMax  = v.get("vel_viento_max"),
+                precipitacion = v.get("precipitacion"),
+                etpMon        = v.get("etp_mon"),
+                pepMon        = v.get("pep_mon"),
+                radiacion     = v.get("radiacion"),
+                estacion      = v.get("estacion"),
+                provincia     = v.get("provincia"),
+                fecha         = v.get("fecha"),
+                estaciones    = HistoricService._estaciones_usadas(data, estacion_id),
             )
-        
-        return historicos
-    
+            for v in data.get("valores_diarios", [])
+        ]
+
     @staticmethod
-    def _build_historico_mes(
-        data,
-        estacion_id
-    ):
-        """Construye una lista DTO por datos agrupados mensuales"""
-        historicos = []
-        valores = data.get("valores_diarios")
-        horas_pico = data.get("horas_pico")
-
-        for v in valores:
-            historicos.append(
-                HistMesesDTO(
-                    anio = v.get("anio"),
-                    mes = v.get("mes"),
-                    numDias = calendar.monthrange(v.get("anio"), v.get("mes"))[1],
-                    tempMedia = v.get("temp_media"),
-                    tempMax = v.get("temp_max"),
-                    diaHoraMinTempMax = horas_pico.get("hora_temp_max") if horas_pico.get("hora_temp_max") else None,
-                    tempMin = v.get("temp_min"),
-                    diaHoraMinTempMin = horas_pico.get("hora_temp_min") if horas_pico.get("hora_temp_min") else None,
-                    humedadMedia = v.get("humedad_media"),
-                    humedadMax = v.get("humedad_max"),
-                    diaHoraHumMax = horas_pico.get("hora_humedad_max") if horas_pico.get("hora_humedad_max") else None,
-                    diaHoraHumMin = horas_pico.get("hora_humedad_min") if horas_pico.get("hora_humedad_min") else None,
-                    velViento = v.get("vel_viento"),
-                    precipitacion = v.get("precipitacion"),
-                    etpMon = v.get("etp_mon"),
-                    pepMon = v.get("pep_mon"),
-                    estacion = v.get("estacion"),
-                    radiacion = v.get("radiacion"),
-                    estaciones = data.get("estaciones_usadas") if estacion_id is None else None,
-                    provincia = v.get("provincia") 
-                )
+    def _build_historico_semana(data: dict, estacion_id) -> list:
+        """Construye DTOs semanales."""
+        horas_pico = data.get("horas_pico", {})
+        return [
+            HistSemanasDTO(
+                anio          = v.get("anio"),
+                semana        = v.get("semana"),
+                tempMedia     = v.get("temp_media"),
+                tempMax       = v.get("temp_max"),
+                tempMin       = v.get("temp_min"),
+                diaHoraTempMax = HistoricService._horas_pico(horas_pico, "hora_temp_max"),
+                diaHoraTempMin = HistoricService._horas_pico(horas_pico, "hora_temp_min"),
+                humedadMedia  = v.get("humedad_media"),
+                humedadMax    = v.get("humedad_max"),
+                humedadMin    = v.get("humedad_min"),
+                diaHoraHumMax = HistoricService._horas_pico(horas_pico, "hora_humedad_max"),
+                diaHoraHumMin = HistoricService._horas_pico(horas_pico, "hora_humedad_min"),
+                velViento     = v.get("vel_viento"),
+                velVientoMax  = v.get("vel_viento_max"),
+                precipitacion = v.get("precipitacion"),
+                etpMon        = v.get("etp_mon"),
+                pepMon        = v.get("pep_mon"),
+                estacion      = v.get("estacion"),
+                radiacion     = v.get("radiacion"),
+                estaciones    = HistoricService._estaciones_usadas(data, estacion_id),
+                provincia     = v.get("provincia")
             )
+            for v in data.get("valores_semanales", [])
+        ]
 
-        return historicos
+    # -------------------------------------------------------------------------
+    # Helpers internos de flujo
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _pending_dto(tipo: TipoHistorico, estado: dict | None = None) -> ProcesoIngestaDTO:
+        return ProcesoIngestaDTO(
+            status            = estado['status'] if estado else 'PENDING',
+            datos_solicitados = tipo.value,
+            started_at        = datetime.now(),
+            finished_at       = None,
+            error             = None,
+        )
+
+    @staticmethod
+    def _crear_ingesta_y_lanzar_hilo(
+        app,
+        tipo: TipoHistorico,
+        fec_init: datetime,
+        fec_fin: datetime,
+        codigo_estacion: Optional[str],
+        provincia_id: Optional[str],
+        fec_fin_hilo: datetime
+    ) -> ProcesoIngestaDTO:
+        """Registra estado PENDING y arranca el hilo de ingesta."""
+        IngestaDAO.create(
+            status        = 'PENDING',
+            dataset       = 'historico',
+            tipo          = tipo.value,
+            year          = fec_init.year,
+            month         = fec_init.month,
+            day           = fec_init.day,
+            zona          = "provincia" if provincia_id else "estacion",
+            started_at    = datetime.now(),
+            finished_at   = None,
+            error_message = None
+        )
+        lanzar_ingesta_background(
+            app,
+            IngestionService.ingest_siar_data,
+            codigo_estacion,
+            provincia_id,
+            tipo,
+            fec_init,
+            fec_fin_hilo
+        )
+        return HistoricService._pending_dto(tipo)
+
+    @staticmethod
+    def _leer_datos_ready(
+        tipo: TipoHistorico,
+        estacion_id: Optional[int],
+        provincia_id: Optional[str],
+        fec_init: datetime,
+        fec_fin: datetime
+    ):
+        """Obtiene datos de BD y construye los DTOs cuando el estado es READY."""
+        provincia_id = HistoricDAO.obtener_id_provincia_por_str(provincia_id=provincia_id)
+
+        dao_fn, build_fn_name, _ = _TIPO_CONFIG.get(tipo, (None, None, None))
+        if not dao_fn:
+            raise NotImplementedError(f"Tipo {tipo} no implementado")
+
+        build_fn = getattr(HistoricService, build_fn_name)
+        data     = dao_fn(estacion_id, provincia_id, fec_init, fec_fin)
+        items    = build_fn(data, estacion_id)
+
+        return HistoricService.comprobar_devolucion(estacion_id, provincia_id, tipo, items)
+
+    # -------------------------------------------------------------------------
+    # Punto de entrada principal
+    # -------------------------------------------------------------------------
 
     @staticmethod
     def get_historico(
         app,
-        tipo : TipoHistorico,
-        fec_init : datetime,
-        fec_fin : datetime,
-        provincia_id : Optional[str] = None,
-        estacion_id : Optional[int] = None,
-        codigo_estacion : Optional[str] = None
+        tipo: TipoHistorico,
+        fec_init: datetime,
+        fec_fin: datetime,
+        provincia_id: Optional[str] = None,
+        codigo_estacion: Optional[str] = None
     ):
-        print(f"Thread running: {threading.current_thread().name}")
-        if not (estacion_id or provincia_id):
+        logger.debug(f"get_historico — thread: {threading.current_thread().name}")
+
+        if not (codigo_estacion or provincia_id):
             raise ValueError("Debe indicarse la estación o provincia")
-        
-        # Obtenemos el estado de ingesta buscado
-        estado : IngestaStatus = IngestaDAO.obtener_estado(
+
+        estacion_id = HistoricDAO.obtener_id_estacion_por_str(codigo_estacion)
+
+        estado = IngestaDAO.obtener_estado(
             dataset = 'historico',
-            tipo = tipo.value,
-            year = fec_init.year,
-            month = fec_init.month,
-            day = fec_init.day,
-            zona = "provincia" if provincia_id else "estacion"
+            tipo    = tipo.value,
+            year    = fec_init.year,
+            month   = fec_init.month,
+            day     = fec_init.day,
+            zona    = "provincia" if provincia_id else "estacion",
+            error   = None
         )
 
+        # --- Estado ya registrado en BD ---
         if estado:
-            # Si no se encuentran los datos solicitados en la BD informamos al cliente
             if estado['status'] in ('PENDING', 'LOADING'):
-                return ProcesoIngestaDTO(
-                    status = estado['status'],
-                    datos_solicitados = tipo.value,
-                    started_at = datetime.now(),
-                    finished_at = None
-                )
-            # Datos ya se encuentran en la BD
-            elif estado['status'] == 'READY':
-                provincia_id = HistoricDAO.obtener_id_provincia_por_str(provincia_id = provincia_id)
+                return HistoricService._pending_dto(tipo, estado)
 
-                match tipo:
-                    case TipoHistorico.HORA:
-                        data = HistoricDAO.define_computing_data_hora(estacion_id, provincia_id, fec_init, fec_fin)
-                        items =  HistoricService._build_historico_hora(data, estacion_id)
-
-                        return HistoricService.comprobar_devolucion(
-                            estacion_id = estacion_id,
-                            provincia_id = provincia_id,
-                            tipo = tipo,
-                            datos = items
-                        )
-
-                    case TipoHistorico.DIA:
-                        data = HistoricDAO.define_computing_data_dia(estacion_id, provincia_id, fec_init, fec_fin)    
-                        items = HistoricService._build_historico_dia(data, estacion_id)
-
-                        return HistoricService.comprobar_devolucion(
-                            estacion_id = estacion_id,
-                            provincia_id = provincia_id,
-                            tipo = tipo,
-                            datos = items
-                        )
-                    
-                    case TipoHistorico.SEMANA:
-                        data = HistoricDAO.define_computing_data_semana(estacion_id, provincia_id, fec_init, fec_fin)
-                        items = HistoricService._build_historico_semana(data, estacion_id)
-
-                        return HistoricService.comprobar_devolucion(
-                            estacion_id = estacion_id,
-                            provincia_id = provincia_id,
-                            tipo = tipo,
-                            datos = items
-                        )
-                    
-                    case TipoHistorico.MES:
-                        data = HistoricDAO.define_compution_data_mes(estacion_id, provincia_id, fec_init, fec_fin)
-                        items = HistoricService._build_historico_mes(data, estacion_id)
-
-                        return HistoricService.comprobar_devolucion(
-                            estacion_id = estacion_id,
-                            provincia_id = provincia_id,
-                            tipo = tipo,
-                            datos = items
-                        )
-                    case _:
-                        raise NotImplementedError(f"Tipo {tipo} no implementado")
-            else:
-                return ProcesoIngestaDTO(
-                    status = 'FAILED',
-                    datos_solicitados = f"{tipo.value} - {estado.get('zona')} - Fecha: {estado.get('day')}-{estado.get('month')}-{estado.get('year')}",
-                    started_at = estado.get('started_at'),
-                    finished_at = datetime.now() 
-                )
-                    
-        # Si existen datos ya registrados, incluimos su estado a ready    
-        computing_general = HistoricDAO.define_computing_general(estacion_id,provincia_id,fec_init,fec_fin)
-        if computing_general is not None or []:
-            # Comparo si existe gap entre la fecha del primer valor almacenado y la fecha inicial de la petición
-            if fec_init != computing_general.timestamp:
-                IngestaDAO.create(
-                    status = 'PENDING',
-                    dataset = 'historico',
-                    tipo = tipo.value,
-                    year = fec_init.year,
-                    month = fec_init.month,
-                    day = fec_init.day,
-                    zona = "provincia" if provincia_id else "estacion",
-                    started_at = datetime.now(),
-                    finished_at = None,
-                    error_message = None
+            if estado['status'] == 'READY':
+                return HistoricService._leer_datos_ready(
+                    tipo, estacion_id, provincia_id, fec_init, fec_fin
                 )
 
-                # Hilo independiente al main que inserta datos
-                lanzar_ingesta_background(
-                    app,
-                    IngestionService.ingest_siar_data,
-                    codigo_estacion,
-                    provincia_id,
-                    tipo,
-                    fec_init,
-                    computing_general.timestamp.date()
-                )
-
-                # Se informa al usuario mientras el hilo va insertando datos
-                return ProcesoIngestaDTO(
-                    status = 'PENDING',
-                    datos_solicitados = tipo.value,
-                    started_at = datetime.now(),
-                    finished_at = None
-                )
-            else:
-                IngestaDAO.create(
-                    status = 'READY',
-                    dataset = 'historico',
-                    tipo = tipo.value,
-                    year = fec_init.year,
-                    month = fec_init.month,
-                    day = fec_init.day,
-                    zona = "provincia" if provincia_id else "estacion",
-                    started_at = datetime.now(),
-                    finished_at = datetime.now(),
-                    error_message = None
-                )
-
-            print(f"DEBUG: datos generales: {computing_general.timestamp.date()}")
-
-            # Retornamos READY para que el usuario sepa que tiene que refrescar
+            # FAILED u otro estado de error
             return ProcesoIngestaDTO(
-                status = 'READY',
-                datos_solicitados = tipo.value,
-                started_at = datetime.now(),
-                finished_at = datetime.now()
+                status            = estado.get('status'),
+                datos_solicitados = (
+                    f"{tipo.value} - {estado.get('zona')} "
+                    f"- Fecha: {estado.get('day')}-{estado.get('month')}-{estado.get('year')}"
+                ),
+                started_at  = estado.get('started_at'),
+                finished_at = datetime.now(),
+                error       = estado.get('error_message')
             )
-        # Si no se ha comenzado con el proceso de incluir datos nuevos solicitados en la BD se comienza
-        else:
+
+        # --- Sin estado previo: buscar datos parciales en BD ---
+        computing_general = HistoricDAO.define_computing_general(
+            estacion_id, provincia_id, fec_init, fec_fin
+        )
+
+        if computing_general:
+            # Hay datos pero con gap respecto a la fecha solicitada → ingesta parcial
+            if fec_init != computing_general.timestamp:
+                return HistoricService._crear_ingesta_y_lanzar_hilo(
+                    app, tipo, fec_init, fec_fin,
+                    codigo_estacion, provincia_id,
+                    fec_fin_hilo=computing_general.timestamp.date()
+                )
+
+            # Los datos ya cubren el rango → marcar READY sin lanzar hilo
             IngestaDAO.create(
-                status = 'PENDING',
-                dataset = 'historico',
-                tipo = tipo.value,
-                year = fec_init.year,
-                month = fec_init.month,
-                day = fec_init.day,
-                zona = "provincia" if provincia_id else "estacion",
-                started_at = datetime.now(),
-                finished_at = None,
+                status        = 'READY',
+                dataset       = 'historico',
+                tipo          = tipo.value,
+                year          = fec_init.year,
+                month         = fec_init.month,
+                day           = fec_init.day,
+                zona          = "provincia" if provincia_id else "estacion",
+                started_at    = datetime.now(),
+                finished_at   = datetime.now(),
                 error_message = None
             )
-
-            # Hilo independiente al main que inserta datos
-            lanzar_ingesta_background(
-                app,
-                IngestionService.ingest_siar_data,
-                codigo_estacion,
-                provincia_id,
-                tipo,
-                fec_init,
-                fec_fin
-            )
-
-            # Se informa al usuario mientras el hilo va insertando datos
             return ProcesoIngestaDTO(
-                status = 'PENDING',
+                status            = 'READY',
                 datos_solicitados = tipo.value,
-                started_at = datetime.now(),
-                finished_at = None
+                started_at        = datetime.now(),
+                finished_at       = datetime.now(),
+                error             = None
             )
-    
+
+        # --- Sin datos en BD en absoluto → ingesta desde cero ---
+        return HistoricService._crear_ingesta_y_lanzar_hilo(
+            app, tipo, fec_init, fec_fin,
+            codigo_estacion, provincia_id,
+            fec_fin_hilo=fec_fin
+        )
+
+    # -------------------------------------------------------------------------
+    # Utilidades
+    # -------------------------------------------------------------------------
+
     @staticmethod
     def comprobar_devolucion(
-        estacion_id : Optional[int],
-        provincia_id : Optional[int],
-        tipo : TipoHistorico,
+        estacion_id: Optional[int],
+        provincia_id: Optional[int],
+        tipo: TipoHistorico,
         datos
     ) -> ProvinciaHistDTO | EstacionHistDTO:
-        
         if provincia_id:
-            return ProvinciaHistDTO(type = tipo, datos = datos)
-        elif estacion_id:
-            print(datos)
-            return EstacionHistDTO(type = tipo, datos = datos)
-        else:
-            raise ValueError("Se debe proporcionar el valor de estacion_id o de provincia_id, no pueden estar los dos a null")
+            return ProvinciaHistDTO(type=tipo, datos=datos)
+        if estacion_id:
+            return EstacionHistDTO(type=tipo, datos=datos)
+        raise ValueError("Se debe proporcionar estacion_id o provincia_id")

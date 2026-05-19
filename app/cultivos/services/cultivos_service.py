@@ -445,7 +445,7 @@ class CultivoService:
         if not all([nombre_variedad, hora_frio_max, hora_frio_min]):
             raise ValueError("Error, se deben especificar los parámetros indicados para actualizar")
         
-        actualizacion = CultivosDAO.actualizar_rango_horas_frio(
+        CultivosDAO.actualizar_rango_horas_frio(
             nombre_variedad = nombre_variedad,
             horas_max_frio = hora_frio_max,
             horas_min_frio = hora_frio_min

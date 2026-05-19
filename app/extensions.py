@@ -6,21 +6,31 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from flask import jsonify
 from flask_migrate import Migrate
 from keycloak import KeycloakOpenID
+from celery import Celery, Task
 import yaml
 import pathlib
-import os
 
+# -------------------------------------------------------------------------
+# Instancias de clases
+# -------------------------------------------------------------------------
 db = SQLAlchemy()
 migrate = Migrate() # Aplico migracionnes de Alembic
+celery_app = Celery()
 
+# -------------------------------------------------------------------------
+# Inicializador de dependencias
+# -------------------------------------------------------------------------
 def init_extensions(app):
     """Inicializo las extensiones con la aplicación Flask"""
     db.init_app(app)
     migrate.init_app(app, db)
     register_swagger(app)
     register_keyclaok(app)
+    celery_init_app(app)
 
-
+# -------------------------------------------------------------------------
+# Configuraciones de extensiones específicas
+# -------------------------------------------------------------------------
 def register_keyclaok(app):
     global keycloak_openid
     keycloak_openid = KeycloakOpenID(
@@ -30,9 +40,6 @@ def register_keyclaok(app):
         #cert = app.config['KEYCLOAK_CERT'],
         client_secret_key = app.config['KEYCLOAK_CLIENT_SECRET'] 
     )
-
-    def get_keycloak_openid():
-        return keycloak_openid
 
 def register_swagger(app):
     """
@@ -68,3 +75,16 @@ def register_swagger(app):
                     "details" : str(e)
                 }
             ), 500
+
+def celery_init_app(app) -> Celery:
+    class FlaskTask(Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery_app.config_from_object(app.config["CELERY"])
+    celery_app.Task = FlaskTask
+
+    app.extensions['celery'] = celery_app
+
+    return celery_app
