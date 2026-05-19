@@ -221,7 +221,7 @@ paths:
     post:
       tags:
         - Históricos
-      summary: Reintenta peticiones de datos histórico que fallaron
+      summary: Reintenta peticiones de datos históric que fallaron
       description: Obtiene peticiones fallidas cacheadas para reintentar su recopilación de datos en el caso que actualmente existieran
       operationId: reintentar_pendientes
       responses:
