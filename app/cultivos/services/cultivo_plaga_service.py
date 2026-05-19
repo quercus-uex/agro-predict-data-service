@@ -3,10 +3,10 @@ from ...plagas.plagas_dao import PlagasDAO
 from ..cultivos_dto import (
     CultivoPlagaDTO, 
     CultivoDTO, 
-    CalendarioDTO, 
     PlagaConCalendarioDTO,
     RecursosPlagaDTO
 )
+from ...plagas.plagas_dto import CalendarioDTO
 from typing import Optional
 from ...models import Cultivo
 from helpers.ApiExceptions import APIException
