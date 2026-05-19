@@ -217,6 +217,31 @@ paths:
                 message: "Error del proveedor de datos"
                 status: 502
                 error: "Provider Error"
+  /climate/historical/reintentar-pendientes:
+    post:
+      tags:
+        - Históricos
+      summary: Reintenta peticiones de datos históricos que fallaron
+      description: Obtiene peticiones fallidas cacheadas para reintentar su recopilación de datos en el caso que actualmente existieran
+      operationId: reintentar_pendientes
+      responses:
+        '202':
+          description: Reintento aplicado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaTasks'
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:  
+                message: "Provider Error"
+                status: 500
+                error: "Error del proveedor de datos"
+
   /climate/pronostico/localidades:
     get:
       tags:
@@ -1057,7 +1082,16 @@ paths:
             
 components:
   schemas:
-
+    RespuestaTasks:
+      type: object
+      properties:
+        task_id: 
+          type: string
+          format: uuid
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        status:
+          type: string
+          example: "PROCESSING"
     CrearVariedad:
       type: object
       properties:
