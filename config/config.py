@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from circuitbreaker import CircuitBreaker
 from pathlib import Path
 import requests
+from kombu import Queue
 
 load_dotenv()
 
@@ -36,6 +37,10 @@ class Config:
         "broker_url"    : os.getenv("RABBITMQ_CONNECTION"),
         "result_backend": os.getenv("REDIS_URL"),
         "worker_pool"   : "solo" if os.name == "nt" else "prefork",
+        "worker_disable_mingle" : True,
+        "task_create_missing_queues" : False,
+        "task_default_queue" : "default",
+        "task_queues" : (Queue("default", durable = True),),
         "redis_backend_use_ssl": False,
         "redis_username": "default",
         "redis_password": os.getenv("REDIS_PASS"),  # ← extrae el password aparte
