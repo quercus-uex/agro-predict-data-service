@@ -43,7 +43,6 @@ class SiARService:
                 fec_init=cursor,
                 fec_fin=cursor
             )
-            print(f"DEBUG: siar {datos}")
 
             if not isinstance(datos, list):
                 if datos.get('success') == False:
