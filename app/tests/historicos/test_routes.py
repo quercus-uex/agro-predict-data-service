@@ -170,6 +170,11 @@ def test_get_historical_estaciones_success_ingest_status(mock_get_historico, cli
     assert response.status_code == 200
 
 def test_retry_queued_tasks(client):
-    task = MagicMock()
-    response = client.post('/climate/historical/reintentar-pendientes')
+    mock_task = MagicMock()
+    mock_task.id = "fake-task-id"
+
+    with patch("app.historicos.routes.procesar_cola_pendientes_task.delay", return_value=mock_task):
+        response = client.post('/climate/historical/reintentar-pendientes')
+    
     assert response.status_code == 202
+
