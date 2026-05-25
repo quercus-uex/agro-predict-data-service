@@ -1,14 +1,14 @@
-from . import forecast_bp
 from ..decorator.log_decorator import log
 from helpers.ApiExceptions import APIException
 from .forecast_service import ForecastService
-from flask import jsonify, request, current_app
+from flask import jsonify, request, current_app, Blueprint
 from ..globals.dto2dict import dataclass_to_json
 from ..globals.convertidor_tipo import convertir_tipo
 from .forecast_dto import TipoPrediccion, TipoZona
 import logging
 from typing import Optional
 
+forecast_bp = Blueprint('forecast', __name__, template_folder = 'templates')
 logger = logging.getLogger(__name__)
 
 

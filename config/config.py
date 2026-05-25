@@ -8,6 +8,8 @@ from kombu import Queue
 load_dotenv()
 
 class Config:
+    SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URL')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     SIAR_SERVICE_DATA_URL = os.getenv('SIAR_SERVICE_DATA_URL')
     SIAR_SERVICE_INFO_URL = os.getenv('SIAR_SERVICE_INFO_URL')
     AEMET_SERVICE_CURRENT_URL = os.getenv('AEMET_SERVICE_CURRENT_URL')
@@ -67,7 +69,7 @@ class TestingConfig(Config):
     """TESTING CONFIG"""
     DEBUG = False
     TESTING = True
-    SQLALCHEMY_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
+    SQLALCHEMY_DATABASE_URI = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
 
 class ProductionConfig(Config):
     """PRODUCTION CONFIG"""

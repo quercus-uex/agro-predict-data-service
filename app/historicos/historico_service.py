@@ -155,7 +155,8 @@ class HistoricService:
             zona          = "provincia" if provincia_id else "estacion",
             started_at    = datetime.now(),
             finished_at   = None,
-            error_message = None
+            error_message = None,
+            codigo        = codigo_estacion if codigo_estacion else provincia_id
         )
         lanzar_ingesta_background(
             app,
@@ -216,8 +217,10 @@ class HistoricService:
             month   = fec_init.month,
             day     = fec_init.day,
             zona    = "provincia" if provincia_id else "estacion",
-            error   = None
+            error   = None,
+            codigo  = codigo_estacion if codigo_estacion else provincia_id
         )
+        print(f"DEBUG: estado {estado}")
 
         # --- Estado ya registrado en BD ---
         if estado:
@@ -243,7 +246,7 @@ class HistoricService:
 
         # --- Sin estado previo: buscar datos parciales en BD ---
         computing_general = HistoricDAO.define_computing_general(
-            estacion_id, provincia_id, fec_init, fec_fin
+            codigo_estacion, provincia_id, fec_init, fec_fin
         )
 
         if computing_general:

@@ -94,7 +94,6 @@ class SiARService:
                         on_datos_obtenidos(datos_dia)
 
             cursor += timedelta(days=1)  # ← solo avanza si los datos fueron válidos
-
         return lista_datos
 
     @classmethod

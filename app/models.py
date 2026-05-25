@@ -158,6 +158,7 @@ class IngestaStatus(db.Model):
     year = Column(Integer, nullable = False)
     month = Column(Integer, nullable = False)
     day = Column(Integer, nullable = False)
+    codigo = Column(String(50), nullable = True) # Cambiar cuando los datos ya contengan valor
 
     status = Column(String(20), nullable = False) # Pending / Loading / Ready
 
@@ -170,7 +171,7 @@ class IngestaStatus(db.Model):
     # Constraint para evitar valores duplicados
     __table_args__ = (
         UniqueConstraint(
-            'dataset', 'tipo', 'year', 'month', 'day', 'zona',
+            'dataset', 'tipo', 'year', 'month', 'day', 'zona', 'codigo',
             name = 'uq_ingesta_dataset_fecha'
         ),
     )
@@ -295,10 +296,10 @@ class MedicionClimatica(db.Model):
     anio = Column(Integer, nullable = True)
     timestamp = Column(DateTime, nullable = False, index = True )
 
-    humedad = Column(Float)
-    temperatura = Column(Float, nullable = False)
-    vel_viento = Column(Float)
-    precipitacion = Column(Float, nullable = False)
+    humedad = Column(Float, nullable = True)
+    temperatura = Column(Float, nullable = True)
+    vel_viento = Column(Float, nullable = True)
+    precipitacion = Column(Float, nullable = True)
     etp_mon = Column(Float, nullable = True)
     pep_mon = Column(Float, nullable = True)
     radiacion = Column(Float, nullable = True)
@@ -327,10 +328,10 @@ class Parcelas(db.Model):
 class Dispositivos(db.Model):
     __tablename__ = "dispositivos"
     
-    id = Column(Integer, primary_key = True, autoincrement = True)
+    id = Column(Integer, autoincrement=True, unique=True, nullable=False)
 
     public_id = Column(String(50), nullable = False)
-    dev_eui = Column(String(50), nullable = False, unique = True)
+    dev_eui = Column(String(50), nullable=False, primary_key=True)
     descripcion = Column(String(300), nullable = True)
     nombre = Column(String(100), nullable = True)
     creado = Column(DateTime, nullable = False)

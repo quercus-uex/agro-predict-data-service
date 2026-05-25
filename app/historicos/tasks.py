@@ -5,6 +5,8 @@ import redis
 import json
 import os
 from dotenv import load_dotenv
+from ..ingesta.siar_ingestion_service import SiarIngestionService
+from .historico_dto import TipoHistorico
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -63,9 +65,9 @@ def procesar_cola_pendientes_task():
     Recorre todas las tareas pendientes en Redis y las reintenta.
     Llamada desde un endpoint manual.
     """
-    from ..ingesta.siar_ingestion_service import SiarIngestionService
-    from .historico_dto import TipoHistorico
     keys = r.keys(f"{PENDING_TASKS_PREFIX}*")
+    if not keys:
+        return {}
     logger.info(f"=== Procesando cola pendiente: {len(keys)} tareas ===")
 
     resultados = {"ok": [], "failed": [], "skipped": []}

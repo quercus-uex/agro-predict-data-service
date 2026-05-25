@@ -1,11 +1,10 @@
 # Controlador de HISTORICOS
-from . import historic_bp
 from ..decorator.log_decorator import log
 from ..decorator.token_decorator import token_required
 from flask import request, current_app
 from helpers.ApiExceptions import APIException
 from app.historicos.historico_service import HistoricService
-from flask import jsonify
+from flask import jsonify, Blueprint
 from ..globals.dto2dict import dataclass_to_json
 from .historico_dto import TipoHistorico
 from ..ingesta.ingesta_dto import ProcesoIngestaDTO
@@ -14,6 +13,7 @@ from app.globals.convertidor_tipo import convertir_tipo
 from datetime import datetime
 import logging
 
+historic_bp = Blueprint('historico', __name__)
 logger = logging.getLogger(__name__)
 
 @historic_bp.route('/climate/historical/provincias', methods = ['GET'])
@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 def historicalProvincial():
 
     try: 
-        province_code = request.args.get('provinceCode', 1)
-        type = request.args.get('type', 'HORA')
-        start_date = request.args.get('startDate', '2025-12-31')
-        end_date = request.args.get('endDate', '2025-12-31')
+        province_code = request.args.get('provinceCode')
+        type = request.args.get('type')
+        start_date = request.args.get('startDate')
+        end_date = request.args.get('endDate')
         
         if not all([province_code, type, start_date, end_date]):
             raise APIException(
@@ -70,6 +70,7 @@ def historicalProvincial():
         
                 status_code = error_to_status.get(datos.error, 500)
                 return response, status_code
+            return response, 200
         
         # Añado configuración en el header para que se descargue la respuesta en un fichero local sobre el usuario
         download = request.args.get('download', 'false').lower() == 'true'
@@ -83,11 +84,11 @@ def historicalProvincial():
         return jsonify(
             {
                 'success' : 'false',
-                'code': '502',
-                'message' : 'Provider Exception',
-                'error': str(e)
+                'code': str(e.status),
+                'message' : e.message,
+                'error': e.error
             }
-        ), 502
+        ), e.status
     
 @historic_bp.route('/climate/historical/estacion', methods = ['GET'])
 @log('../logs/fichero_salida.json')
@@ -106,6 +107,13 @@ def historicalEstacion():
                 error = 'Invalid parameters'
             )
         
+        if start_date > end_date:
+            raise APIException(
+                message = "La fecha inicial de recogida de datos no puede ser mayor a la fecha final",
+                status = 400,
+                error = 'Invalid parameters'
+            )
+        
         estacion_code_format = estacion_code_raw[2:len(estacion_code_raw)]
         estacion_code = convertir_tipo(estacion_code_format, int)
         type_historico = convertir_tipo(type, TipoHistorico)
@@ -120,6 +128,7 @@ def historicalEstacion():
             provincia_id = None,
             codigo_estacion = estacion_code_raw,
         )
+        print(f"DEBUG: datos routes {datos}")
 
         if not datos:
             raise APIException(
@@ -139,24 +148,32 @@ def historicalEstacion():
         
                 status_code = error_to_status.get(datos.error, 500)
                 return response, status_code
-            
+            return response, 200
         # Añado configuración en el header para que se descargue la respuesta en un fichero local sobre el usuario
         download = request.args.get('download', 'false').lower() == 'true'
         if download:
             response.headers["Content-Disposition"] = f"attachment; filename = agropredict_estacion_{estacion_code}_{start_date}_{end_date}.json"
         
         return response
+    except ValueError as e:
+        logger.error(f"ValueError: {e}")
+        return jsonify({
+            'success' : 'false',
+            'code' : str(400),
+            'message' : 'Error al convertir el tipo',
+            'error' : str(e)
+        }), 400
     
     except APIException as e:
         logger.error(f"API Exception: {e}")
         return jsonify(
             {
                 'success' : 'false',
-                'code': '502',
-                'message' : 'Provider Exception',
+                'code': str(e.status),
+                'message' : e.message,
                 'error': str(e)
             }
-        ), 502
+        ), e.status
 
 @historic_bp.route('/climate/historical/reintentar-pendientes', methods=['POST'])
 def reintentar_pendientes():

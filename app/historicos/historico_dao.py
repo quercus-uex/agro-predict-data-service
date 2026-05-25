@@ -197,14 +197,20 @@ class HistoricDAO:
         :type fec_fin: datetime
         """
         try:
+            condiciones = [
+                MedicionClimatica.timestamp.between(fec_init, fec_fin)
+            ]
+
+            if estacion_id:
+                condiciones.append(MedicionClimatica.estacion_id == estacion_id)
+            if provincia_id:
+                condiciones.append(MedicionClimatica.provincia_id == provincia_id)
             query = (
                 select(
                     MedicionClimatica.id,
                     MedicionClimatica.timestamp
                 )
-                .where(
-                    MedicionClimatica.timestamp.between(fec_init, fec_fin)
-                )
+                .where(*condiciones)
             )
 
             result = db.session.execute(query).first()

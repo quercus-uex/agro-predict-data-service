@@ -22,7 +22,8 @@ class AemetIngestionService:
                 day         = fecha.day,
                 zona        = tipo_zona.value,
                 finish_time = None,
-                error       = None
+                error       = None,
+                codigo      = codigo_zona if codigo_zona else "",
             )
 
             data_predicciones, data_localidades = AemetService.get_aemet_data(
@@ -56,7 +57,8 @@ class AemetIngestionService:
                 day         = fecha.day,
                 finish_time = datetime.now(),
                 zona        = tipo_zona.value,
-                error       = None
+                error       = None,
+                codigo      = codigo_zona if codigo_zona else "",
             )
             db.session.commit()
 
@@ -70,5 +72,6 @@ class AemetIngestionService:
                 day         = fecha.day,
                 finish_time = datetime.now(),
                 zona        = tipo_zona.value,
-                error       = str(e)
+                error       = str(e),
+                codigo      = codigo_zona if codigo_zona else "",
             )

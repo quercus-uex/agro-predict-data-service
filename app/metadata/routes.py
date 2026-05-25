@@ -1,6 +1,5 @@
 from .metadata_service import MetadataService
-from . import metadata_bp
-from flask import jsonify, request
+from flask import jsonify, request, Blueprint
 from werkzeug.utils import secure_filename
 from ..decorator.log_decorator import log
 from helpers.ApiExceptions import APIException
@@ -8,6 +7,7 @@ from ..globals.dto2dict import dataclass_to_json
 import logging
 import os
 
+metadata_bp = Blueprint('metadata', __name__)
 logger = logging.getLogger(__name__)
 
 @metadata_bp.route('/metadatos/registro/<string:tipo>', methods = ['POST'])

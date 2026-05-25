@@ -236,7 +236,8 @@ class ForecastService:
             #month = fecha_valida_date.month,
             #day = fecha_valida_date.day,
             zona = tipo_zona.value,
-            error = None
+            error = None,
+            codigo = provincia_id if provincia_id else "",
         )
 
         if estado:
@@ -318,7 +319,8 @@ class ForecastService:
                 zona = tipo_zona.value,
                 started_at = datetime.now(),
                 finished_at = datetime.now(),
-                error_message = None
+                error_message = None,
+                codigo = provincia_id if provincia_id else "",
             )
              
              # Retornamos READY para que el usuario sepa que tiene que refrescar
@@ -344,7 +346,8 @@ class ForecastService:
                 zona = tipo_zona.value,
                 started_at = datetime.now(),
                 finished_at = None,
-                error_message = None
+                error_message = None,
+                codigo = provincia_id if provincia_id else "",
             )
             # Hilo independiente al main que inserta datos
             lanzar_ingesta_background(

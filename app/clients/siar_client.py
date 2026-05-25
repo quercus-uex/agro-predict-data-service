@@ -35,7 +35,6 @@ class SiARClient(BaseClient):
                 method = 'GET',
                 url = url
             )
-            print(response.json())
             
             if response.status_code == 404:
                 logger.error(f"No se han encontrado datos para la los parámetros indicados")

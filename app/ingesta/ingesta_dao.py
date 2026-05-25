@@ -25,7 +25,7 @@ class IngestaDAO:
     # -------------------------------------------------------------------------
 
     @staticmethod
-    def _filtro_ingesta(dataset: str, tipo: str, year: int, month: int, day: int, zona: str):
+    def _filtro_ingesta(dataset: str, tipo: str, year: int, month: int, day: int, zona: str, codigo: str):
         """
         Devuelve la cláusula AND compartida por obtener_estado, actualizar_estado y delete_estado.
         Centraliza el filtro para evitar repetición y posibles inconsistencias.
@@ -37,6 +37,7 @@ class IngestaDAO:
             IngestaStatus.month   == month,
             IngestaStatus.day     == day,
             IngestaStatus.zona    == zona,
+            IngestaStatus.codigo  == codigo,
         )
 
     # -------------------------------------------------------------------------
@@ -51,12 +52,13 @@ class IngestaDAO:
         month: int,
         day: int,
         zona: str,
+        codigo: str,
         error: Optional[str]
     ):
         try:
             query = (
                 select(IngestaStatus)
-                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona))
+                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona, codigo))
             )
 
             if error:
@@ -84,21 +86,23 @@ class IngestaDAO:
         day: int,
         zona: str,
         started_at: datetime,
+        codigo: str,
         finished_at: Optional[datetime],
         error_message: Optional[str]
     ):
         try:
             ingesta = IngestaStatus(
-                dataset      = dataset,
-                tipo         = tipo,
-                year         = year,
-                month        = month,
-                day          = day,
-                status       = status,
-                zona         = zona,
-                started_at   = started_at,
-                finished_at  = finished_at,
-                error_message = error_message
+                dataset       = dataset,
+                tipo          = tipo,
+                year          = year,
+                month         = month,
+                day           = day,
+                status        = status,
+                zona          = zona,
+                started_at    = started_at,
+                finished_at   = finished_at,
+                error_message = error_message,
+                codigo        = codigo
             )
             db.session.add(ingesta)
             db.session.commit()
@@ -115,13 +119,14 @@ class IngestaDAO:
         month: int,
         day: int,
         zona: str,
+        codigo : str,
         finish_time: Optional[datetime],
         error: Optional[str]
     ):
         try:
             query = (
                 update(IngestaStatus)
-                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona))
+                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona, codigo))
                 .values(
                     status        = status,
                     error_message = error,
@@ -145,12 +150,13 @@ class IngestaDAO:
         year: int,
         month: int,
         day: int,
-        zona: str
+        zona: str,
+        codigo: str
     ):
         try:
             query = (
                 delete(IngestaStatus)
-                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona))
+                .where(IngestaDAO._filtro_ingesta(dataset, tipo, year, month, day, zona, codigo))
             )
             db.session.execute(query)
             db.session.commit()

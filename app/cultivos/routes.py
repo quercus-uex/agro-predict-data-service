@@ -1,13 +1,13 @@
-from . import cultivo_bp
 from ..decorator.log_decorator import log
 from ..globals.dto2dict import dataclass_to_json
 from helpers.ApiExceptions import APIException
 from .services.cultivos_service import CultivoService
 from .services.cultivo_plaga_service import CultivoPlagaService
 from .services.cultivo_parcela_service import CultivoParcelaService
-from flask import jsonify, request, Response
+from flask import jsonify, request, Response, Blueprint
 import logging
 
+cultivo_bp = Blueprint('cultivos', __name__, template_folder = 'templates')
 logger = logging.getLogger(__name__)
 
 

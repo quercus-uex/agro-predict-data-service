@@ -15,6 +15,9 @@ def convertir_tipo(valor, tipo_destino):
         return datetime_obj
     
     if issubclass(tipo_destino, Enum):
-        return tipo_destino[valor.upper()]
+        try:
+            return tipo_destino[valor.upper()]
+        except KeyError:
+            raise ValueError(f"Valor '{valor}' no válido para {tipo_destino.__name__}")
 
     raise ValueError(f"Tipo destino no soportado: {tipo_destino}")

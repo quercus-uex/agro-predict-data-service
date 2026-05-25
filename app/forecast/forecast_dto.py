@@ -37,19 +37,19 @@ class ForecastDTO:
     codigo_zona : str
     fecha_prediccion : date
     fecha_elaboracion : datetime
-    estado_cielo : Optional[str]
-    tendencia_temp_general : Optional[str]
-    tendencia_temp_max : Optional[str]
-    tendencia_temp_min : Optional[str]
-    rachas_viento : Optional[str]
-    precipitaciones : Optional[str]
-    cotas_nieve : Optional[str]
-    existencia_heladas : Optional[bool]
-    zona_heladas : Optional[str]
-    aparicion_nieblas : Optional[str]
-    provincia : Optional[str]
-    ccaa : Optional[str]
-    temperatura_localidades : Optional[List[TemperaturaLocalidadDTO]]
+    estado_cielo : Optional[str] = None
+    tendencia_temp_general : Optional[str] = None
+    tendencia_temp_max : Optional[str] = None
+    tendencia_temp_min : Optional[str] = None
+    rachas_viento : Optional[str] = None
+    precipitaciones : Optional[str] = None
+    cotas_nieve : Optional[str] = None
+    existencia_heladas : Optional[bool] = None
+    zona_heladas : Optional[str] = None
+    aparicion_nieblas : Optional[str] = None
+    provincia : Optional[str] = None
+    ccaa : Optional[str] = None
+    temperatura_localidades : Optional[List[TemperaturaLocalidadDTO]] = None
 
 ##### GENERICO CCAA #####
 @dataclass

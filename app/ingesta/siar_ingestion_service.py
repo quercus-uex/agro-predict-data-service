@@ -60,7 +60,8 @@ class SiarIngestionService:
             day         = fec_init.day,
             finish_time = datetime.now(),
             zona        = "provincia" if codigo_provincia_id else "estacion",
-            error       = None
+            error       = None,
+            codigo      = codigo_provincia_id,
         )
         db.session.commit()
 
@@ -82,7 +83,8 @@ class SiarIngestionService:
                 day         = fec_init.day,
                 zona        = "provincia" if codigo_provincia_id else "estacion",
                 finish_time = None,
-                error       = None
+                error       = None,
+                codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
             )
 
             lista_datos = SiARService.get_siar_data(
@@ -95,6 +97,20 @@ class SiarIngestionService:
                     datos_dia, codigo_provincia_id, fec_init, tipo
                 )
             )
+
+            IngestaDAO.actualizar_estado(
+                status      = 'READY',
+                dataset     = 'historico',
+                tipo        = tipo.value,
+                year        = fec_init.year,
+                month       = fec_init.month,
+                day         = fec_init.day,
+                zona        = "provincia" if codigo_provincia_id else "estacion",
+                finish_time = datetime.now(),
+                error       = None,
+                codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
+            )
+
             return lista_datos
         except SiARFechaInvalidaError as e:
             from ..historicos.tasks import programar_consulta_datos_task
@@ -115,7 +131,8 @@ class SiarIngestionService:
                 day         = fec_init.day,
                 finish_time = datetime.now(),
                 zona        = "provincia" if codigo_provincia_id else "estacion",
-                error       = str(e)
+                error       = str(e),
+                codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
             )
 
         except Exception as e:
@@ -128,7 +145,8 @@ class SiarIngestionService:
                 day         = fec_init.day,
                 finish_time = datetime.now(),
                 zona        = "provincia" if codigo_provincia_id else "estacion",
-                error       = e.message if hasattr(e, 'message') else str(e)
+                error       = e.message if hasattr(e, 'message') else str(e),
+                codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
             )
 
     @staticmethod

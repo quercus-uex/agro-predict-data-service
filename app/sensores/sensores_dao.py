@@ -14,7 +14,7 @@ class SensoresDAO():
                 return False
 
             sensor = db.session.query(Sensores.dispositivo_id).filter_by(
-                eui = eui
+                dispositivo_id = eui
             ).first()
 
             return sensor is not None

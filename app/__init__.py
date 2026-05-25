@@ -21,8 +21,6 @@ def create_app(config_class = Config):
 
     # Configuracion de la app
     app.config.from_object(config_class)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("SQLALCHEMY_DATABASE_URL")
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Inicializo la db
     init_extensions(app = app)
@@ -31,12 +29,12 @@ def create_app(config_class = Config):
     with app.app_context():
         from . import models
 
-    from .plagas import calendario_bp
-    from .historicos import historic_bp
-    from .forecast import forecast_bp
-    from .cultivos import cultivo_bp
-    from .sensores import sensores_bp
-    from .metadata import metadata_bp
+    from app.plagas.routes import calendario_bp
+    from app.historicos.routes import historic_bp
+    from app.forecast.routes import forecast_bp
+    from app.cultivos.routes import cultivo_bp
+    from app.sensores.routes import sensores_bp
+    from app.metadata.routes import metadata_bp
 
     app.register_blueprint(calendario_bp)
     app.register_blueprint(historic_bp)

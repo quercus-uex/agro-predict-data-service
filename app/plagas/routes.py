@@ -1,12 +1,12 @@
 # Controlador CALENDARIO
 from .plagas_service import PlagasService
-from . import calendario_bp
-from flask import request, jsonify
+from flask import request, jsonify, Blueprint
 from ..decorator.log_decorator import log
 from app.globals.dto2dict import dataclass_to_json
 from helpers.ApiExceptions import APIException
 import logging
 
+calendario_bp = Blueprint('calendario', __name__, template_folder = 'templates')
 logger = logging.getLogger(__name__)
 
 

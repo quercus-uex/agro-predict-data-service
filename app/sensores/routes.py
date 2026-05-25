@@ -1,6 +1,5 @@
 from .sensores_service import SensoresService
-from . import sensores_bp
-from flask import request
+from flask import request, Blueprint
 from ..decorator.log_decorator import log
 from ..globals.convertidor_tipo import convertir_tipo
 from app.globals.dto2dict import dataclass_to_json
@@ -8,6 +7,7 @@ from helpers.ApiExceptions import APIException
 from datetime import date
 import logging
 
+sensores_bp = Blueprint('sensores', __name__)
 logger = logging.getLogger(__name__)
 
 @sensores_bp.route('/sensores', methods = ['GET'])

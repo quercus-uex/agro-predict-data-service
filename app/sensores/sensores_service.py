@@ -69,6 +69,7 @@ class SensoresService():
                 eui = eui
             )
             if existe_sensor:
+                print("DEBUG: existe sensor")
                 sensores_existentes.append(eui)
 
             existe_sensor_data = SensoresDAO.existe_sensor_data(
@@ -83,6 +84,7 @@ class SensoresService():
                 sensores_sin_datos_almacenados.append(eui)
 
         if sensores_existentes == []:
+            print("entro")
             raise APIException(
                 status = 404,
                 message = f"No existe ningún sensor registrado con eui '{eui}'",
@@ -102,6 +104,7 @@ class SensoresService():
         datos_resultantes = []
         for eui in euis:
             datos = SensoresDAO.consultar_datos_sensores(eui, fecha_inicio, fecha_fin)
+            print(f"DEBUG: datos sensores: {datos}")
             datos_resultantes.append(datos)
 
 

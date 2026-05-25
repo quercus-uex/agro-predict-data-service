@@ -126,11 +126,11 @@ class MetadataDAO:
         modelo,
         filtros : Optional[list] = None
     ):
+        
+        if not filtros:
+            raise ValueError("Se requieren filtros para eliminar registros")
+
         try:
-
-            if not filtros:
-                raise ValueError("Se requieren filtros para eliminar registros")
-
             query = db.session.query(modelo)
             registros = query.filter(*filtros).all()
 
