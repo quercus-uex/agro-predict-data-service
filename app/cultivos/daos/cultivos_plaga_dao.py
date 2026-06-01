@@ -1,5 +1,6 @@
 from sqlalchemy import select, and_
 from app.extensions import db
+from typing import Optional
 from ...models import Cultivo, CalendarioPlaga, CultivoPlaga, Plaga, PlagaTipoDato, TipoDato
 import logging
 
@@ -8,12 +9,13 @@ logger = logging.getLogger(__name__)
 class CultivoPlagaDAO:
     @staticmethod
     def obtener_info_cultivo_plaga(
-        nombres_cultivo : list[str]
+        nombres_cultivo : list[str],
+        nombre_plaga    : Optional[str]
     ):
         try:
             resultados = []
             datos_finales_json = {}
-            def definicion_query_base(args):
+            def definicion_query_base(cultivo, plaga):
                 base_query = (
                     select(
                         Cultivo,
@@ -22,8 +24,11 @@ class CultivoPlagaDAO:
                     .select_from(Cultivo)
                     .join(CultivoPlaga, CultivoPlaga.cultivo_id == Cultivo.id)
                     .join(Plaga, CultivoPlaga.plaga_id == Plaga.id)
-                    .where(Cultivo.id == args.id)
+                    .where(Cultivo.id == cultivo.id)
                 )
+
+                if plaga:
+                    base_query = base_query.where(Plaga.public_id == plaga)
                 return base_query
 
             for nombre_cultivo in nombres_cultivo:
@@ -43,10 +48,10 @@ class CultivoPlagaDAO:
 
                 if tiene_calendario:
                     logger.info("El cultivo tiene calendario asociado")
-                    query = definicion_query_base(cultivo).add_columns(CalendarioPlaga).join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
+                    query = definicion_query_base(cultivo, None).add_columns(CalendarioPlaga).join(CalendarioPlaga, CalendarioPlaga.plaga_id == Plaga.id)
                 else:
                     logger.info(f"El cultivo {nombre_cultivo} no tiene asociado un calendario")
-                    query = definicion_query_base(cultivo).add_columns(TipoDato).join(PlagaTipoDato, PlagaTipoDato.plaga_id == Plaga.id).join(TipoDato, TipoDato.id == PlagaTipoDato.tipo_dato_id)
+                    query = definicion_query_base(cultivo, nombre_plaga).add_columns(TipoDato).join(PlagaTipoDato, PlagaTipoDato.plaga_id == Plaga.id).join(TipoDato, TipoDato.id == PlagaTipoDato.tipo_dato_id)
 
                 resultado = db.session.execute(query).mappings().all()
 

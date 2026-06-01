@@ -2,7 +2,7 @@ from sqlalchemy import select, and_, inspect
 from ..models import Sensores, MedicionesSensor
 from datetime import date, datetime, time
 from app.extensions import db
-
+from datetime import timedelta
 
 class SensoresDAO():
     @staticmethod
@@ -27,7 +27,8 @@ class SensoresDAO():
     def existe_sensor_data(
         eui : str,
         fec_init,
-        fec_fin
+        fec_fin,
+        nombre_prediccion : str
     ) -> bool:
         try:
             if not eui:
@@ -42,8 +43,15 @@ class SensoresDAO():
 
             datos = db.session.query(MedicionesSensor).filter(
                 MedicionesSensor.sensor_id == sensor_registrado.id,
-                MedicionesSensor.timestamp.between(fec_init, fec_fin)
-            ).first()
+                MedicionesSensor.timestamp.between(fec_init, fec_fin),
+                MedicionesSensor.campo == nombre_prediccion
+            ).order_by(MedicionesSensor.id.desc()).first()
+
+            datos.timestamp = datetime.fromisoformat(datos.timestamp)
+            if datos.timestamp.date() != (fec_fin - timedelta(days = 1)): # Si consulto hasta el dia 20 en DTAgro me devuelve hasta el 19, por lo que aunque los datos estén bien almacenados, 19 != 20, hace la petición igual
+                print(f"DEBUG: datos timestampo {datos.timestamp.date()}")
+                print("entro")
+                return datos.timestamp.date() + timedelta(days = 1) # Para que la siguiente fecha inicial sea la siguiente a la fecha del último dato ya registrado
 
             return datos is not None
 

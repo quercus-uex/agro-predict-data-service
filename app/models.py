@@ -368,24 +368,20 @@ class Metadatos(db.Model):
     fecha_creacion = Column(DateTime, nullable = True)
 
 class MedicionesSensor(db.Model):
-
+    __tablename__ = "mediciones_sensor"
+    
     id = Column(Integer, primary_key = True, autoincrement = True)
 
-    humedad_foliar = Column(Float, nullable = True)
-    temperatura_DS18B20 = Column(Integer, nullable = True)
-    temperatura_hojas = Column(Float, nullable = True)
     timestamp = Column(String(50), nullable = False)
-    temperatura_suelo = Column(Float, nullable = True)
-    humedad_suelo = Column(Float, nullable = True)
-    temperatura_minima = Column(Float, nullable = True)
-    temperatura_maxima = Column(Float, nullable = True)
+    campo     = Column(String(100), nullable = False)
+    valor     = Column(Float, nullable = True)
     sensor_id = Column(Integer, ForeignKey("sensores.id"), nullable = False)
 
     sensor = relationship("Sensores", back_populates = 'mediciones')
 
     __table_args__ = (
         UniqueConstraint(
-            'sensor_id', 'timestamp',
+            'sensor_id', 'timestamp', 'campo',
             name = 'uq_sensor_data'
         ),
     )

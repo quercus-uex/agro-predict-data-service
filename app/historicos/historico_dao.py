@@ -223,6 +223,28 @@ class HistoricDAO:
         except Exception as e:
             print(f"Error computando los datos generales historicos: {e}")
             return []
+        
+    @staticmethod
+    def obtener_dias_existentes(tipo, estacion_id, provincia_id, fec_init, fec_fin):
+        try:
+            filtros = [
+                func.date(MedicionClimatica.timestamp).between(fec_init, fec_fin),
+            ]
+            if estacion_id:
+                filtros.append(MedicionClimatica.estacion_id == estacion_id)
+            if provincia_id:
+                filtros.append(MedicionClimatica.provincia_id == provincia_id)
+
+            query = select(
+                distinct(func.date(MedicionClimatica.timestamp))
+            ).where(and_(*filtros))
+
+            result = db.session.execute(query).scalars().all()
+            return set(result)
+
+        except Exception as e:
+            print(f"Error obteniendo días existentes: {e}")
+            return set()
 
     @staticmethod
     def define_computing_data_hora(

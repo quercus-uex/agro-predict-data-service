@@ -980,6 +980,20 @@ paths:
             type: string
             format: date
             default: "2025-02-25"
+        - name: nombre_dt_agro
+          in: query
+          required: true
+          description: Nombre de campo-valor a extraer sobre datos referentes al sensor especificado en `eui` desde DTAgro.
+          schema:
+            type: string
+            default: "Leaf_Moisture"
+        - name: nombre_predictor
+          in: query
+          required: true
+          description: Nombre traducido de `nombre_dt_agro` al vocabulario del predictor de plagas cuando se envíen los datos obtenidos.
+          schema:
+            type: string
+            default: "humedad_foliar"
       responses:
         '200':
           description: Datos del sensor `{eui}` recopilados correctamente

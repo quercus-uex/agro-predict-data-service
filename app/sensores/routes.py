@@ -17,10 +17,12 @@ def sensores():
     euis = request.args.getlist('eui')
     fecha_inicio = request.args.get('fecha_inicio', '')
     fecha_fin = request.args.get('fecha_fin', '')
+    nombre_dt_agro = request.args.get('nombre_dt_agro', '')
+    nombre_predictor = request.args.get('nombre_predictor', '')
 
     print(euis)
 
-    if not all([euis, fecha_inicio, fecha_fin]):
+    if not all([euis, fecha_inicio, fecha_fin, nombre_dt_agro, nombre_predictor]):
         raise APIException(
             message = "Debe indicarse todos los parámetros de la query (eui, fecha_inicio, fecha_fin)",
             status = 400,
@@ -33,8 +35,10 @@ def sensores():
 
     datos = SensoresService.get_sensor_data(
         euis = euis,
-        fecha_inicio = fecha_inicio,
-        fecha_fin = fecha_fin
+        fecha_inicio     = fecha_inicio,
+        fecha_fin        = fecha_fin,
+        nombre_dtagro    = nombre_dt_agro,
+        nombre_predictor = nombre_predictor
     )
 
     if not datos:

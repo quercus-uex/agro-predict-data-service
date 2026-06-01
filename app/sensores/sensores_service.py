@@ -8,47 +8,35 @@ from ..ingesta.ingesta_service import IngestionService
 class SensoresService():
 
     @staticmethod
-    def _build_sensores_dto(
-        data : list
-    ) -> Optional[list[SensoresDTO]]:
-        """
-        Carga los DTO definidos de Sensores en base a los datos que llegan de 
-        la base de datos
-        """
-        # Guarda
+    def _build_sensores_dto(data: list) -> Optional[list]:
         if not data:
-            return
-        
-        lista_dtos = []
-        # Me llega una lista
+            return None
+
+        agrupado = {}  # {eui: GloablSensorDTO}
+
         for d in data:
             for sensor in d:
-                eui = sensor['id']
-                lista_dtos.append(
-                    GloablSensorDTO(
-                        eui = eui,
-                        resultados = [
-                            SensoresDTO(
-                                humedad_foliar = sensor.get('humedad_foliar', 0.0),
-                                temperatura_DS18B20 = sensor.get('temperatura_DS18B20', 0),
-                                temperatura_hojas = sensor.get('temperatura_hojas', 0.0),
-                                timestamp = sensor.get('timestamp'),
-                                temperatura_suelo = sensor.get('temperatura_suelo', 0.0),
-                                humedad_suelo = sensor.get('humedad_suelo', 0.0),
-                                temperatura_minima = sensor.get('temperatura_minima', 0.0),
-                                temperatura_maxima = sensor.get('temperatura_maxima', 0.0)
-                            )
-                        ]
-                    )
+                eui = sensor['sensor_id']
+                resultado = SensoresDTO(
+                    timestamp=sensor.get('timestamp'),
+                    campo=sensor.get('campo'),
+                    valor=sensor.get('valor'),
                 )
 
-        return lista_dtos
+                if eui not in agrupado:
+                    agrupado[eui] = GloablSensorDTO(eui=eui, resultados=[])
+                
+                agrupado[eui].resultados.append(resultado)
+
+        return list(agrupado.values())[0] if len(agrupado) == 1 else list(agrupado.values())
 
     @staticmethod
     def get_sensor_data(
         euis : list[str],
         fecha_inicio : date,
-        fecha_fin : date
+        fecha_fin : date,
+        nombre_dtagro : str,
+        nombre_predictor : str,
     ):
         """
         Obtiene los datos de sensor almacenados en la base de datos
@@ -69,42 +57,54 @@ class SensoresService():
                 eui = eui
             )
             if existe_sensor:
-                print("DEBUG: existe sensor")
                 sensores_existentes.append(eui)
 
             existe_sensor_data = SensoresDAO.existe_sensor_data(
                 eui = eui,
                 fec_init = fecha_inicio,
-                fec_fin = fecha_fin
+                fec_fin = fecha_fin,
+                nombre_prediccion = nombre_predictor
             )
 
-            if existe_sensor_data:
+            """
+            Si yo quiero obtener datos desde el 2026-04-03 hasta el 2026-05-20 y en la BD
+            estos sensores solo tienen registrados hasta el 2026-04-20, me van a devolver 
+            hasta ahí y los que le siguen hasta el 2026-05-20 no existen por lo que no lo 
+            devuelven. En estos casos es necesario hacer una ingesta sobre estos datos 
+            faltantes
+            """
+            fechas_iniciales = []
+            if isinstance(existe_sensor_data, date): # Datos faltantes
+                fechas_iniciales.append(existe_sensor_data)
+                sensores_sin_datos_almacenados.append(eui)
+            elif existe_sensor_data:
                 contador_verificaciones += 1
             else:
                 sensores_sin_datos_almacenados.append(eui)
 
         if sensores_existentes == []:
-            print("entro")
             raise APIException(
                 status = 404,
                 message = f"No existe ningún sensor registrado con eui '{eui}'",
                 error = "Data Not Found"
             )
 
-
+        print(f"DEBUG: fechas iniciales: {fechas_iniciales}")
         if contador_verificaciones != len(euis):
+            print("entro a la ingesta")
         # Almaceno los datos de los sensores en DB
             IngestionService.ingesta_sensores_data(
                 euis = sensores_sin_datos_almacenados,
-                fecha_inicio = fecha_inicio,
-                fecha_fin = fecha_fin
+                fecha_inicio = fechas_iniciales if fechas_iniciales != [] else fecha_inicio,
+                fecha_fin = fecha_fin,
+                nombre_dtagro = nombre_dtagro,
+                nombre_predictor = nombre_predictor,
             )
 
         # Obtengo los datos de los sensores sobre DTAgro
         datos_resultantes = []
         for eui in euis:
             datos = SensoresDAO.consultar_datos_sensores(eui, fecha_inicio, fecha_fin)
-            print(f"DEBUG: datos sensores: {datos}")
             datos_resultantes.append(datos)
 
 
@@ -114,9 +114,6 @@ class SensoresService():
                 message = "No se han encontrado datos del sensor en DTAgro para los parámetros indicados",
                 error = "Data Not Found"
             )
-        # 'a' añade contenido al final, 'w' sobrescribe el archivo
-        with open('registro.txt', 'a') as f:                
-            print(datos_resultantes, file=f)
 
         dto_cargado = SensoresService._build_sensores_dto(
             data = datos_resultantes

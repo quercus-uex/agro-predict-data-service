@@ -44,7 +44,6 @@ def test_base_client_make_request_handles_exception(monkeypatch, app):
 
     monkeypatch.setattr("requests.request", fail_request)
     response = client._make_request(method="GET", url="http://example.com")
-    print(f"DEBUG: response {response}")
     assert response is None
 
 

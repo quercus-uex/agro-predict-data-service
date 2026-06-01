@@ -6,9 +6,9 @@ from ..ingesta.ingesta_dto import ProcesoIngestaDTO
 from ..ingesta.ingesta_dao import IngestaDAO
 from ..ingesta.ingesta_service import IngestionService
 from ..ingesta.ingesta_thread import lanzar_ingesta_background
-import threading
-import calendar
+from datetime import timedelta
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -145,19 +145,22 @@ class HistoricService:
         fec_fin_hilo: datetime
     ) -> ProcesoIngestaDTO:
         """Registra estado PENDING y arranca el hilo de ingesta."""
-        IngestaDAO.create(
-            status        = 'PENDING',
-            dataset       = 'historico',
-            tipo          = tipo.value,
-            year          = fec_init.year,
-            month         = fec_init.month,
-            day           = fec_init.day,
-            zona          = "provincia" if provincia_id else "estacion",
-            started_at    = datetime.now(),
-            finished_at   = None,
-            error_message = None,
-            codigo        = codigo_estacion if codigo_estacion else provincia_id
-        )
+        cursor = fec_init
+        while cursor <= fec_fin_hilo:
+            IngestaDAO.create(
+                status        = 'PENDING',
+                dataset       = 'historico',
+                tipo          = tipo.value,
+                year          = cursor.year,
+                month         = cursor.month,
+                day           = cursor.day,
+                zona          = "provincia" if provincia_id else "estacion",
+                started_at    = datetime.now(),
+                finished_at   = None,
+                error_message = None,
+                codigo        = codigo_estacion if codigo_estacion else provincia_id
+            )
+            cursor += timedelta(days=1)
         lanzar_ingesta_background(
             app,
             IngestionService.ingest_siar_data,
@@ -191,6 +194,34 @@ class HistoricService:
         return HistoricService.comprobar_devolucion(estacion_id, provincia_id, tipo, items)
 
     # -------------------------------------------------------------------------
+    # Helper punto de entrada
+    # -------------------------------------------------------------------------
+    
+    @staticmethod
+    def _agrupar_dias_contiguos(dias: list) -> list[tuple]:
+        """Agrupa una lista de fechas en rangos contiguos.
+        Ej: [19, 21, 22, 25] → [(19,19), (21,22), (25,25)]
+        """
+        if not dias:
+            return []
+        
+        dias_ordenados = sorted(dias)
+        rangos = []
+        inicio = dias_ordenados[0]
+        fin = dias_ordenados[0]
+
+        for dia in dias_ordenados[1:]:
+            if dia - fin == timedelta(days=1):  # contiguo
+                fin = dia
+            else:  # hueco → cierra rango actual y abre uno nuevo
+                rangos.append((inicio, fin))
+                inicio = dia
+                fin = dia
+        
+        rangos.append((inicio, fin))
+        return rangos
+
+    # -------------------------------------------------------------------------
     # Punto de entrada principal
     # -------------------------------------------------------------------------
 
@@ -203,88 +234,62 @@ class HistoricService:
         provincia_id: Optional[str] = None,
         codigo_estacion: Optional[str] = None
     ):
-        logger.debug(f"get_historico — thread: {threading.current_thread().name}")
-
         if not (codigo_estacion or provincia_id):
             raise ValueError("Debe indicarse la estación o provincia")
 
-        estacion_id = HistoricDAO.obtener_id_estacion_por_str(codigo_estacion)
+        estacion_id = None
+        provincia_db_id = None
+        if codigo_estacion:
+            estacion_id = HistoricDAO.obtener_id_estacion_por_str(codigo_estacion)
+        elif provincia_id:
+            provincia_db_id = HistoricDAO.obtener_id_provincia_por_str(provincia_id)
 
-        estado = IngestaDAO.obtener_estado(
-            dataset = 'historico',
-            tipo    = tipo.value,
-            year    = fec_init.year,
-            month   = fec_init.month,
-            day     = fec_init.day,
-            zona    = "provincia" if provincia_id else "estacion",
-            error   = None,
-            codigo  = codigo_estacion if codigo_estacion else provincia_id
+        # 1. Ver qué días ya tenemos en BD
+        dias_existentes = HistoricDAO.obtener_dias_existentes(
+            tipo, estacion_id, provincia_db_id, fec_init, fec_fin
         )
-        print(f"DEBUG: estado {estado}")
 
-        # --- Estado ya registrado en BD ---
-        if estado:
-            if estado['status'] in ('PENDING', 'LOADING'):
-                return HistoricService._pending_dto(tipo, estado)
+        # Obtengo los dias sin datos almacenados sobre el rango de fechas indicado
+        dias_faltantes = []
+        cursor = fec_init
+        while cursor <= fec_fin:
+            if cursor not in dias_existentes:
+                dias_faltantes.append(cursor)
+            cursor += timedelta(days=1)
 
-            if estado['status'] == 'READY':
-                return HistoricService._leer_datos_ready(
-                    tipo, estacion_id, provincia_id, fec_init, fec_fin
-                )
-
-            # FAILED u otro estado de error
-            return ProcesoIngestaDTO(
-                status            = estado.get('status'),
-                datos_solicitados = (
-                    f"{tipo.value} - {estado.get('zona')} "
-                    f"- Fecha: {estado.get('day')}-{estado.get('month')}-{estado.get('year')}"
-                ),
-                started_at  = estado.get('started_at'),
-                finished_at = datetime.now(),
-                error       = estado.get('error_message')
+        # 2. Si no faltan días, leer directamente de BD
+        if not dias_faltantes:
+            return HistoricService._leer_datos_ready(
+                tipo, estacion_id, provincia_id, fec_init, fec_fin
             )
 
-        # --- Sin estado previo: buscar datos parciales en BD ---
-        computing_general = HistoricDAO.define_computing_general(
-            codigo_estacion, provincia_id, fec_init, fec_fin
-        )
-
-        if computing_general:
-            # Hay datos pero con gap respecto a la fecha solicitada → ingesta parcial
-            if fec_init != computing_general.timestamp:
-                return HistoricService._crear_ingesta_y_lanzar_hilo(
-                    app, tipo, fec_init, fec_fin,
+        # 3. Itero sobre los rangos de fechas faltantes definidos
+        if dias_faltantes:
+            # Obtengo los rangos de fechas ordenados como tuplas
+            rangos = HistoricService._agrupar_dias_contiguos(dias_faltantes)
+            
+            for fec_init_gap, fec_fin_gap in rangos:
+                estado = IngestaDAO.obtener_estado(
+                    dataset = 'historico',
+                    tipo    = tipo.value,
+                    year    = fec_init_gap.year,
+                    month   = fec_init_gap.month,
+                    day     = fec_init_gap.day,
+                    zona    = "provincia" if provincia_id else "estacion",
+                    error   = None,
+                    codigo  = codigo_estacion if codigo_estacion else provincia_id
+                )
+                
+                if estado and estado['status'] in ('PENDING', 'LOADING'):
+                    continue  # este rango ya está en proceso, saltarlo
+                
+                HistoricService._crear_ingesta_y_lanzar_hilo(
+                    app, tipo, fec_init_gap, fec_fin,
                     codigo_estacion, provincia_id,
-                    fec_fin_hilo=computing_general.timestamp.date()
+                    fec_fin_hilo=fec_fin_gap
                 )
-
-            # Los datos ya cubren el rango → marcar READY sin lanzar hilo
-            IngestaDAO.create(
-                status        = 'READY',
-                dataset       = 'historico',
-                tipo          = tipo.value,
-                year          = fec_init.year,
-                month         = fec_init.month,
-                day           = fec_init.day,
-                zona          = "provincia" if provincia_id else "estacion",
-                started_at    = datetime.now(),
-                finished_at   = datetime.now(),
-                error_message = None
-            )
-            return ProcesoIngestaDTO(
-                status            = 'READY',
-                datos_solicitados = tipo.value,
-                started_at        = datetime.now(),
-                finished_at       = datetime.now(),
-                error             = None
-            )
-
-        # --- Sin datos en BD en absoluto → ingesta desde cero ---
-        return HistoricService._crear_ingesta_y_lanzar_hilo(
-            app, tipo, fec_init, fec_fin,
-            codigo_estacion, provincia_id,
-            fec_fin_hilo=fec_fin
-        )
+        
+        return HistoricService._pending_dto(tipo)
 
     # -------------------------------------------------------------------------
     # Utilidades

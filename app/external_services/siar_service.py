@@ -34,8 +34,9 @@ class SiARService:
         lista_datos = []
         cursor = fec_init
         contador_timeouts = 0
-
+        contador_peticiones = 0
         while cursor <= fec_fin:
+            
             datos = cliente.get_historical_data_by_date(
                 estacion_id=estacion_id,
                 provincia_id=provincia_id,
@@ -55,11 +56,10 @@ class SiARService:
                         )
                     
                     if "autenticación" in message.lower() or "clave API" in message.lower():
-                        raise SiARAutenticarError(
-                            message = f"Error de autenticación con SiAR: {message}",
-                            status  = 401,
-                            error   = "UNAUTHORIZED"
-                        )
+                        logger.warning(f"Rate limit alcanzado para {cursor}, esperando 62s...")
+                        time.sleep(62)
+                        contador_peticiones = 0  # reset tras la espera
+                        continue  # reintenta el mismo día
                     
                     time.sleep(62)
                     contador_timeouts += 1
@@ -94,6 +94,10 @@ class SiARService:
                         on_datos_obtenidos(datos_dia)
 
             cursor += timedelta(days=1)  # ← solo avanza si los datos fueron válidos
+            contador_peticiones += 1
+            if contador_peticiones % 5 == 0: # Máximo número de peticiones por minuto a SiAR
+                logger.info(f"Límite de 5 peticiones alcanzado, esperando 62s...")
+                time.sleep(62)
         return lista_datos
 
     @classmethod
@@ -125,21 +129,24 @@ class SiARService:
                 lista_datos.append(
                     {
                         "nombre-comunidades": [
-                            "EXTREMADURA",
+                            "ANDALUCIA",
                             "ARAGON",
                             "ASTURIAS",
                             "BALEARES",
-                            "CANARIAS",
-                            "CANTABRIA",
-                            "CASTILLA-LA MANCHA",
                             "CASTILLA Y LEON",
+                            "CASTILLA LA MANCHA",
+                            "CANARIAS",
                             "CATALUNIA",
-                            "MADRID",
-                            "MURCIA",
+                            "CEUTA",
+                            "EXTREMADURA",
                             "GALICIA",
+                            "MADRID",
+                            "MELILLA",
+                            "MURCIA",
+                            "PVASCO",
                             "RIOJA",
-                            "NAVARRA",
-                            "PAIS VASCO"
+                            "CANTABRIA",
+                            "VALENCIA",
                         ]
                     }
                 )

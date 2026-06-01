@@ -19,38 +19,36 @@ class DTAgroService:
     def get_dtagro_datos(
         cls,
         euis : list[str],
-        fecha_inicio : date,
-        fecha_fin : date
+        fecha_inicio : list[date] | date,
+        fecha_fin : date,
+        nombre_dtagro : str,
+        nombre_predictor : str
     ):
         cliente = cls._get_cliente()
         lista_resultados = []  # Contiene una lista de diccionarios, identificador por el eui del sensor analizado
 
+        iter = 0
         for eui in euis:
             # Almaceno la estructura incial del json de datos por eui
             json_eui = {'eui' : eui, 'resultados' : []}
 
             datos_por_eui = cliente.get_dtagro_data(
                 eui = eui,
-                fecha_inicio = fecha_inicio,
+                fecha_inicio = fecha_inicio if isinstance(fecha_inicio, date) else fecha_inicio[iter],
                 fecha_fin = fecha_fin
             )
             lista_datos = []
             for dato in datos_por_eui:
                 lista_datos.append(
                     {
-                        "humedad_foliar" : dato['measurements'].get('Leaf_Moisture', 0.0),
-                        "temp_DS18B20": dato['measurements'].get('TempC_DS18B20', 0),
-                        "temperatura_hoja" : dato['measurements'].get('Leaf_Temperature', 0.0),
                         "timestamp" : dato['time'],
-                        "temperatura_suelo" : dato['measurements'].get('temp_SOIL', 0.0),
-                        "humedad_suelo" : dato['measurements'].get('water_SOIL', 0.0),
-                        "temperatura_minima" : dato['measurements'].get('Temp_Channel2', 0.0),
-                        "temperatura_maxima" : dato['measurements'].get('Temp_Channel1', 0.0)
+                        f"{nombre_predictor}" : dato['measurements'].get(nombre_dtagro)
                     }
                 )
 
             # Actualizo el valor de los resultados por la lista de datos obtenido del sensor analizado
             json_eui['resultados'] = lista_datos
             lista_resultados.append(json_eui)
+            iter += 1
         
         return lista_resultados

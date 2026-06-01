@@ -149,6 +149,7 @@ def variedades_por_modelo(
 def obtener_cultivos_asociados_plagas():
     
     nombre_cultivos = request.args.get('cultivos')
+    nombre_plaga = request.args.get('plaga')
 
     if not nombre_cultivos:
         raise APIException(
@@ -160,7 +161,8 @@ def obtener_cultivos_asociados_plagas():
     nombre_cultivos_lista = [c.strip() for c in nombre_cultivos.split(',')]
 
     datos_cultivo_plaga = CultivoPlagaService.obtener_cultivo_plaga_asociado(
-        nombres_cultivo = nombre_cultivos_lista
+        nombres_cultivo = nombre_cultivos_lista,
+        nombre_plaga    = nombre_plaga if nombre_plaga else None
     )
 
     if not datos_cultivo_plaga:

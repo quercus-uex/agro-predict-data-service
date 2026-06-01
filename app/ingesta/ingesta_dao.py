@@ -135,9 +135,6 @@ class IngestaDAO:
             )
             result = db.session.execute(query)
 
-            if result.rowcount == 0:
-                logger.warning("actualizar_estado: no se encontró ninguna fila para actualizar")
-
             db.session.commit()
         except Exception as e:
             logger.error(f"Error actualizando estado de ingesta: {e}")
@@ -171,14 +168,9 @@ class IngestaDAO:
     @staticmethod
     def crear_datos_sensores(
         eui: str,
-        humedad_foliar: float,
-        temperatura_sensor: int,
-        temperatura_hojas: float,
         timestamp: datetime,
-        temperatura_suelo: float,
-        humedad_suelo: float,
-        temperatura_minima: float,
-        temperatura_maxima: float
+        campo : str,
+        valor : str
     ):
         """
         Inserta una medición de sensor, creando el sensor si no existe.
@@ -201,14 +193,9 @@ class IngestaDAO:
                 sensor = existe_sensor
 
             medicion = MedicionesSensor(
-                humedad_foliar      = humedad_foliar,
-                temperatura_DS18B20 = temperatura_sensor,
-                temperatura_hojas   = temperatura_hojas,
+                campo               = campo,
+                valor               = valor,
                 timestamp           = timestamp,
-                temperatura_suelo   = temperatura_suelo,
-                humedad_suelo       = humedad_suelo,
-                temperatura_minima  = temperatura_minima,
-                temperatura_maxima  = temperatura_maxima,
                 sensor_id           = sensor.id
             )
             db.session.add(medicion)

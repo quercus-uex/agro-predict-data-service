@@ -123,7 +123,8 @@ class CultivoPlagaService():
 
     @staticmethod
     def obtener_cultivo_plaga_asociado(
-        nombres_cultivo : list[str]
+        nombres_cultivo : list[str],
+        nombre_plaga : Optional[str]
     ) -> Optional[list[CultivoPlagaDTO]]:
         """
         Obtiene información del cultivo con información de posibles plagas y enfermedades asociada
@@ -133,7 +134,8 @@ class CultivoPlagaService():
         """
         try:
             datos : list[dict] = CultivoPlagaDAO.obtener_info_cultivo_plaga(
-                nombres_cultivo = nombres_cultivo
+                nombres_cultivo = nombres_cultivo,
+                nombre_plaga    = nombre_plaga if nombre_plaga else None,
             )
 
             if not datos:

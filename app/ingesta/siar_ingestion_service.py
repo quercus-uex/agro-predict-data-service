@@ -5,6 +5,7 @@ from ..external_services.siar_service import SiARService
 from ..ingesta.ingesta_dao import IngestaDAO
 from ..models import MedicionClimatica, Estacion, Provincia
 from helpers.siar_exceptions import SiARFechaInvalidaError
+from datetime import timedelta
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 class SiarIngestionService:
 
     @staticmethod
-    def callback_db_siar(data, codigo_provincia_id, fec_init, tipo):
+    def callback_db_siar(data, codigo_provincia_id, codigo_estacion_id, fec_init, tipo):
         """Persiste en BD cada bloque de datos devuelto por SiAR y actualiza el estado."""
         for d in data:
             d_timestamp = d["timestamp"]
@@ -39,30 +40,28 @@ class SiarIngestionService:
             )
 
             existe = db.session.query(MedicionClimatica.id).filter_by(
-                temperatura   = medicion.temperatura,
-                humedad       = medicion.humedad,
-                vel_viento    = medicion.vel_viento,
-                precipitacion = medicion.precipitacion,
-                etp_mon       = medicion.etp_mon,
-                pep_mon       = medicion.pep_mon,
-                radiacion     = medicion.radiacion
+                timestamp    = medicion.timestamp,
+                estacion_id  = medicion.estacion_id,
+                provincia_id = medicion.provincia_id,
             ).first()
 
             if not existe:
                 db.session.add(medicion)
 
+        dia = data[0]["timestamp"].date() if data else fec_init
         IngestaDAO.actualizar_estado(
             status      = 'READY',
             dataset     = 'historico',
             tipo        = tipo.value,
-            year        = fec_init.year,
-            month       = fec_init.month,
-            day         = fec_init.day,
-            finish_time = datetime.now(),
+            year        = dia.year,
+            month       = dia.month,
+            day         = dia.day,
             zona        = "provincia" if codigo_provincia_id else "estacion",
+            finish_time = datetime.now(),
             error       = None,
-            codigo      = codigo_provincia_id,
+            codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
         )
+
         db.session.commit()
 
     @staticmethod
@@ -74,18 +73,22 @@ class SiarIngestionService:
         fec_fin: date
     ):
         try:
-            IngestaDAO.actualizar_estado(
-                status      = 'LOADING',
-                dataset     = 'historico',
-                tipo        = tipo.value,
-                year        = fec_init.year,
-                month       = fec_init.month,
-                day         = fec_init.day,
-                zona        = "provincia" if codigo_provincia_id else "estacion",
-                finish_time = None,
-                error       = None,
-                codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
-            )
+            cursor = fec_init
+            while cursor <= fec_fin:
+                IngestaDAO.actualizar_estado(
+                    status      = 'LOADING',
+                    dataset     = 'historico',
+                    tipo        = tipo.value,
+                    year        = cursor.year,
+                    month       = cursor.month,
+                    day         = cursor.day,
+                    zona        = "provincia" if codigo_provincia_id else "estacion",
+                    finish_time = None,
+                    error       = None,
+                    codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
+                )
+
+                cursor += timedelta(days = 1)
 
             lista_datos = SiARService.get_siar_data(
                 estacion_id  = codigo_estacion_id,
@@ -93,25 +96,13 @@ class SiarIngestionService:
                 tipo         = tipo,
                 fec_init     = fec_init,
                 fec_fin      = fec_fin,
-                on_datos_obtenidos=lambda datos_dia: SiarIngestionService.callback_db_siar(
-                    datos_dia, codigo_provincia_id, fec_init, tipo
+                on_datos_obtenidos = lambda datos_dia: SiarIngestionService.callback_db_siar(
+                    datos_dia, codigo_provincia_id, codigo_estacion_id, fec_init, tipo
                 )
             )
 
-            IngestaDAO.actualizar_estado(
-                status      = 'READY',
-                dataset     = 'historico',
-                tipo        = tipo.value,
-                year        = fec_init.year,
-                month       = fec_init.month,
-                day         = fec_init.day,
-                zona        = "provincia" if codigo_provincia_id else "estacion",
-                finish_time = datetime.now(),
-                error       = None,
-                codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
-            )
-
             return lista_datos
+        
         except SiARFechaInvalidaError as e:
             from ..historicos.tasks import programar_consulta_datos_task
             programar_consulta_datos_task.delay({
@@ -136,18 +127,21 @@ class SiarIngestionService:
             )
 
         except Exception as e:
-            IngestaDAO.actualizar_estado(
-                status      = 'FAILED',
-                dataset     = 'historico',
-                tipo        = tipo.value,
-                year        = fec_init.year,
-                month       = fec_init.month,
-                day         = fec_init.day,
-                finish_time = datetime.now(),
-                zona        = "provincia" if codigo_provincia_id else "estacion",
-                error       = e.message if hasattr(e, 'message') else str(e),
-                codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
-            )
+            cursor = fec_init
+            while cursor <= fec_fin:
+                IngestaDAO.actualizar_estado(
+                    status      = 'FAILED',
+                    dataset     = 'historico',
+                    tipo        = tipo.value,
+                    year        = cursor.year,
+                    month       = cursor.month,
+                    day         = cursor.day,
+                    finish_time = datetime.now(),
+                    zona        = "provincia" if codigo_provincia_id else "estacion",
+                    error       = e.message if hasattr(e, 'message') else str(e),
+                    codigo      = codigo_estacion_id if codigo_estacion_id else codigo_provincia_id,
+                )
+                cursor += timedelta(days = 1)
 
     @staticmethod
     def ingest_info(estaciones: bool = True):
@@ -156,12 +150,14 @@ class SiarIngestionService:
         todas_comunidades = []
 
         for d in data:
+            print(f"DEBUG: {d}")
             if estaciones:
                 codigo_raw = d.get('codigo', '')
-                if codigo_raw[:2] != "CC":
-                    continue
 
                 provincia = Provincia.query.filter_by(codigo=codigo_raw[:2]).one_or_none()
+                if not provincia:
+                    continue
+                
                 estacion = Estacion(
                     codigo       = d.get('codigo'),
                     nombre       = d.get('nombre_estacion'),

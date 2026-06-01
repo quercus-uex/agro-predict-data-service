@@ -128,7 +128,6 @@ def historicalEstacion():
             provincia_id = None,
             codigo_estacion = estacion_code_raw,
         )
-        print(f"DEBUG: datos routes {datos}")
 
         if not datos:
             raise APIException(

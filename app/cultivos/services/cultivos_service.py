@@ -11,6 +11,9 @@ from datetime import date, datetime
 from ...historicos.historico_dao import HistoricDAO
 from .cultivo_plaga_service import CultivoPlagaService
 from .cultivo_parcela_service import CultivoParcelaService
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CultivoService:
 
@@ -470,6 +473,11 @@ class CultivoService:
 
         for temperatura in temperaturas:
             t = temperatura.get('temperatura')
+            # Guarda para temperaturas a None
+            if t is None:
+                logger.warning(f"Medición sin temperatura, saltando registro: {temperatura}")
+                continue
+
             if t < 1.4:
                 contador_unidades += 0
             elif 1.5 <= t <= 2.4:

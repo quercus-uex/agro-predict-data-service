@@ -10,12 +10,15 @@ logger = logging.getLogger(__name__)
 class SensorIngestionService:
 
     @staticmethod
-    def ingesta_sensores_data(euis: list[str], fecha_inicio: date, fecha_fin: date):
+    def ingesta_sensores_data(euis: list[str], fecha_inicio: list[date] | date, fecha_fin: date, nombre_dtagro : str, nombre_predictor : str):
         try:
+            print(f"DEBUG: fec_ini fec_fin ingest: {fecha_inicio} - {fecha_fin}")
             datos = DTAgroService.get_dtagro_datos(
-                euis         = euis,
-                fecha_inicio = fecha_inicio,
-                fecha_fin    = fecha_fin
+                euis             = euis,
+                fecha_inicio     = fecha_inicio,
+                fecha_fin        = fecha_fin,
+                nombre_dtagro    = nombre_dtagro,
+                nombre_predictor = nombre_predictor
             )
 
             for medicion in datos:
@@ -24,14 +27,9 @@ class SensorIngestionService:
                 for resultado in medicion['resultados']:
                     IngestaDAO.crear_datos_sensores(
                         eui                = medicion['eui'],
-                        humedad_foliar     = resultado['humedad_foliar'],
-                        temperatura_sensor = resultado['temp_DS18B20'],
-                        temperatura_hojas  = resultado['temperatura_hoja'],
                         timestamp          = resultado['timestamp'],
-                        temperatura_suelo  = resultado['temperatura_suelo'],
-                        humedad_suelo      = resultado['humedad_suelo'],
-                        temperatura_minima = resultado['temperatura_minima'],
-                        temperatura_maxima = resultado['temperatura_maxima']
+                        campo              = nombre_predictor,
+                        valor              = resultado[f'{nombre_predictor}'],
                     )
 
             db.session.commit()
