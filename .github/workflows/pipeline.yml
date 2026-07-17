@@ -59,4 +59,4 @@ jobs:
           context: .
           push: true
           tags: |
-            dtagro/agro-predict-siar:latest
+            dtagro/agro-predict-data-service:latest
