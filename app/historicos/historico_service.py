@@ -250,10 +250,12 @@ class HistoricService:
         )
 
         # Obtengo los dias sin datos almacenados sobre el rango de fechas indicado
+        # (dias_existentes contiene objetos date; comparamos por date() para evitar
+        # que un datetime nunca case con un date aunque sea el mismo día)
         dias_faltantes = []
         cursor = fec_init
         while cursor <= fec_fin:
-            if cursor not in dias_existentes:
+            if cursor.date() not in dias_existentes:
                 dias_faltantes.append(cursor)
             cursor += timedelta(days=1)
 

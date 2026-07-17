@@ -98,11 +98,16 @@ def test_get_historico_returns_pending_when_estado_pending(monkeypatch):
 
 
 def test_get_historico_ready_uses_read_data_path(monkeypatch):
+    """Cuando obtener_dias_existentes cubre todo el rango pedido, no faltan
+    días y get_historico lee directamente de BD sin tocar IngestaDAO."""
+    fec_init = datetime(2026, 1, 1)
+    fec_fin = datetime(2026, 1, 2)
+
     monkeypatch.setattr(historico_service_module.HistoricDAO, "obtener_id_estacion_por_str", lambda _: 21)
     monkeypatch.setattr(
-        historico_service_module.IngestaDAO,
-        "obtener_estado",
-        lambda **kwargs: {"status": "READY"},
+        historico_service_module.HistoricDAO,
+        "obtener_dias_existentes",
+        lambda *args, **kwargs: {fec_init.date(), fec_fin.date()},
     )
 
     expected = EstacionHistDTO(type=TipoHistorico.HORA, datos=["ok"])
@@ -111,54 +116,59 @@ def test_get_historico_ready_uses_read_data_path(monkeypatch):
     result = HistoricService.get_historico(
         app=None,
         tipo=TipoHistorico.HORA,
-        fec_init=datetime(2026, 1, 1),
-        fec_fin=datetime(2026, 1, 2),
+        fec_init=fec_init,
+        fec_fin=fec_fin,
         codigo_estacion="EST01",
     )
 
     assert result is expected
 
 
-def test_get_historico_returns_error_dto_for_failed_estado(monkeypatch):
+def test_get_historico_retries_gap_when_previous_estado_is_failed(monkeypatch):
+    """Un hueco cuyo último intento quedó en FAILED no se salta (solo se
+    saltan PENDING/LOADING): se vuelve a lanzar la ingesta para ese hueco."""
+    fec_init = datetime(2026, 1, 1)
+    fec_fin = datetime(2026, 1, 2)
+
     monkeypatch.setattr(historico_service_module.HistoricDAO, "obtener_id_estacion_por_str", lambda _: 21)
+    monkeypatch.setattr(historico_service_module.HistoricDAO, "obtener_dias_existentes", lambda *args, **kwargs: set())
     monkeypatch.setattr(
         historico_service_module.IngestaDAO,
         "obtener_estado",
-        lambda **kwargs: {
-            "status": "FAILED",
-            "zona": "estacion",
-            "day": 1,
-            "month": 1,
-            "year": 2026,
-            "started_at": datetime(2026, 1, 1, 9, 0),
-            "error_message": "boom",
-        },
+        lambda **kwargs: {"status": "FAILED", "error_message": "boom"},
     )
+
+    captured = {}
+
+    def fake_crear_ingesta(app, tipo, fec_init_gap, fec_fin_arg, codigo_estacion, provincia_id, fec_fin_hilo):
+        captured["fec_init_gap"] = fec_init_gap
+        captured["fec_fin_hilo"] = fec_fin_hilo
+
+    monkeypatch.setattr(historico_service_module.HistoricService, "_crear_ingesta_y_lanzar_hilo", fake_crear_ingesta)
 
     result = HistoricService.get_historico(
         app=None,
         tipo=TipoHistorico.SEMANA,
-        fec_init=datetime(2026, 1, 1),
-        fec_fin=datetime(2026, 1, 2),
+        fec_init=fec_init,
+        fec_fin=fec_fin,
         codigo_estacion="EST01",
     )
 
+    assert captured["fec_init_gap"] == fec_init
+    assert captured["fec_fin_hilo"] == fec_fin
     assert isinstance(result, ProcesoIngestaDTO)
-    assert result.status == "FAILED"
-    assert "Semana - estacion" in result.datos_solicitados
-    assert result.error == "boom"
+    assert result.status == "PENDING"
 
 
 def test_get_historico_without_estado_and_without_data_launches_full_ingesta(monkeypatch):
     monkeypatch.setattr(historico_service_module.HistoricDAO, "obtener_id_estacion_por_str", lambda _: 7)
+    monkeypatch.setattr(historico_service_module.HistoricDAO, "obtener_dias_existentes", lambda *args, **kwargs: set())
     monkeypatch.setattr(historico_service_module.IngestaDAO, "obtener_estado", lambda **kwargs: None)
-    monkeypatch.setattr(historico_service_module.HistoricDAO, "define_computing_general", lambda *args, **kwargs: None)
 
     captured = {}
 
     def fake_crear_ingesta(*args, **kwargs):
         captured["fec_fin_hilo"] = kwargs["fec_fin_hilo"]
-        return "INGESTA_START"
 
     monkeypatch.setattr(historico_service_module.HistoricService, "_crear_ingesta_y_lanzar_hilo", fake_crear_ingesta)
 
@@ -173,26 +183,26 @@ def test_get_historico_without_estado_and_without_data_launches_full_ingesta(mon
         codigo_estacion="EST99",
     )
 
-    assert result == "INGESTA_START"
     assert captured["fec_fin_hilo"] == fec_fin
+    assert isinstance(result, ProcesoIngestaDTO)
+    assert result.status == "PENDING"
 
 
 def test_get_historico_without_estado_with_partial_data_launches_partial_ingesta(monkeypatch):
+    """Solo faltan los días 1-3 (4-8 ya existen): se agrupan en un único
+    hueco contiguo y se lanza la ingesta solo para ese hueco."""
     monkeypatch.setattr(historico_service_module.HistoricDAO, "obtener_id_estacion_por_str", lambda _: 5)
     monkeypatch.setattr(historico_service_module.IngestaDAO, "obtener_estado", lambda **kwargs: None)
-
-    partial_row = SimpleNamespace(timestamp=datetime(2026, 1, 3, 10, 0))
     monkeypatch.setattr(
         historico_service_module.HistoricDAO,
-        "define_computing_general",
-        lambda *args, **kwargs: partial_row,
+        "obtener_dias_existentes",
+        lambda *args, **kwargs: {datetime(2026, 1, d).date() for d in range(4, 9)},
     )
 
     captured = {}
 
     def fake_crear_ingesta(*args, **kwargs):
         captured["fec_fin_hilo"] = kwargs["fec_fin_hilo"]
-        return "PARTIAL"
 
     monkeypatch.setattr(historico_service_module.HistoricService, "_crear_ingesta_y_lanzar_hilo", fake_crear_ingesta)
 
@@ -204,20 +214,22 @@ def test_get_historico_without_estado_with_partial_data_launches_partial_ingesta
         codigo_estacion="EST99",
     )
 
-    assert result == "PARTIAL"
-    assert captured["fec_fin_hilo"] == datetime(2026, 1, 3).date()
+    assert captured["fec_fin_hilo"] == datetime(2026, 1, 3)
+    assert isinstance(result, ProcesoIngestaDTO)
+    assert result.status == "PENDING"
 
 
-def test_get_historico_without_estado_with_full_coverage_creates_ready(monkeypatch):
+def test_get_historico_with_full_coverage_reads_directly_without_creating_ingesta(monkeypatch):
+    """Cuando ya existen todos los días del rango, no se crea ningún registro
+    de ingesta: se lee directamente de BD para los tres tipos."""
     monkeypatch.setattr(historico_service_module.HistoricDAO, "obtener_id_estacion_por_str", lambda _: 5)
-    monkeypatch.setattr(historico_service_module.IngestaDAO, "obtener_estado", lambda **kwargs: None)
 
     fec_init = datetime(2026, 1, 3)
-    full_row = SimpleNamespace(timestamp=fec_init)
+    fec_fin = datetime(2026, 1, 8)
     monkeypatch.setattr(
         historico_service_module.HistoricDAO,
-        "define_computing_general",
-        lambda *args, **kwargs: full_row,
+        "obtener_dias_existentes",
+        lambda *args, **kwargs: {datetime(2026, 1, d).date() for d in range(3, 9)},
     )
 
     calls = {"count": 0}
@@ -226,45 +238,26 @@ def test_get_historico_without_estado_with_full_coverage_creates_ready(monkeypat
         calls["count"] += 1
 
     monkeypatch.setattr(historico_service_module.IngestaDAO, "create", fake_create)
+    monkeypatch.setattr(
+        historico_service_module.HistoricService,
+        "_leer_datos_ready",
+        lambda tipo, *args, **kwargs: SimpleNamespace(tipo=tipo),
+    )
 
     result_dia = HistoricService.get_historico(
-        app=None,
-        tipo=TipoHistorico.DIA,
-        fec_init=fec_init,
-        fec_fin=datetime(2026, 1, 8),
-        codigo_estacion="EST99",
+        app=None, tipo=TipoHistorico.DIA, fec_init=fec_init, fec_fin=fec_fin, codigo_estacion="EST99",
     )
-
-    monkeypatch.setattr(historico_service_module.IngestaDAO, "create", fake_create)
-
     result_hora = HistoricService.get_historico(
-        app = None,
-        tipo = TipoHistorico.HORA,
-        fec_init = fec_init,
-        fec_fin = datetime(2026, 1, 8),
-        codigo_estacion = "EST99"
+        app=None, tipo=TipoHistorico.HORA, fec_init=fec_init, fec_fin=fec_fin, codigo_estacion="EST99",
     )
-
-    monkeypatch.setattr(historico_service_module.IngestaDAO, "create", fake_create)
-
     result_semana = HistoricService.get_historico(
-        app = None,
-        tipo = TipoHistorico.SEMANA,
-        fec_init = fec_init,
-        fec_fin = datetime(2026, 1, 8),
-        codigo_estacion = "EST99"
+        app=None, tipo=TipoHistorico.SEMANA, fec_init=fec_init, fec_fin=fec_fin, codigo_estacion="EST99",
     )
 
-    assert isinstance(result_dia, ProcesoIngestaDTO)
-    assert isinstance(result_hora, ProcesoIngestaDTO)
-    assert isinstance(result_semana, ProcesoIngestaDTO)
-    assert result_dia.status == "READY"
-    assert result_hora.status == "READY"
-    assert result_semana.status == "READY"
-    assert result_dia.datos_solicitados == TipoHistorico.DIA.value
-    assert result_hora.datos_solicitados == TipoHistorico.HORA.value
-    assert result_semana.datos_solicitados == TipoHistorico.SEMANA.value
-    assert calls["count"] == 3
+    assert result_dia.tipo == TipoHistorico.DIA
+    assert result_hora.tipo == TipoHistorico.HORA
+    assert result_semana.tipo == TipoHistorico.SEMANA
+    assert calls["count"] == 0
 
 
 def test_leer_datos_ready_uses_tipo_config_and_builder(monkeypatch):
