@@ -30,6 +30,7 @@
 ---
 
 ## 🏗️ Arquitectura general
+
 ```text
 data-service/
 ├── app/ # Código principal de la aplicación
@@ -157,13 +158,13 @@ data-service/
 └── README.md # Este archivo
 ```
 
-
 ---
 
 ## 🛠️ Instalación y ejecución
 
 ### Requisitos previos
-- Python 3.13+
+
+- Python 3.13 (obligatorio; versiones más nuevas como 3.14 aún no tienen wheels de Windows precompilados para dependencias como `python-qpid-proton`, lo que obliga a compilar desde el código fuente)
 - MySQL / MariaDB
 - RabbitMQ
 - Redis
@@ -171,41 +172,69 @@ data-service/
 
 ### Instalación local
 
+1. Clonar el repositorio
+
 ```bash
-# Clonar el repositorio
-git clone https://github.com/agro-predict-tfg-2026/data-service.git
-cd data-service
+git clone https://github.com/quercus-uex/agro-predict-data-service.git
+cd agro-predict-data-service
+```
 
-# Crear entorno virtual
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+2. Crear entorno virtual
 
-# Instalar dependencias
+```bash
+py -3.13 -m venv venv
+```
+
+3. Activar entorno virtual
+
+```bash
+# Windows:
+venv\Scripts\activate
+
+# Linux:
+source venv/bin/activate
+```
+
+4. Instalar dependencias
+
+```bash
 pip install -r requirements.txt
+```
 
-# Configurar variables de entorno (crear archivo .env)
+5. Configurar variables de entorno (crear archivo .env)
+
+```bash
 cp .env.example .env
 # Editar .env con tus configuraciones
+```
 
-# Inicializar base de datos
+6. Inicializar base de datos
+
+```bash
 python scripts/init_db.py
+```
 
-# Ejecutar la aplicación
+7. Ejecutar la aplicación
+
+```bash
 python entrypoint.py
+```
 
-# En otra terminal, ejecutar el worker de Celery
+8. En otra terminal, ejecutar el worker de Celery
+
+```bash
 celery -A celery_worker:celery_app worker --loglevel=info
 ```
 
 ### Ejecución en Docker
+
 ```bash
 # Construir la imagen
 docker build -t agro-predict-data-service .
 
 # Ejecutar el contenedor
 docker run -p 5000:5000 --env-file .env agro-predict-data-service
-```
-
+````
 
 ## Endpoints principales - API
 
@@ -248,47 +277,61 @@ pytest --cov=app/historicos --cov-fail-under=80
 pytest app/tests/historicos/
 ```
 
-
 ## 🤝 Como contribuir
 
 ### 1. **Haz FORK del repositorio**
+
 ### 2. **Crea una rama para tu FEATURE**:
+
 ```bash
 git checkout -b feature/nueva-funcionalidad
 ```
+
 ### 3. **Realiza tus cambios aplicando las siguientes convenciones**:
+
     - Añade pruebas para nueva funcionalidad
     - Asegura que todas las pruebas pasan (`pytest`)
     - Actualiza la documentación si es necesario
+
 ### 4. **Haz commit de los cambios**:
+
 ```bash
 git commit -m "feat: añadir nueva funcionalidad X"
 ```
+
 ### 5. **Sube los cambios a tu FORK**:
+
 ```bash
 git push origin feature/nueva-funcionalidad
 ```
+
 ### 6. **Abre una PULL REQUEST contra la rama `main`**
 
 ### Convenciones de código
-* Usa tipado estático en todas las funciones
-* Documenta las nuevas funciones con DockStrings
-* Sigue el patrón DTO para las respuestas de la aplicando
-* Las excepciones personalizadas heredan de `APIException`
+
+- Usa tipado estático en todas las funciones
+- Documenta las nuevas funciones con DockStrings
+- Sigue el patrón DTO para las respuestas de la aplicando
+- Las excepciones personalizadas heredan de `APIException`
 
 ### Reportar issues
+
 Si encuentras un bug o tienes una sugerencia de implementación, pro favor:
+
 #### 1. Verifica que no exista ya en el apartado `issues`.
+
 #### 2. Abre un nuevo issue con:
-* Descripción clara del problema o propuesta
-* Pasos para reproducir el problema
-* Comportamiento esperado vs actual
-* Logs o capturas relevantes
+
+- Descripción clara del problema o propuesta
+- Pasos para reproducir el problema
+- Comportamiento esperado vs actual
+- Logs o capturas relevantes
+
 ## 📄 License
 
 [Apache 2.0 License](https://choosealicense.com/licenses/mit/)
 
-
 ## 📬 Contacto
-* **email**: alvaromendobusiness@gmail.com
-* **Documentación del proyecto**: [documentacion_agro_predict](https://github.com/agro-predict-tfg-2026/documentacion_agro_predict)
+
+- **email**: alvaromendobusiness@gmail.com
+- **Documentación del proyecto**: [documentacion_agro_predict](https://github.com/agro-predict-tfg-2026/documentacion_agro_predict)

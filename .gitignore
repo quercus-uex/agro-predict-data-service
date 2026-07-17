@@ -7,6 +7,7 @@ htmlcov/
 .tox/
 docs/_build/
 .env*
+!.env.example
 app/logs/*
 !app/logs/.gitkeep
 prueba-regex.txt
@@ -14,3 +15,4 @@ prueba-regex.txt
 *.key
 *.txt
 .secrets
+/app/logs
