@@ -160,6 +160,12 @@ data-service/
 
 ---
 
+## 📚 Documentación adicional
+
+- [Bases de datos y colas](docs/databases.md): qué servicio usa MySQL, Redis y RabbitMQ, por qué, y cómo se encolan/borran los reintentos pendientes de SiAR.
+
+---
+
 ## 🛠️ Instalación y ejecución
 
 ### Requisitos previos
