@@ -63,7 +63,7 @@ class Config:
         "task_default_queue" : "default",
         "task_queues" : (Queue("default", durable = True),),
         "redis_backend_use_ssl": False,
-        "redis_username": "default",
+        "redis_username": os.getenv("REDIS_USER"),
         "redis_password": os.getenv("REDIS_PASS"),  # ← extrae el password aparte
         "redis_host"    : os.getenv("REDIS_HOST", "localhost"),
         "redis_port"    : int(os.getenv("REDIS_PORT", 6379)),

@@ -11,8 +11,8 @@ def convertir_tipo(valor, tipo_destino):
         return tipo_destino(valor)
     
     if tipo_destino in (datetime, date):
-        datetime_obj = datetime.strptime(valor, "%Y-%m-%d").date()
-        return datetime_obj
+        datetime_obj = datetime.strptime(valor, "%Y-%m-%d")
+        return datetime_obj if tipo_destino is datetime else datetime_obj.date()
     
     if issubclass(tipo_destino, Enum):
         try:
