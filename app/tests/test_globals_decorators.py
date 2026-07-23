@@ -1,30 +1,20 @@
 import json
 import os
-import base64
 import tempfile
 from enum import Enum as PyEnum
 from dataclasses import dataclass
 from datetime import datetime, date
 from types import SimpleNamespace
 from app.extensions import db
-from helpers.ApiExceptions import APIException
-from unittest.mock import MagicMock, patch
 
 import pytest
-from flask import jsonify
 from sqlalchemy import select
 
 from app.decorator.log_decorator import log
-from app.decorator.token_decorator import (
-    get_jwks_keys,
-    get_public_key,
-    token_required,
-)
 from app.globals.dto2dict import dataclass_to_json
 from app.globals.convertidor_tipo import convertir_tipo
 from app.globals.normalizar_json import normalizar_json
 from app.globals.row2dict_converter import row2dict_converter
-from helpers.ApiExceptions import APIException
 
 
 @dataclass
@@ -97,87 +87,3 @@ def test_log_decorator_writes_json_file(app):
     assert parsed["endpoint"] == "wrapped"
     assert parsed["method"] == "GET"
     os.remove(path)
-
-
-def test_token_required_decorator_allows_valid_token(app, monkeypatch):
-    app.config["KEYCLOAK_CLIENT_ID"] = "test-client"
-
-    with app.test_request_context(
-        "/secure",
-        method="GET",
-        headers={"Authorization": "Bearer token123"},
-    ):
-        monkeypatch.setattr(
-            "app.decorator.token_decorator.get_jwks_keys",
-            lambda: {"keys": [{"kid": "kid1", "x5c": ["cert"]}]},
-        )
-        monkeypatch.setattr(
-            "app.decorator.token_decorator.jwt.get_unverified_header",
-            lambda token: {"kid": "kid1"},
-        )
-        monkeypatch.setattr(
-            "app.decorator.token_decorator.jwt.decode",
-            lambda token, key, algorithms, audience, options: {"preferred_username": "user", "roles": ["public"]},
-        )
-
-        @token_required(roles=["public"])
-        def secured():
-            return "ok"
-
-        assert secured() == "ok"
-
-
-def test_token_required_returns_401_when_no_authorization_header(app):
-    with app.test_request_context("/secure", method="GET"):
-
-        @token_required(roles=["public"])
-        def secured():
-            return "ok"
-
-        result = None
-        with pytest.raises(APIException) as exc_info:
-            result = secured()
-
-        assert exc_info.value.status == 401
-        assert exc_info.value.error == "Token required"
-        assert result is None
-
-
-def test_get_jwks_keys_uses_cached_result(monkeypatch, app):
-    with app.app_context():
-        from app.decorator import token_decorator
-
-        token_decorator._jwks_cache = None
-
-        class FakeResponse:
-            def raise_for_status(self):
-                pass
-            def json(self):
-                return {"keys": [{"kid": "kid1"}]}
-
-        monkeypatch.setattr("requests.get", lambda url, timeout, verify: FakeResponse())
-
-        first = get_jwks_keys()
-        second = get_jwks_keys()
-
-        assert first == second
-
-def make_fake_jwt(kid: str) -> str:
-    def b64_encode(data: dict) -> str:
-        json_bytes = json.dumps(data, separators=(',', ':')).encode('utf-8')
-        return base64.urlsafe_b64encode(json_bytes).decode('utf-8').rstrip('=')
-    
-    header = b64_encode({"alg": "RS256", "typ": "JWT", "kid": kid})
-    payload = b64_encode({"sub": "test"})
-    signature = base64.urlsafe_b64encode(b"fakesig").decode('utf-8').rstrip('=')
-    return f"{header}.{payload}.{signature}"
-
-def test_get_public_key_matches_kid(app):
-    with app.app_context():
-        jwks = {"keys": [{"kid": "kid1", "x5c": ["cert"]}]}
-        token = make_fake_jwt("kid1")
-        key = get_public_key(token, jwks)
-        assert key["kid"] == "kid1"
-
-        with pytest.raises(Exception):
-            get_public_key("dummy", {"keys": []})

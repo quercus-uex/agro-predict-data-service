@@ -5,7 +5,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask import jsonify
 from flask_migrate import Migrate
-from keycloak import KeycloakOpenID
 from celery import Celery, Task
 import yaml
 import pathlib
@@ -25,22 +24,11 @@ def init_extensions(app):
     db.init_app(app)
     migrate.init_app(app, db)
     register_swagger(app)
-    register_keyclaok(app)
     celery_init_app(app)
 
 # -------------------------------------------------------------------------
 # Configuraciones de extensiones específicas
 # -------------------------------------------------------------------------
-def register_keyclaok(app):
-    global keycloak_openid
-    keycloak_openid = KeycloakOpenID(
-        server_url = app.config['KEYCLOAK_SERVER_URL'],
-        realm_name = app.config['KEYCLOAK_REALM_NAME'],
-        client_id = app.config['KEYCLOAK_CLIENT_ID'],
-        #cert = app.config['KEYCLOAK_CERT'],
-        client_secret_key = app.config['KEYCLOAK_CLIENT_SECRET'] 
-    )
-
 def register_swagger(app):
     """
     Registra el blueprint de swagger junto con su configuración para poder usarlo

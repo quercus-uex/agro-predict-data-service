@@ -1,6 +1,5 @@
 # Controlador de HISTORICOS
 from ..decorator.log_decorator import log
-from ..decorator.token_decorator import token_required
 from flask import request, current_app
 from helpers.ApiExceptions import APIException
 from app.historicos.historico_service import HistoricService
@@ -18,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 @historic_bp.route('/climate/historical/provincias', methods = ['GET'])
 @log('../logs/fichero_salida.json')
-#@token_required(roles = ['public', 'data-reader'])
 def historicalProvincial():
 
     try: 

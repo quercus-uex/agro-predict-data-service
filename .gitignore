@@ -16,3 +16,4 @@ prueba-regex.txt
 *.txt
 .secrets
 /app/logs
+.pytest_cache/

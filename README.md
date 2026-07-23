@@ -21,7 +21,6 @@
   - 📡 **DTAgro** (sensores IoT)
 - **Base de datos**: MySQL / MariaDB con SQLAlchemy ORM.
 - **Tareas asíncronas**: Celery + RabbitMQ + Redis.
-- **Autenticación**: Keycloak (JWT).
 - **Documentación interactiva**: Swagger UI (`/api/v1/ui`).
 - **Testing**: Pytest + cobertura.
 - **CI/CD**: GitHub Actions → construcción y publicación de imagen Docker.
@@ -93,12 +92,9 @@ data-service/
 │ │ ├── metadata_dao.py # Consultas a BD
 │ │ └── metadata_dto.py # DTOs de metadatos
 │ │
-│ ├── auth/ # Autenticación Keycloak
-│ │ └── keycloak_service.py # Integración con Keycloak
-│ │
 │ ├── decorator/ # Decoradores personalizados
 │ │ ├── log_decorator.py # Logging de peticiones
-│ │ └── token_decorator.py # Validación de JWT
+│ │ └── ...
 │ │
 │ ├── globals/ # Utilidades globales
 │ │ ├── dto2dict.py # Conversión de DTOs a JSON
@@ -240,7 +236,7 @@ docker build -t agro-predict-data-service .
 
 # Ejecutar el contenedor
 docker run -p 5000:5000 --env-file .env agro-predict-data-service
-````
+```
 
 ## Endpoints principales - API
 

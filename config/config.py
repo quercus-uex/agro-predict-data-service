@@ -8,6 +8,30 @@ from kombu import Queue
 load_dotenv()
 
 class Config:
+    REQUIRED_ENV_VARS = (
+        'SQLALCHEMY_DATABASE_URL',
+        'SIAR_SERVICE_DATA_URL',
+        'SIAR_SERVICE_INFO_URL',
+        'AEMET_SERVICE_CURRENT_URL',
+        'AEMET_SERVICE_FUTURE_URL',
+        'ITACYL_SERVICE_BASE_URL',
+        'DTAGRO_SERVICE_BASE_URL',
+        'DTAGRO_API_TOKEN',
+        'QUEUE_IN_NAME',
+        'QUEUE_OUT_NAME',
+        'RABBITMQ_CONNECTION',
+        'REDIS_URL',
+    )
+
+    OPTIONAL_ENV_VARS = (
+        'REDIS_HOST',
+        'REDIS_PORT',
+        'REDIS_DB',
+        'REDIS_USER',
+        'REDIS_PASS',
+        'TEST_DATABASE_URL',
+    )
+
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SIAR_SERVICE_DATA_URL = os.getenv('SIAR_SERVICE_DATA_URL')
@@ -20,11 +44,6 @@ class Config:
     QUEUE_IN_NAME = os.getenv('QUEUE_IN_NAME')
     QUEUE_OUT_NAME = os.getenv('QUEUE_OUT_NAME')
     RABBITMQ_CONNECTION = os.getenv('RABBITMQ_CONNECTION')
-    KEYCLOAK_SERVER_URL = os.getenv('KEYCLOAK_SERVER_URL')
-    KEYCLOAK_REALM_NAME = os.getenv('KEYCLOAK_REALM_NAME')
-    KEYCLOAK_CLIENT_ID = os.getenv('KEYCLOAK_CLIENT_ID')
-    KEYCLOAK_CERT = os.getenv('KEYCLOAK_CERT')
-    KEYCLOAK_CLIENT_SECRET = os.getenv('KEYCLOAK_CLIENT_SECRET')
 
     # Swagger
     SWAGGER_URL = '/api/v1/ui'
@@ -52,8 +71,32 @@ class Config:
     }
 
     # Metadata
+    @staticmethod
     def obtener_ruta_contenido_metadatos(tipo : str):
         return Path(__file__).parent.parent / f"app/data/{tipo}"
+
+    @classmethod
+    def validate_environment(cls):
+        missing_vars = []
+        empty_vars = []
+
+        for var_name in cls.REQUIRED_ENV_VARS:
+            value = os.getenv(var_name)
+            if value is None:
+                missing_vars.append(var_name)
+            elif isinstance(value, str) and not value.strip():
+                empty_vars.append(var_name)
+
+        if missing_vars or empty_vars:
+            parts = []
+            if missing_vars:
+                parts.append(f"faltan: {', '.join(sorted(missing_vars))}")
+            if empty_vars:
+                parts.append(f"vacias: {', '.join(sorted(empty_vars))}")
+            detail = ' | '.join(parts)
+            raise RuntimeError(
+                f"Variables de entorno invalidas ({detail}). Revisa el archivo .env o las variables del contenedor."
+            )
 
 class CircuitBreakerPersonalizado(CircuitBreaker):
     FAILURE_THRESHOLD = 7
@@ -69,6 +112,7 @@ class TestingConfig(Config):
     """TESTING CONFIG"""
     DEBUG = False
     TESTING = True
+    REQUIRED_ENV_VARS = ()
     SQLALCHEMY_DATABASE_URI = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
 
 class ProductionConfig(Config):

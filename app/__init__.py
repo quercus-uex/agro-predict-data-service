@@ -16,6 +16,9 @@ load_dotenv()
 def create_app(config_class = Config):
     app = Flask(__name__)
 
+    if hasattr(config_class, 'validate_environment'):
+        config_class.validate_environment()
+
     # Evito problemas de CORS
     CORS(app, resources = {r"/*" : {"origins" : "*"}}) # Permite CORS para todas las rutas y origenes
 
