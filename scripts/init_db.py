@@ -3,7 +3,7 @@ import logging
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from flask_migrate import upgrade
+from flask_migrate import upgrade, stamp
 from app.extensions import db
 
 # Configuracion del logging
@@ -25,8 +25,21 @@ with app.app_context():
         
         # Crear todas las tablas
         logger.info("Creando tablas...")
-        upgrade()
-        #db.create_all()
+        inspector = db.inspect(db.engine)
+        tablas_existentes = set(inspector.get_table_names()) - {"alembic_version"}
+        if tablas_existentes:
+            # La base de datos ya tiene tablas de la aplicación: aplico las
+            # migraciones pendientes de forma incremental
+            upgrade()
+        else:
+            # Base de datos nueva y vacía (o con un "alembic_version" huérfano
+            # de un intento anterior fallido): la cadena de migraciones asume
+            # que las tablas base ya existen (solo contiene ALTER TABLE),
+            # así que las creo a partir de los modelos actuales y marco
+            # la base de datos como si ya estuviera al día ("head"),
+            # sin volver a ejecutar las migraciones antiguas
+            db.create_all()
+            stamp()
         logger.info("Tablas creadas exitosamente")
         
         # Verificar que las tablas se crearon
